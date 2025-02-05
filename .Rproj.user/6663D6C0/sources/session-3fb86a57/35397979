@@ -1,27 +1,27 @@
 {
-    "id": "D13D8A92",
-    "path": "~/Documents/git-repos/PelagicReefs/01_read_ime_data.R",
-    "project_path": "01_read_ime_data.R",
+    "id": "35397979",
+    "path": "~/Documents/git-repos/PelagicReefs/02_model_planks.R",
+    "project_path": "02_model_planks.R",
     "type": "r_source",
     "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1738684572819.0,
+    "created": 1738769885067.0,
     "source_on_save": false,
-    "relative_order": 1,
+    "relative_order": 2,
     "properties": {
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "91,43",
-        "scrollLine": "74"
+        "cursorPosition": "46,51",
+        "scrollLine": "36"
     },
     "folds": "",
-    "lastKnownWriteTime": 1738769937,
+    "lastKnownWriteTime": 1738770282,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1738769937158,
+    "last_content_update": 1738770282317,
     "read_only": false,
     "read_only_alternatives": []
 }
