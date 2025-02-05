@@ -1,0 +1,27 @@
+{
+    "id": "D13D8A92",
+    "path": "~/Documents/git-repos/PelagicReefs/01_read_data.R",
+    "project_path": "01_read_data.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1738684572819.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "67,53",
+        "scrollLine": "63"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1738688142,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1738688142806,
+    "read_only": false,
+    "read_only_alternatives": []
+}
