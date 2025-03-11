@@ -1,8 +1,10 @@
 library(tidyverse)
 library(terra)
 library(ggthemes)
+library(sf)
 # Load the world map as an sf object
 world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
+world_shifted <- st_transform(world, crs = "+proj=robin +lon_0=150")
 
 theme_set(theme_classic())
 
@@ -83,7 +85,7 @@ seas<-chl_ime %>%
   summarise(cv_ime = sd(Chl_increase_nearby, na.rm=TRUE)/mean(Chl_increase_nearby, na.rm=TRUE) * 100, 
             mean_ime_percent = mean(Chl_increase_nearby, na.rm=TRUE),
             max_ime_percent = max(Chl_increase_nearby, na.rm=TRUE),
-            max_chl = mean(Chl_max, na.rm=TRUE),
+            max_chl = max(Chl_max, na.rm=TRUE),
             total_ime_chl_tCm = sum(total_chl_increase_tC_per_m, na.rm=TRUE),
             months_ime = n_distinct(month[!is.na(has_IME)])
             )
@@ -109,12 +111,18 @@ hist(seas$months_ime)
 ggplot(seas %>% filter(mean_ime_percent > 10), 
        aes(cv_ime, mean_ime_percent, size = total_ime_chl_tCm)) + geom_point()
 
+# Convert to sf object (WGS 84, EPSG:4326)
+seas_sf <- st_as_sf(seas, coords = c("lon", "lat"), crs = 4326)
+seas_sf <- st_transform(seas_sf, crs = "+proj=robin +lon_0=150")
+
 ggplot() + 
-  # geom_sf(data = world, fill = "lightblue", color = "black") +
-  geom_point(data = seas %>% filter(mean_ime_percent > 1), 
-             aes(lon, lat, col=max_chl), alpha=0.5) +
+  geom_sf(data = world_shifted, fill = "grey", color = "grey") +
+  geom_sf(data = seas_sf %>% filter(mean_ime_percent > 1 & max_chl < 2), 
+             aes(col=min_), alpha=0.5, size=1.2) +
   scale_color_distiller(palette='Spectral') +
-  theme_minimal()
+  theme_map() +
+  coord_sf(xlim = c(-5000000, 13000000), ylim = c(-3500000, 4000000))
+
 
 
 # Qs for Messie:

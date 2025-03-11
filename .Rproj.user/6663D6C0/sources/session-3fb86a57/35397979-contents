@@ -4,8 +4,10 @@ depth<-read.csv('data/richardson_2023/Depth_study_fish_data.csv')
 depth_ime<-depth %>% 
   filter(ISLAND %in% ime$island) %>% 
   mutate(island = ISLAND) %>% 
-  left_join(ime)
- 
+  left_join(ime) %>% 
+  mutate(across(c(DEPTH_c, SITE_SLOPE_400m_c, mean_ime_percent, max_chl, months_ime), 
+                ~scale(., center=TRUE, scale=TRUE)))
+
 # From Richardson sup mat 
 fix<- ~ DEPTH_c +
   POP_STATUS +
@@ -24,8 +26,8 @@ fix<- ~ DEPTH_c +
 
 fix2 <- ~DEPTH_c +
   POP_STATUS +
-  SITE_SLOPE_400m_c +
-  mean_ime_percent + max_chl + months_ime +
+  SITE_SLOPE_400m_c * max_chl +
+  mean_ime_percent + months_ime +
   (1|OBS_YEAR) +
   (1|ISLAND) +
   (1|SITE) 
