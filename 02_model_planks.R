@@ -26,8 +26,9 @@ fix<- ~ DEPTH_c +
 
 fix2 <- ~DEPTH_c +
   POP_STATUS +
-  SITE_SLOPE_400m_c * max_chl +
-  mean_ime_percent + months_ime +
+  SITE_SLOPE_400m_c + #* max_chl +
+  # mean_ime_percent + 
+  months_ime*max_chl +
   (1|OBS_YEAR) +
   (1|ISLAND) +
   (1|SITE) 

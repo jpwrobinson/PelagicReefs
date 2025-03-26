@@ -2,6 +2,8 @@ library(tidyverse)
 library(terra)
 library(ggthemes)
 library(sf)
+library(ggrepel)
+
 # Load the world map as an sf object
 world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
 world_shifted <- st_transform(world, crs = "+proj=robin +lon_0=150")
@@ -57,7 +59,8 @@ chl_ime<-chl_ime %>%
          total_chl_increase_tC_per_m = ifelse(has_IME ==1,
                 (chl_ime - Chl_REF) * area_IME / 1e3, NA)) %>% 
   group_by(island) %>% 
-  mutate(n_month_ime = n_distinct(month[!is.na(Chl_increase_nearby)])) %>% 
+  mutate(n_month_ime = n_distinct(month[has_IME==1]),
+         Chl_increase_nearby = ifelse(has_IME==1, Chl_increase_nearby, NA)) %>% 
   select(-c(N_PHYSAT, Pielou_REF, Shannon_IME, Pielou_IME, braycurtis_IMEvsREF))
 
 # Prevalence of IME 
@@ -82,12 +85,14 @@ chl_ime %>% group_by(island) %>%
 seas<-chl_ime %>% 
   filter(has_IME == 1) %>% 
   group_by(island, lon, lat) %>% 
+  filter(keep_IME == 1) %>% 
   summarise(cv_ime = sd(Chl_increase_nearby, na.rm=TRUE)/mean(Chl_increase_nearby, na.rm=TRUE) * 100, 
-            mean_ime_percent = mean(Chl_increase_nearby, na.rm=TRUE),
-            max_ime_percent = max(Chl_increase_nearby, na.rm=TRUE),
-            max_chl = max(Chl_max, na.rm=TRUE),
-            total_ime_chl_tCm = sum(total_chl_increase_tC_per_m, na.rm=TRUE),
-            months_ime = n_distinct(month[!is.na(has_IME)])
+            mean_ime_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean IME relative to REF, %
+            max_ime_percent = max(Chl_increase_nearby, na.rm=TRUE), # max IME relative to REF, %
+            chl_ime = mean(chl_ime, na.rm=TRUE), # chl-a in IME mask
+            max_chl = max(Chl_max, na.rm=TRUE), # max chl-a in IME mask
+            total_ime_chl_tCm = sum(total_chl_increase_tC_per_m, na.rm=TRUE), # total annual chl-a in IME 
+            months_ime = n_distinct(month[!is.na(has_IME)]) # number of months with IME
             )
 
 write.csv(chl_ime, file = 'island_ime_month_dat.csv', row.names=FALSE)
@@ -109,7 +114,30 @@ seas %>% filter(months_ime == 12) %>% dim / 613 * 100
 hist(seas$months_ime)  
 
 ggplot(seas %>% filter(mean_ime_percent > 10), 
-       aes(cv_ime, mean_ime_percent, size = total_ime_chl_tCm)) + geom_point()
+       aes(cv_ime, mean_ime_percent)) + 
+  geom_point(aes(size = total_ime_chl_tCm)) +
+  geom_text_repel(aes(label = island), size=2) 
+
+ggplot(seas %>% filter(mean_ime_percent > 10), 
+       aes(months_ime, mean_ime_percent)) + 
+  geom_point(aes(size = total_ime_chl_tCm)) +
+  geom_text_repel(aes(label = island), size=2) 
+
+ggplot(seas %>% filter(chl_ime < 1),
+       aes(chl_ime, max_ime_percent)) + 
+  geom_point(aes(size = total_ime_chl_tCm)) +
+  geom_text_repel(aes(label = island), size=2) 
+
+ggplot(seas %>% filter(chl_ime < 1),
+       aes(months_ime, lat)) + 
+  geom_point(aes(size = total_ime_chl_tCm)) +
+  geom_text_repel(aes(label = island), size=2) 
+
+
+ggplot(seas %>% filter(chl_ime < 1),
+       aes(chl_ime, lat)) + 
+  geom_point(aes(size = total_ime_chl_tCm)) +
+  geom_text_repel(aes(label = island), size=2) 
 
 # Convert to sf object (WGS 84, EPSG:4326)
 seas_sf <- st_as_sf(seas, coords = c("lon", "lat"), crs = 4326)
