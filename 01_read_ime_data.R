@@ -79,9 +79,10 @@ chl_ime %>% group_by(island) %>%
 ## Average chl-a values estimated using all months
 seas<-chl_ime %>% 
   group_by(island, lon, lat) %>% 
-  mutate(chl_island = mean(Chl_max, na.rm=TRUE)) %>% 
+  mutate(chl_island = mean(Chl_max, na.rm=TRUE),
+         cv_chl = sd(Chl_max, na.rm=TRUE)/mean(Chl_max, na.rm=TRUE) * 100) %>% 
   filter(has_IME == 1) %>% 
-  group_by(island, lon, lat, chl_island) %>% 
+  group_by(island, lon, lat, chl_island, cv_chl) %>% 
   filter(keep_IME == 1) %>% 
   summarise(cv_ime = sd(Chl_increase_nearby, na.rm=TRUE)/mean(Chl_increase_nearby, na.rm=TRUE) * 100, 
             mean_ime_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean IME relative to REF, %
@@ -112,41 +113,45 @@ seas %>% filter(months_ime == 12) %>% dim / 613 * 100 # 17% of islands with 12 m
 
 hist(seas$months_ime)  
 
-ggplot(seas %>% filter(mean_ime_percent > 10), 
-       aes(cv_ime, mean_ime_percent)) + 
-  geom_point(aes(size = total_ime_chl_tCm)) +
-  geom_text_repel(aes(label = island), size=2) 
+pdf(file = 'fig/ime_db/ime_db_variables.pdf', height=5, width=7)
 
-ggplot(seas %>% filter(mean_ime_percent > 10), 
-       aes(months_ime, mean_ime_percent)) + 
-  geom_point(aes(size = total_ime_chl_tCm)) +
-  geom_text_repel(aes(label = island), size=2) 
+ggplot(seas, 
+       aes(months_ime, mean_ime_percent/100)) + 
+  geom_point(alpha=0.5, aes(size = total_ime_chl_tCm)) +
+  geom_text_repel(data = seas %>% filter(mean_ime_percent>2), 
+                  aes(label = island), size=2) +
+  scale_x_continuous(breaks=seq(1, 12, 1)) +
+  scale_y_continuous(labels=percent) +
+  labs(x = 'Number of months IME present', y = 'IME: increase in chl-a relative to REF',
+       size = 'IME chl\nTgC yr-1')
 
-ggplot(seas %>% filter(chl_ime < 1),
-       aes(chl_island, max_ime_percent)) + 
-  geom_point(aes(size = total_ime_chl_tCm)) +
-  geom_text_repel(aes(label = island), size=2) 
-
-ggplot(seas %>% filter(chl_ime < 1),
-       aes(chl_island, mean_ime_percent)) + 
+ggplot(seas,
+       aes(chl_island, mean_ime_percent/100)) + 
   geom_point() +
-  geom_text_repel(aes(label = island), size=2)
+  geom_text_repel(data = seas,
+                  aes(label = island), size=2) +
+  scale_y_continuous(labels=percent) +
+  labs(x = 'Climatology: mean maximum chl-a, mg/m3', 
+       y = 'IME: increase in chl-a relative to REF',
+       subtitle = 'IME is unrelated to climatological average chl-a',
+       size = 'IME chl\nTgC yr-1')
 
-
-ggplot(seas %>% filter(chl_ime < 1),
-       aes(chl_island, chl_ime)) + 
+ggplot(seas %>% filter(chl_island < 0.4), aes(chl_island, max_chl)) + 
   geom_point() +
   geom_text_repel(aes(label = island), size=2) +
-  geom_abline(intercept = 0, slope = 1)
+  geom_abline(intercept = 0, slope = 1) +
+  labs(x = 'Climatology: mean maximum chl-a, mg/m3', 
+       subtitle = 'IME raises chl-a above average max chl-a',
+       y = 'IME: maximum chl-a, mg/m3')
 
 ggplot(seas %>% filter(chl_ime < 1),
        aes(months_ime, lat_neg)) + 
-  geom_point(aes(size = total_ime_chl_tCm)) 
+  geom_point(aes(size = total_ime_chl_tCm))  +
+  scale_x_continuous(breaks=seq(1, 12, 1)) +
+  labs(x = 'Number of months IME present', y = 'Distance from equator',
+       size =  'IME chl\nTgC yr-1', subtitle = 'Temporal IME variability occurs across Pacific Ocean')
 
-ggplot(seas %>% filter(chl_ime < 1),
-       aes(chl_ime, lat_neg)) + 
-  geom_point(aes(size = total_ime_chl_tCm)) +
-  geom_text_repel(aes(label = island), size=2) 
+dev.off()
 
 # Convert to sf object (WGS 84, EPSG:4326)
 seas_sf <- st_as_sf(seas, coords = c("lon", "lat"), crs = 4326)
@@ -154,8 +159,8 @@ seas_sf <- st_transform(seas_sf, crs = "+proj=robin +lon_0=150")
 
 ggplot() + 
   geom_sf(data = world_shifted, fill = "grey", color = "grey") +
-  geom_sf(data = seas_sf %>% filter(mean_ime_percent > 1 & max_chl < 2), 
-             aes(col=min_), alpha=0.5, size=1.2) +
+  geom_sf(data = seas_sf,
+             aes(col=months_ime), alpha=0.5, size=1.2) +
   scale_color_distiller(palette='Spectral') +
   theme_map() +
   coord_sf(xlim = c(-5000000, 13000000), ylim = c(-3500000, 4000000))
