@@ -74,12 +74,6 @@ chl_ime %>% group_by(island) %>%
   ungroup() %>% 
   summarise(across(c(chl_ime, Chl_REF, Chl_increase_nearby, Chl_max), ~ mean(., na.rm=TRUE)))
 
-chl_ime %>% group_by(island) %>% 
-  summarise(across(c(total_chl_increase_tC_per_m), ~ sum(., na.rm=TRUE))) %>% 
-  ungroup() %>% 
-  summarise(across(c(total_chl_increase_tC_per_m), ~ mean(., na.rm=TRUE)))
-
-
 ## What is intra-annual / seasonal variation in IME?
 ## Note that average IME values are for months with IME detected (keep_IME & has_IME)
 ## Average chl-a values estimated using all months
