@@ -17,7 +17,6 @@ theme_set(theme_classic())
 ime<-rast('data/ime_layers_messie_2022/IME_database.nc')
 islands<-read.csv('data/ime_layers_messie_2022/island_database.csv', skip = 6)
 dim(ime)
-plot(ime[[2]])
 names(ime[1])
 
 chl_ime<-t(as.matrix(ime[[1]], wide=TRUE))
@@ -38,6 +37,7 @@ chl_ime<-chl_ime %>%
 # has_IME	=	1 if IME, 0 if not, NaN if undetermined (too many gaps near the island, does not happen on a climatology)
 # keep_IME = NaN if no IME or merged IME, 0 if too many gaps within IME region (does not happen on a climatology), 1 otherwise
 # mask_IME = cell containing the IME mask for each island (same size as Chl.chl)
+# cChl = IME Chl contour
 
 for(i in 2:18){
   var<-t(as.matrix(ime[[i]], wide=TRUE))
@@ -59,7 +59,6 @@ chl_ime<-chl_ime %>%
          total_chl_increase_tC_per_m = ifelse(has_IME ==1,(chl_ime - Chl_REF) * area_IME / 1e3, NA),
          total_chl_ime_tC_per_m = ifelse(has_IME ==1, chl_ime * area_IME / 1e3, NA)) %>% 
   group_by(island) %>% 
-  mutate(n_month_ime = n_distinct(month[has_IME==1])) %>% 
   select(-c(N_PHYSAT, Pielou_REF, Shannon_IME, Pielou_IME, braycurtis_IMEvsREF))
 
 # Prevalence of IME 
@@ -80,9 +79,10 @@ chl_ime %>% group_by(island) %>%
 seas<-chl_ime %>% 
   group_by(island, lon, lat) %>% 
   mutate(chl_island = mean(Chl_max, na.rm=TRUE),
-         cv_chl = sd(Chl_max, na.rm=TRUE)/mean(Chl_max, na.rm=TRUE) * 100) %>% 
-  filter(has_IME == 1) %>% 
-  group_by(island, lon, lat, chl_island, cv_chl) %>% 
+         cv_chl = sd(Chl_max, na.rm=TRUE)/mean(Chl_max, na.rm=TRUE) * 100,
+         chl_ime = mean(Chl_max[which(keep_IME == 1)]),
+         chl_no_ime = mean(Chl_max[which(is.na(keep_IME))])) %>% 
+  group_by(island, lon, lat, chl_island, cv_chl, chl_ime, chl_no_ime) %>% 
   filter(keep_IME == 1) %>% 
   summarise(cv_ime = sd(Chl_increase_nearby, na.rm=TRUE)/mean(Chl_increase_nearby, na.rm=TRUE) * 100, 
             mean_ime_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean IME relative to REF, %
@@ -91,9 +91,10 @@ seas<-chl_ime %>%
             max_chl = max(Chl_max, na.rm=TRUE), # max chl-a in nearest island mask pixel
             total_ime_chl_tCm = sum(total_chl_ime_tC_per_m, na.rm=TRUE), # total annual chl-a produced in IME 
             total_increase_chl_tCm = sum(total_chl_increase_tC_per_m, na.rm=TRUE), # total annual chl-a increase in IME 
-            months_ime = n_distinct(month[!is.na(has_IME)]) # number of months with IME
+            months_ime = n_distinct(month) # number of months with IME
             ) %>% 
-  mutate(lat_neg = ifelse(lat > 0, lat*-1, lat))
+  mutate(lat_neg = ifelse(lat > 0, lat*-1, lat),
+         ime_diff = (chl_ime - chl_no_ime) / chl_no_ime * 100)
 
 write.csv(chl_ime, file = 'island_ime_month_dat.csv', row.names=FALSE)
 write.csv(seas, file = 'island_ime_dat.csv', row.names=FALSE)

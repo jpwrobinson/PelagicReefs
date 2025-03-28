@@ -21,6 +21,21 @@ ime<-read.csv(file = 'island_ime_dat.csv') %>%
                               'Swains  (Olohega)' ~ 'Swains',
                               'Ta’u' ~ 'Tau', .default = island2))
 
+ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% 
+  left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>% 
+  mutate(
+         island2 = trimws(str_replace_all(island, 'Atoll', '')),
+         island2 = trimws(str_replace_all(island2, 'Island', '')),
+         island2 = trimws(str_replace_all(island2, 'Reef', '')),
+         island2 = trimws(str_replace_all(island2, '\\ and', '\\ &')),
+         island2 = case_match(island2, 
+                              'Hawai’i' ~ 'Hawaii',
+                              'French Frigate Shoals' ~ 'French Frigate',
+                              'Kaua’i' ~ 'Kauai',
+                              'Ni’ihau' ~ 'Niihau',
+                              'Swains  (Olohega)' ~ 'Swains',
+                              'Ta’u' ~ 'Tau', .default = island2))
+
 # 6 missing islands in depth
 unique(depth$ISLAND[!depth$ISLAND %in% ime$island2]) 
 
@@ -36,11 +51,14 @@ dev.off()
 
 depth_ime<-depth %>% 
   filter(ISLAND %in% ime$island2) %>% 
-  mutate(island2 = ISLAND) %>% 
-  left_join(ime, by = 'island2') 
+  mutate(island2 = ISLAND,
+         month = as.numeric(str_split_fixed(DATE_, '\\/', 3)[,2])) %>% 
+  left_join(ime, by = 'island2') %>% 
+  left_join(ime_month %>% mutate(month = month_num, max_chl_month = Chl_max, ime_on = ifelse(is.na(keep_IME), 0, 1)) %>% 
+              select(island2, month, max_chl_month, ime_on))
 
 depth_ime_scaled <- depth_ime %>% 
-  mutate(across(c(DEPTH_c, SITE_SLOPE_400m_c, mean_ime_percent, max_chl, months_ime), 
+  mutate(across(c(DEPTH_c, SITE_SLOPE_400m_c, mean_ime_percent, max_chl, max_chl_month, months_ime), 
                 ~scale(., center=TRUE, scale=TRUE)))
 
 # 29 islands, excluding 6 islands, mostly large MHI or Marianas
@@ -63,10 +81,12 @@ fix<- ~ DEPTH_c +
 
 fix2 <- ~DEPTH_c +
   POP_STATUS +
-  SITE_SLOPE_400m_c * max_chl +
-  # mean_ime_percent + 
+  SITE_SLOPE_400m_c + 
+  max_chl +
+  max_chl_month +
   months_ime +
   cv_chl + 
+  ime_on +
   (1|OBS_YEAR) +
   (1|ISLAND) +
   (1|SITE) 
