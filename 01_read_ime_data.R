@@ -15,9 +15,9 @@ theme_set(theme_classic())
 
 # https://zenodo.org/records/6416130
 ime<-rast('data/ime_layers_messie_2022/IME_database.nc')
-islands<-read.csv('data/ime_layers_messie_2022/island_database.csv', skip = 6)
-dim(ime)
-names(ime[1])
+islands<-read.csv('data/ime_layers_messie_2022/island_database.csv', skip = 6) %>% 
+  janitor::clean_names()
+names(islands)
 
 chl_ime<-t(as.matrix(ime[[1]], wide=TRUE))
 chl_ime<-as.data.frame(chl_ime)
@@ -25,10 +25,14 @@ colnames(chl_ime)<-month.abb[1:12]
 
 # add meta data and pivot
 chl_ime<-chl_ime %>% 
-  mutate(island = islands$Island.name,
-         lon = islands$Longitude,
-         lat = islands$Latitude) %>% 
-  pivot_longer(Jan:Dec, names_to = 'month', values_to = 'chl_ime')
+  mutate(island = islands$island_name,
+         lon = islands$longitude,
+         lat = islands$latitude,
+         type = ifelse(islands$island_1_or_reef_0 == 1, 'Island', 'Reef'),
+         island_area_km2 = islands$island_area_obtained_either_from_the_nunn_database_or_from_the_island_contour_km2,
+         island_reef_area_km2 = islands$island_area_obtained_either_from_the_nunn_database_or_from_the_island_contour_km2) %>% 
+  pivot_longer(Jan:Dec, names_to = 'month', values_to = 'chl_ime') %>% 
+  mutate(reef_area_km2 = island_area_km2 - island_reef_area_km2)
 
 # chl_ime = Chl averaged within IME mask
 # Chl_REF = Chl averaged within REF mask
@@ -43,8 +47,8 @@ for(i in 2:18){
   var<-t(as.matrix(ime[[i]], wide=TRUE))
   var<-as.data.frame(var) %>% 
     pivot_longer(V1:V12, names_to = 'month', values_to = 'var')
-  chl_ime[,4+i]<-var$var
-  colnames(chl_ime)[4+i]<-names(ime[[i]])
+  chl_ime[,8+i]<-var$var
+  colnames(chl_ime)[8+i]<-names(ime[[i]])
 }
 
 # add IME seasonality and tons carbon estimates
@@ -58,7 +62,6 @@ chl_ime<-chl_ime %>%
          # Compute total chlorophyll increase (tons Chl/m (area_IME is in km²))
          total_chl_increase_tC_per_m = ifelse(has_IME ==1,(chl_ime - Chl_REF) * area_IME / 1e3, NA),
          total_chl_ime_tC_per_m = ifelse(has_IME ==1, chl_ime * area_IME / 1e3, NA)) %>% 
-  group_by(island) %>% 
   select(-c(N_PHYSAT, Pielou_REF, Shannon_IME, Pielou_IME, braycurtis_IMEvsREF))
 
 # Prevalence of IME 
@@ -77,18 +80,16 @@ chl_ime %>% group_by(island) %>%
 ## Note that average IME values are for months with IME detected (keep_IME & has_IME)
 ## Average chl-a values estimated using all months
 seas<-chl_ime %>% 
-  group_by(island, lon, lat) %>% 
+  group_by(island, lon, lat, type, island_area_km2, reef_area_km2) %>% 
   mutate(chl_island = mean(Chl_max, na.rm=TRUE),
          cv_chl = sd(Chl_max, na.rm=TRUE)/mean(Chl_max, na.rm=TRUE) * 100,
          chl_ime = mean(Chl_max[which(keep_IME == 1)]),
          chl_no_ime = mean(Chl_max[which(is.na(keep_IME))])) %>% 
-  group_by(island, lon, lat, chl_island, cv_chl, chl_ime, chl_no_ime) %>% 
   filter(keep_IME == 1) %>% 
+  group_by(island, lon, lat, type, island_area_km2, reef_area_km2, chl_island, cv_chl, chl_ime, chl_no_ime) %>% 
   summarise(cv_ime = sd(Chl_increase_nearby, na.rm=TRUE)/mean(Chl_increase_nearby, na.rm=TRUE) * 100, 
             mean_ime_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean IME relative to REF, %
             max_ime_percent = max(Chl_increase_nearby, na.rm=TRUE), # max IME relative to REF, %
-            chl_ime = mean(chl_ime, na.rm=TRUE), # chl-a in IME mask
-            max_chl = max(Chl_max, na.rm=TRUE), # max chl-a in nearest island mask pixel
             total_ime_chl_tCm = sum(total_chl_ime_tC_per_m, na.rm=TRUE), # total annual chl-a produced in IME 
             total_increase_chl_tCm = sum(total_chl_increase_tC_per_m, na.rm=TRUE), # total annual chl-a increase in IME 
             months_ime = n_distinct(month) # number of months with IME
@@ -116,6 +117,31 @@ hist(seas$months_ime)
 
 pdf(file = 'fig/ime_db/ime_db_variables.pdf', height=5, width=7)
 
+# Convert to sf object (WGS 84, EPSG:4326)
+seas_sf <- st_as_sf(seas, coords = c("lon", "lat"), crs = 4326)
+seas_sf <- st_transform(seas_sf, crs = "+proj=robin +lon_0=150")
+
+ggplot() + 
+  geom_sf(data = world_shifted, fill = "grey", color = "grey") +
+  geom_sf(data = seas_sf,
+          aes(col=months_ime), alpha=0.5, size=0.8) +
+  scale_color_distiller(palette='Spectral') +
+  theme_map() +
+  theme(legend.position = 'bottom') +
+  coord_sf(xlim = c(-3000000, 12000000), ylim = c(-3500000, 4000000)) +
+  labs(subtitle = 'Seasonality in IME duration', colour = 'N. months')
+
+ggplot() + 
+  geom_sf(data = world_shifted, fill = "grey", color = "grey") +
+  geom_sf(data = seas_sf %>% filter(!is.na(ime_diff)),
+          aes(col=ime_diff), alpha=0.5, size=0.8) +
+  scale_color_distiller(palette='Spectral') +
+  theme_map() +
+  theme(legend.position = 'bottom') +
+  coord_sf(xlim = c(-3000000, 12000000), ylim = c(-3500000, 4000000)) +
+  labs(subtitle = 'Non-IME periods can have higher chl-a than IME', colour = 'IME/non-IME, %')
+
+
 ggplot(seas, 
        aes(months_ime, mean_ime_percent/100)) + 
   geom_point(alpha=0.5, aes(size = total_ime_chl_tCm)) +
@@ -126,10 +152,20 @@ ggplot(seas,
   labs(x = 'Number of months IME present', y = 'IME: increase in chl-a relative to REF',
        size = 'IME chl\nTgC yr-1')
 
-ggplot(seas,
+
+ggplot(seas %>% filter(chl_island < 1), 
+       aes(months_ime, chl_island)) + 
+  geom_point(alpha=0.5) + 
+  geom_text_repel(data = seas %>% filter(chl_island < 1), 
+                  aes(label = island), size=2) +
+  scale_x_continuous(breaks=seq(1, 12, 1)) +
+  labs(x = 'Number of months IME present', y = 'Island mean chl-a nearby',
+       subtitle = 'IME duration does not influence average chl-a nearby islands and reefs')
+
+ggplot(seas %>% filter(chl_island < 1),
        aes(chl_island, mean_ime_percent/100)) + 
   geom_point() +
-  geom_text_repel(data = seas,
+  geom_text_repel(data = seas %>% filter(chl_island < 1),
                   aes(label = island), size=2) +
   scale_y_continuous(labels=percent) +
   labs(x = 'Climatology: mean maximum chl-a, mg/m3', 
@@ -137,12 +173,12 @@ ggplot(seas,
        subtitle = 'IME is unrelated to climatological average chl-a',
        size = 'IME chl\nTgC yr-1')
 
-ggplot(seas %>% filter(chl_island < 0.4), aes(chl_island, max_chl)) + 
+ggplot(seas %>% filter(chl_island < 0.4), aes(chl_island, chl_ime)) + 
   geom_point() +
   geom_text_repel(aes(label = island), size=2) +
   geom_abline(intercept = 0, slope = 1) +
   labs(x = 'Climatology: mean maximum chl-a, mg/m3', 
-       subtitle = 'IME raises chl-a above average max chl-a',
+       subtitle = 'IME chl-a strongly correlated with average chl-a',
        y = 'IME: maximum chl-a, mg/m3')
 
 ggplot(seas %>% filter(chl_ime < 1),
@@ -154,17 +190,6 @@ ggplot(seas %>% filter(chl_ime < 1),
 
 dev.off()
 
-# Convert to sf object (WGS 84, EPSG:4326)
-seas_sf <- st_as_sf(seas, coords = c("lon", "lat"), crs = 4326)
-seas_sf <- st_transform(seas_sf, crs = "+proj=robin +lon_0=150")
-
-ggplot() + 
-  geom_sf(data = world_shifted, fill = "grey", color = "grey") +
-  geom_sf(data = seas_sf,
-             aes(col=months_ime), alpha=0.5, size=1.2) +
-  scale_color_distiller(palette='Spectral') +
-  theme_map() +
-  coord_sf(xlim = c(-5000000, 13000000), ylim = c(-3500000, 4000000))
 
 
 

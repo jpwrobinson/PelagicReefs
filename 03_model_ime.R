@@ -1,0 +1,20 @@
+library(brms)
+library(scales)
+library(RColorBrewer)
+library(tidybayes)
+library(bayesplot)
+
+
+ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% 
+  left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) 
+
+ime_month_scaled<-ime_month %>% 
+  mutate(type = factor(type), reef_area_km2 = reef_area_km2+0.1) %>% 
+  mutate(across(c(island_area_km2, reef_area_km2, month_num), 
+                ~scale(., center=TRUE, scale=TRUE)))
+
+
+
+m<-brm(Chl_increase_nearby ~ type + island_area_km2 + reef_area_km2 + month_num, 
+       family = Gamma, data = ime_month,
+        chains = 3, iter = 2000, warmup = 500, cores = 4)

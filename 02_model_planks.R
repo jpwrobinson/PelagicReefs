@@ -41,7 +41,7 @@ unique(depth$ISLAND[!depth$ISLAND %in% ime$island2])
 
 pdf(file = 'fig/ime_db/noaa_months_max_chl.pdf', height=5, width=7)
 ime %>% filter(island2 %in% depth$ISLAND) %>% 
-  ggplot(aes(months_ime, max_chl, col=lat_neg*-1)) + 
+  ggplot(aes(months_ime, chl_island, col=lat_neg*-1)) + 
   geom_point(alpha=1) +
   geom_text_repel(aes(label=island2), size=2) +
   labs(x = 'Number of months IME present', y = 'Climatology: mean maximum chl-a, mg/m3') +
@@ -58,7 +58,8 @@ depth_ime<-depth %>%
               select(island2, month, max_chl_month, ime_on))
 
 depth_ime_scaled <- depth_ime %>% 
-  mutate(across(c(DEPTH_c, SITE_SLOPE_400m_c, mean_ime_percent, max_chl, max_chl_month, months_ime), 
+  mutate(ime_on = factor(ime_on)) %>% 
+  mutate(across(c(DEPTH_c, SITE_SLOPE_400m_c, mean_ime_percent, chl_island, max_chl_month, months_ime), 
                 ~scale(., center=TRUE, scale=TRUE)))
 
 # 29 islands, excluding 6 islands, mostly large MHI or Marianas
@@ -82,11 +83,12 @@ fix<- ~ DEPTH_c +
 fix2 <- ~DEPTH_c +
   POP_STATUS +
   SITE_SLOPE_400m_c + 
-  max_chl +
-  max_chl_month +
-  months_ime +
-  cv_chl + 
-  ime_on +
+  chl_island + ## island avg max nearby chl-a
+  max_chl_month + ## survey aligned nearby chl-a [monthly]
+  months_ime + ## duration of IME in months
+  cv_chl + ## annual variation in nearby chl-a
+  ime_on + ## was the IME pumping during fish survey
+  mean_ime_percent + ## average increase in chl-a during IME months [relative to non-IME REF]
   (1|OBS_YEAR) +
   (1|ISLAND) +
   (1|SITE) 
@@ -115,7 +117,7 @@ conditional_effects(m1_ime)
 
 # Extract posterior draws
 effects <- m1_ime %>%
-  spread_draws(b_DEPTH_c, b_POP_STATUSU, b_SITE_SLOPE_400m_c, b_max_chl, b_months_ime, b_cv_chl) %>%  
+  spread_draws(b_DEPTH_c, b_POP_STATUSU, b_SITE_SLOPE_400m_c, b_chl_island, b_months_ime, b_cv_chl) %>%  
   pivot_longer(cols = starts_with("b_"), names_to = "Variable", values_to = "Effect")
 
 # Plot effect sizes
