@@ -9,6 +9,7 @@ ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>%
   left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) 
 
 ime_month_scaled<-ime_month %>% 
+  filter(!is.na(Chl_increase_nearby)) %>% 
   mutate(type = factor(type), reef_area_km2 = reef_area_km2+0.1) %>% 
   mutate(across(c(island_area_km2, reef_area_km2, month_num), 
                 ~scale(., center=TRUE, scale=TRUE)))

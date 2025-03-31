@@ -84,7 +84,7 @@ fix2 <- ~DEPTH_c +
   POP_STATUS +
   SITE_SLOPE_400m_c + 
   chl_island + ## island avg max nearby chl-a
-  max_chl_month + ## survey aligned nearby chl-a [monthly]
+  # max_chl_month + ## survey aligned nearby chl-a [monthly] [correlated with chl_island]
   months_ime + ## duration of IME in months
   cv_chl + ## annual variation in nearby chl-a
   ime_on + ## was the IME pumping during fish survey
@@ -126,3 +126,15 @@ ggplot(effects, aes(x = Effect, y = Variable)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
   labs(x = "Effect size", y = "") +
   theme_minimal()
+
+
+
+# Create the pairs plot with histograms on the diagonal
+GGally::ggpairs(
+  depth_ime %>% 
+    select(SITE_SLOPE_400m_c, chl_island, max_chl_month, months_ime, cv_chl, ime_on, mean_ime_percent),
+  lower = list(continuous = wrap("points", alpha = 0.5, size=.5)),  # Scatterplots in lower panels
+  diag = list(continuous = wrap("barDiag", bins = 20)),    # Histograms on the diagonal
+  upper = list(continuous = wrap("cor", size = 3))         # Correlations in upper panels
+) +
+  theme_minimal()  # Apply a clean theme
