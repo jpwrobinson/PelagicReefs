@@ -129,7 +129,7 @@ ggplot(effects, aes(x = Effect, y = Variable)) +
 
 
 
-# Create the pairs plot with histograms on the diagonal
+# Create pairs plot for IME ~ CREP covariates
 GGally::ggpairs(
   depth_ime %>% 
     select(SITE_SLOPE_400m_c, chl_island, max_chl_month, months_ime, cv_chl, ime_on, mean_ime_percent),

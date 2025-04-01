@@ -30,9 +30,8 @@ chl_ime<-chl_ime %>%
          lat = islands$latitude,
          type = ifelse(islands$island_1_or_reef_0 == 1, 'Island', 'Reef'),
          island_area_km2 = islands$island_area_obtained_either_from_the_nunn_database_or_from_the_island_contour_km2,
-         island_reef_area_km2 = islands$island_area_obtained_either_from_the_nunn_database_or_from_the_island_contour_km2) %>% 
-  pivot_longer(Jan:Dec, names_to = 'month', values_to = 'chl_ime') %>% 
-  mutate(reef_area_km2 = island_area_km2 - island_reef_area_km2)
+         reef_area_km2 = islands$island_reef_area_calculated_from_gebco_500_m_resolution_as_the_area_of_pixels_above_30_m_depth_including_emerged_lands_km2) %>% 
+  pivot_longer(Jan:Dec, names_to = 'month', values_to = 'chl_ime')
 
 # chl_ime = Chl averaged within IME mask
 # Chl_REF = Chl averaged within REF mask
@@ -47,8 +46,8 @@ for(i in 2:18){
   var<-t(as.matrix(ime[[i]], wide=TRUE))
   var<-as.data.frame(var) %>% 
     pivot_longer(V1:V12, names_to = 'month', values_to = 'var')
-  chl_ime[,8+i]<-var$var
-  colnames(chl_ime)[8+i]<-names(ime[[i]])
+  chl_ime[,7+i]<-var$var
+  colnames(chl_ime)[7+i]<-names(ime[[i]])
 }
 
 # add IME seasonality and tons carbon estimates
