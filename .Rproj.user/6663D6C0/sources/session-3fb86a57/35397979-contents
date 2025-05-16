@@ -5,7 +5,7 @@ library(tidybayes)
 library(bayesplot)
 
 
-depth<-read.csv('data/richardson_2023/Depth_study_fish_data.csv')
+source('00_crep_load.R')
 
 # read ime and change island names
 ime<-read.csv(file = 'island_ime_dat.csv') %>% 
@@ -127,7 +127,11 @@ ggplot(effects, aes(x = Effect, y = Variable)) +
   labs(x = "Effect size", y = "") +
   theme_minimal()
 
-
+# Multipanel of conditional effects
+pdf(file = 'fig/ime_crep/ime_model_planktivore.pdf', height=7, width=12)
+ce<-plot(conditional_effects(m1_ime), plot=FALSE)
+do.call(gridExtra::grid.arrange, c(ce, ncol = 2))
+dev.off()
 
 # Create pairs plot for IME ~ CREP covariates
 GGally::ggpairs(
