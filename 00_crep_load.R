@@ -28,13 +28,26 @@ crep_full<-readRDS("data/noaa-crep/NCRMP.nSPC.site_meancount_species-size.rds") 
   # join bathymetry for islands ~ years available (2010-2015)
   left_join(depth %>% distinct(SITEVISITID, DEPTH, ComplexityValue, SITE_SLOPE_400m))
 
+dim(crep_full) # 566,439 obs
+
+# drop large mobile predators
+drops<-c('Caranx melampygus', 'Un-id fish sp', 'Triaenodon obesus', 'Carcharhinus melanopterus', 'Carcharhinus amblyrhynchos', 'Nebrius ferrugineus',
+         'Sarda orientalis', 'Caranx ignobilis', 'Carcharhinus galapagensis','Caranx sp', 'Thunnus albacares','Carangidae', 'Scombridae', 'Katsuwonus pelamis', 'Alectis ciliaris')
+crep_full<-crep_full %>% filter(!TAXONNAME %in% drops)
+dim(crep_full) # 561,265 obs
 
 write.csv(crep_full, 'data/noaa-crep/crep_full_merged.csv', row.names=FALSE)
 write.csv(crep_full %>% filter(!is.na(SITE_SLOPE_400m)), 'data/noaa-crep/crep_bathymetry_merged.csv', row.names=FALSE)
 
 
-summer<-crep_full %>% filter(!is.na(SITE_SLOPE_400m)) %>% group_by(SITEVISITID) %>% 
+summer<-crep_full %>% filter(!is.na(SITE_SLOPE_400m) & !is.na(biomass_g)) %>% 
+  group_by(SITEVISITID) %>% 
   summarise(biom_g = sum(biomass_g_m2)) %>% 
   mutate(biom_kg  = biom_g / 1000, biom_kg_ha = biom_kg * 10000)
 
 ggplot(summer) + geom_histogram(aes(biom_kg_ha))
+max(summer$biom_kg_ha)
+
+# big biomass in Jarvis due to sharks - exclude these from our analyses
+ss<-summer %>% filter(biom_kg_ha > 10000) %>% pull(SITEVISITID)
+crep_full %>% filter(SITEVISITID %in% ss)
