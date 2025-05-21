@@ -110,7 +110,7 @@ seas %>% ungroup() %>% slice(which.min(mean_ime_percent))
 seas %>% ungroup() %>% slice(which.max(mean_ime_percent)) %>% data.frame
 seas %>% filter(months_ime < 6) %>% dim / 613 * 100 # 27% of islands with <6 months IME
 seas %>% filter(months_ime == 12) %>% dim / 613 * 100 # 17% of islands with 12 months IME
-
+seas %>% filter(ime_diff > 35 | ime_diff <= -35)
 
 hist(seas$months_ime)  
 
