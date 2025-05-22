@@ -17,10 +17,13 @@ depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR) %>%
 
 
 # from Tye NOAA, full dataset with 0s
+lw<-read.csv('data/noaa-crep/NCRMP Fish L-W.csv') %>% 
+  mutate(across(c(LW_A, LW_B, LENGTH_CONVERSION_FACTOR), as.numeric))
+
 crep_full<-readRDS("data/noaa-crep/NCRMP.nSPC.site_meancount_species-size.rds") %>% 
   filter(MEAN_COUNT > 0) %>% 
   # join length weight parameters from Heenan 2017 to estimate biomass
-  left_join(crep %>% distinct(SPECIES, LW_A, LW_B, LMAX, LENGTH_CONVERSION_FACTOR)) %>% 
+  left_join(lw) %>% 
   mutate(SIZE_cmTL = as.numeric(SIZE_cmTL), 
          body_mass_g = LW_A * (SIZE_cmTL * LENGTH_CONVERSION_FACTOR) ^ LW_B,
          biomass_g = body_mass_g * MEAN_COUNT,
@@ -46,7 +49,7 @@ summer<-crep_full %>% filter(!is.na(SITE_SLOPE_400m) & !is.na(biomass_g)) %>%
   mutate(biom_kg  = biom_g / 1000, biom_kg_ha = biom_kg * 10000)
 
 ggplot(summer) + geom_histogram(aes(biom_kg_ha))
-max(summer$biom_kg_ha)
+max(summer$biom_kg_ha) # 19,780.77 kg/ha [Palmyra - Chanos chanos]
 
 # big biomass in Jarvis due to sharks - exclude these from our analyses
 ss<-summer %>% filter(biom_kg_ha > 10000) %>% pull(SITEVISITID)
