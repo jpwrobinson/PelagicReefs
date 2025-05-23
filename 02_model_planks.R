@@ -3,6 +3,7 @@ library(scales)
 library(RColorBrewer)
 library(tidybayes)
 library(bayesplot)
+library(ggrepel)
 
 
 source('00_crep_load.R')
@@ -60,7 +61,7 @@ depth_ime<-depth %>%
   left_join(ime_month %>% mutate(month = month_num, max_chl_month = Chl_max, ime_on = ifelse(is.na(keep_IME), 0, 1)) %>% 
               select(island2, month, max_chl_month, ime_on)) %>% 
   # Bring Gove, MLD and TD variables
-  left_join(island %>% mutate(ISLAND = island) %>% select(ISLAND, sst_mean:ted_sum)) %>% 
+  left_join(island %>% mutate(ISLAND = island) %>% select(ISLAND, island_code, sst_mean:ted_sum)) %>% 
   left_join(mld_recent %>% mutate(date_ym = Date, ISLAND = Island) %>% select(ISLAND, date_ym, mean_mld_3months))
 
 depth_ime_scaled <- depth_ime %>% 
@@ -69,6 +70,19 @@ depth_ime_scaled <- depth_ime %>%
                 ~scale(., center=TRUE, scale=TRUE)))
 
 # 29 islands, excluding 6 islands, mostly large MHI or Marianas
+pdf(file = 'fig/crep_island_ime_oceanography.pdf', height=7, width=15)
+ime %>% 
+  left_join(island %>% mutate(island2 = island) %>% select(island_code, island2, region)) %>% 
+  filter(island2 %in% depth_ime$island2) %>% 
+  mutate(island_code = factor(island_code, levels = rev(levs))) %>% 
+  select(island_code, region, reef_area_km2, island_area_km2, chl_island, cv_ime, mean_ime_percent, months_ime) %>% 
+  pivot_longer(-c(island_code, region), names_to = 'cov', values_to = 'val') %>% 
+  ggplot(aes(island_code, val, fill=region)) + geom_col() +
+  facet_grid(~cov, scales='free') + 
+  coord_flip() +
+  theme(legend.position = 'none') +
+  labs( x= '', y = '')
+dev.off()
 
 # From Richardson sup mat 
 fix<- ~ DEPTH_c +
@@ -96,8 +110,7 @@ fix2 <- ~DEPTH_c +
   ime_on + ## was the IME pumping during fish survey
   mean_ime_percent + ## average increase in chl-a during IME months [relative to non-IME REF]
   (1|OBS_YEAR) +
-  (1|ISLAND) +
-  (1|SITE) 
+  (1|ISLAND/SITE)
 
 # with Richardson covariates
 pos_form <- formula(paste(c('PLANKTIVORE', fix), collapse = " ")) # Formula for models with positive data only
