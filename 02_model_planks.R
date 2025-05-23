@@ -6,6 +6,7 @@ library(bayesplot)
 
 
 source('00_crep_load.R')
+source('00_oceanographic_load.R')
 
 # read ime and change island names
 ime<-read.csv(file = 'island_ime_dat.csv') %>% 
@@ -52,14 +53,19 @@ dev.off()
 depth_ime<-depth %>% 
   filter(ISLAND %in% ime$island2) %>% 
   mutate(island2 = ISLAND,
-         month = as.numeric(str_split_fixed(DATE_, '\\/', 3)[,2])) %>% 
+         month = month(DATE_),
+         date_ym = floor_date(DATE_, unit = "month")) %>% 
+  # Bring IME variables
   left_join(ime, by = 'island2') %>% 
   left_join(ime_month %>% mutate(month = month_num, max_chl_month = Chl_max, ime_on = ifelse(is.na(keep_IME), 0, 1)) %>% 
-              select(island2, month, max_chl_month, ime_on))
+              select(island2, month, max_chl_month, ime_on)) %>% 
+  # Bring Gove, MLD and TD variables
+  left_join(island %>% mutate(ISLAND = island) %>% select(ISLAND, sst_mean:ted_sum)) %>% 
+  left_join(mld_recent %>% mutate(date_ym = Date, ISLAND = Island) %>% select(ISLAND, date_ym, mean_mld_3months))
 
 depth_ime_scaled <- depth_ime %>% 
   mutate(ime_on = factor(ime_on)) %>% 
-  mutate(across(c(DEPTH_c, SITE_SLOPE_400m_c, mean_ime_percent, chl_island, max_chl_month, months_ime), 
+  mutate(across(c(DEPTH_c, SITE_SLOPE_400m_c, mean_ime_percent, chl_island, max_chl_month, months_ime, sst_mean:mean_mld_3months), 
                 ~scale(., center=TRUE, scale=TRUE)))
 
 # 29 islands, excluding 6 islands, mostly large MHI or Marianas
