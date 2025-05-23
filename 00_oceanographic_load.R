@@ -24,7 +24,9 @@ island<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.x
 mld<-read.csv('data/crep_oceanographic/island_mld_timeseries.csv') %>% 
   mutate(Date = as.Date(Date, format = "%d/%m/%Y"), year = year(Date), .before=Island)
 
-mld_avg<-mld %>% group_by(Island) %>% summarise(mld = mean(MLD))
+mld_avg<-mld %>% group_by(Island) %>% 
+  summarise(mld = mean(MLD),
+            mld_sd = sd(MLD))
 
 # MLD mean over past 3 months (inclusive of that month)
 mld_recent<-mld %>% 
@@ -47,9 +49,10 @@ pdf(file = 'fig/crep_island_oceanography.pdf', height=7, width=15)
 island %>% 
   mutate(island_code = factor(island_code, levels = rev(levs))) %>% 
   rename(
-         mean_tidal_energy_W_m1 = ted_mean,
-         sum_tidal_energy_W_m1 = ted_sum,
-         mixed_layer_depth_m = mld) %>% 
+         tidal_energy_mean_W_m1 = ted_mean,
+         tidal_energy_sum_W_m1 = ted_sum,
+         mixed_layer_depth_avg_m = mld,
+         mixed_layer_depth_sd_m = mld_sd) %>% 
   pivot_longer(-c(island_code, island, region, latitude, longitude), names_to = 'cov', values_to = 'val') %>% 
   ggplot(aes(island_code, val, fill=region)) + geom_col() +
   facet_grid(~cov, scales='free') + 
