@@ -76,22 +76,22 @@ chl_ime %>% group_by(island) %>%
   summarise(across(c(chl_ime, Chl_REF, Chl_increase_nearby, Chl_max), ~ mean(., na.rm=TRUE)))
 
 ## What is intra-annual / seasonal variation in IME?
-## Note that average IME values are for months with IME detected (keep_IME & has_IME)
+## Note that average IME values are for months with and without IME detected (keep_IME & has_IME variables). without = CHL values.
 ## Average chl-a values estimated using all months
 seas<-chl_ime %>% 
   group_by(island, lon, lat, type, island_area_km2, reef_area_km2) %>% 
   mutate(chl_island = mean(Chl_max, na.rm=TRUE),
          cv_chl = sd(Chl_max, na.rm=TRUE)/mean(Chl_max, na.rm=TRUE) * 100,
          chl_ime = mean(Chl_max[which(keep_IME == 1)]),
-         chl_no_ime = mean(Chl_max[which(is.na(keep_IME))])) %>% 
-  filter(keep_IME == 1) %>% 
-  group_by(island, lon, lat, type, island_area_km2, reef_area_km2, chl_island, cv_chl, chl_ime, chl_no_ime) %>% 
+         chl_no_ime = mean(Chl_max[which(is.na(keep_IME))]),
+         months_ime = n_distinct(month[which(!is.na(keep_IME))])) %>%  # number of months with IME 
+  # filter(keep_IME == 1) %>% 
+  group_by(island, lon, lat, type, island_area_km2, reef_area_km2, chl_island, cv_chl, chl_ime, chl_no_ime, months_ime) %>% 
   summarise(cv_ime = sd(Chl_increase_nearby, na.rm=TRUE)/mean(Chl_increase_nearby, na.rm=TRUE) * 100, 
             mean_ime_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean IME relative to REF, %
             max_ime_percent = max(Chl_increase_nearby, na.rm=TRUE), # max IME relative to REF, %
             total_ime_chl_tCm = sum(total_chl_ime_tC_per_m, na.rm=TRUE), # total annual chl-a produced in IME 
-            total_increase_chl_tCm = sum(total_chl_increase_tC_per_m, na.rm=TRUE), # total annual chl-a increase in IME 
-            months_ime = n_distinct(month) # number of months with IME
+            total_increase_chl_tCm = sum(total_chl_increase_tC_per_m, na.rm=TRUE) # total annual chl-a increase in IME 
             ) %>% 
   mutate(lat_neg = ifelse(lat > 0, lat*-1, lat),
          ime_diff = (chl_ime - chl_no_ime) / chl_no_ime * 100)

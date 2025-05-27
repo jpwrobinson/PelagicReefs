@@ -20,6 +20,7 @@ ime<-read.csv(file = 'island_ime_dat.csv') %>%
                               'French Frigate Shoals' ~ 'French Frigate',
                               'Kaua’i' ~ 'Kauai',
                               'Ni’ihau' ~ 'Niihau',
+                              'O’ahu' ~ 'Oahu',
                               'Swains  (Olohega)' ~ 'Swains',
                               'Ta’u' ~ 'Tau', .default = island2))
 
@@ -35,11 +36,14 @@ ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>%
                               'French Frigate Shoals' ~ 'French Frigate',
                               'Kaua’i' ~ 'Kauai',
                               'Ni’ihau' ~ 'Niihau',
+                              'O’ahu' ~ 'Oahu',
                               'Swains  (Olohega)' ~ 'Swains',
                               'Ta’u' ~ 'Tau', .default = island2))
 
 # 6 missing islands in depth
 unique(depth$ISLAND[!depth$ISLAND %in% ime$island2]) 
+# "Ofu & Olosega" "Lanai"         "Molokai"         "Tinian"        "Aguijan"     
+# islands %>%  filter(str_detect(island_name, 'kai')) %>% distinct(island_name) %>% data.frame
 
 pdf(file = 'fig/ime_db/noaa_months_max_chl.pdf', height=5, width=7)
 ime %>% filter(island2 %in% depth$ISLAND) %>% 
