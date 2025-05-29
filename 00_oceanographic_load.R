@@ -1,6 +1,6 @@
 library(tidyverse)
 library(janitor)
-theme_set(theme_bw())
+theme_set(theme_classic())
 
 # Climatological covariates from Gove et al. 2013
 island<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.xlsx', sheet=2) %>% 
@@ -36,9 +36,13 @@ mld_recent<-mld %>%
 tc<-read.csv('data/crep_oceanographic/TEDestimates_CREPislands.csv') %>% 
   group_by(ISLAND) %>% summarise(ted_mean = mean(TED_MEAN), ted_sum = sum(TED_SUM))
 
+island_cols<-data.frame(region = unique(island$region),
+                        region.col = c('#349BEB', '#F05826', '#01A74F', '#FEB913', '#FCF20E'))
+
 island<-island %>% 
   left_join(mld_avg %>% rename(island = Island)) %>% 
-  left_join(tc %>% mutate(island_code = ISLAND) %>% select(-ISLAND))
+  left_join(tc %>% mutate(island_code = ISLAND) %>% select(-ISLAND)) %>% 
+  left_join(island_cols)
 
 
 # island oceanographic summaries
@@ -53,10 +57,12 @@ island %>%
          tidal_energy_sum_W_m1 = ted_sum,
          mixed_layer_depth_avg_m = mld,
          mixed_layer_depth_sd_m = mld_sd) %>% 
-  pivot_longer(-c(island_code, island, region, latitude, longitude), names_to = 'cov', values_to = 'val') %>% 
-  ggplot(aes(island_code, val, fill=region)) + geom_col() +
+  pivot_longer(-c(island_code, island, region, latitude, longitude, region.col), names_to = 'cov', values_to = 'val') %>% 
+  ggplot(aes(island_code, val, fill=region.col), col='black') + geom_col() +
   facet_grid(~cov, scales='free') + 
   coord_flip() +
+  scale_fill_identity() +
   theme(legend.position = 'none') +
+  scale_y_continuous(expand=c(0,0)) +
   labs( x= '', y = '')
 dev.off()

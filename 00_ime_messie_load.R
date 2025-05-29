@@ -99,6 +99,7 @@ seas<-chl_ime %>%
 write.csv(chl_ime, file = 'island_ime_month_dat.csv', row.names=FALSE)
 write.csv(seas, file = 'island_ime_dat.csv', row.names=FALSE)
 
+# summary stats
 seas %>% ungroup() %>% 
   reframe(across(c(mean_ime_percent, total_ime_chl_tCm, months_ime), ~ range(., na.rm=TRUE)))
 
@@ -108,7 +109,7 @@ seas %>% group_by(months_ime) %>%
 
 seas %>% ungroup() %>% slice(which.min(mean_ime_percent))
 seas %>% ungroup() %>% slice(which.max(mean_ime_percent)) %>% data.frame
-seas %>% filter(months_ime < 6) %>% dim / 613 * 100 # 27% of islands with <6 months IME
+seas %>% filter(months_ime < 6) %>% dim / 613 * 100 # 35% of islands with <6 months IME
 seas %>% filter(months_ime == 12) %>% dim / 613 * 100 # 17% of islands with 12 months IME
 seas %>% filter(ime_diff > 35 | ime_diff <= -35)
 
