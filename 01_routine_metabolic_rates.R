@@ -44,7 +44,6 @@ sst_K_crep <- unlist(oce[match(crep_full$ISLAND,oce$island),'sst_mean']) + 273.1
 sst_K_crep[crep_full$ISLAND == no_match] <- unique(sst_K_crep[crep_full$ISLAND == 'Maui'])
 count_area_m2 <- (pi*(7.5^2))
 
-
 ## Converting to energy (kJ day^-1) and area units
 ## 1) assumes that each g C respired results in 3.66 g CO2 produced (co2_mol_mass / c_mol_mass)
 ## 2) assumes that one mol of C02 produced consumes 0.85 mol of O2 (resp_quot)
@@ -62,7 +61,6 @@ energy_conv <- function(c_metab, c_mol_mass = 12.01, co2_mol_mass = 44.01,
   return(energy_dens)
 
 }
-
 
 ## Inputting all values back into crep_full
 crep_full %<>% 
@@ -83,25 +81,35 @@ crep_full |>
   as.data.frame()
 
 ## A processed data frame to play
+
+# ISLAND MEAN METABOLIC RATES
 proc <- crep_full |>
   group_by(OBS_YEAR, REGION,ISLAND,SECTOR,REEF_ZONE,SITEVISITID,TROPHIC_BROAD) |>
-  summarise(
-    metab_kJ_m2_day = sum(metab_kJ_m2_day),
-    .groups = 'drop'
-  ) |>
-  pivot_wider(
-    names_from  = TROPHIC_BROAD,
-    values_from = metab_kJ_m2_day
-  ) |>
+  summarise(metab_kJ_m2_day = sum(metab_kJ_m2_day), .groups = 'drop') |>
+  pivot_wider(names_from  = TROPHIC_BROAD, values_from = metab_kJ_m2_day) |>
   mutate(across(PISCIVORE:SECONDARY,\(x)ifelse(is.na(x),0,x))) |>
   rowwise() |>
-  mutate(
-    PLANK_rel = PLANKTIVORE / sum(c_across(PISCIVORE:SECONDARY))) |>
+  mutate(PLANK_rel = PLANKTIVORE / sum(c_across(PISCIVORE:SECONDARY))) |>
   group_by(REGION,ISLAND,OBS_YEAR) |>
-  summarise(
-    across(PISCIVORE:PLANK_rel, mean),
-    .groups = 'drop'
-  )
+  summarise(across(PISCIVORE:PLANK_rel, mean),.groups = 'drop')
+
+# SITE SUM METABOLIC RATES
+proc_reg <- crep_full |>
+  group_by(OBS_YEAR, REGION,ISLAND,SECTOR,REEF_ZONE,SITEVISITID,TROPHIC_BROAD) |>
+  summarise(metab_kJ_m2_day = sum(metab_kJ_m2_day), .groups = 'drop') |>
+  pivot_wider(names_from  = TROPHIC_BROAD, values_from = metab_kJ_m2_day) |>
+  mutate(
+    across(PISCIVORE:SECONDARY,\(x)ifelse(is.na(x),0,x)),
+    REGION = factor(REGION,c('MARIAN','SAMOA','PRIAs','NWHI','MHI'))) |>
+  rowwise() |>
+  mutate(PLANK_rel = PLANKTIVORE / sum(c_across(PISCIVORE:SECONDARY))) |>
+  ungroup() |>
+  arrange(REGION) |>
+  mutate(ISLAND = factor(ISLAND,unique(ISLAND))) %>% 
+  left_join(island_cols)
+
+write.csv(proc, file = 'data/metabolic/crep_island_metabolic_rates.csv', row.names=FALSE)
+write.csv(proc_reg, file = 'data/metabolic/crep_site_metabolic_rates.csv', row.names=FALSE)
   
 ## Temporal patterns in planktivore community metabolic rates
 abs_comm_met <- 
@@ -148,7 +156,7 @@ rel_comm_met <-
 ## for commuity metabolic rates?
 geom_mean <- function(x) exp(mean(log(x)))
 gm_pkrel <- format(geom_mean(proc$PLANK_rel), digits = 2)
-gm_pkrel_lab <- paste("italic(G)~'='~",gm_pkrel)
+gm_pkrel_lab <- paste("italic(G)~'='~",gm_pkrel, "~'%'")
 
 pk_rel_hist <-
   ggplot(data = proc) +
@@ -157,7 +165,7 @@ pk_rel_hist <-
     fill = "#A7C3D9",
     col = NA) +
   labs(
-    x = 'Relative planktivore abundance',
+    x = 'Planktivore contribution to community metabolic rate',
     y = 'Value count') +
   geom_vline(
     xintercept = geom_mean(proc$PLANK_rel),
@@ -174,42 +182,23 @@ pk_rel_hist
 
 
 ## Also no time, a look at absolute planktivore metabolic rates across islands
-proc_reg <- crep_full |>
-  group_by(OBS_YEAR, REGION,ISLAND,SECTOR,REEF_ZONE,SITEVISITID,TROPHIC_BROAD) |>
-  summarise(
-    metab_kJ_m2_day = sum(metab_kJ_m2_day),
-    .groups = 'drop'
-  ) |>
-  pivot_wider(
-    names_from  = TROPHIC_BROAD,
-    values_from = metab_kJ_m2_day
-  ) |>
-  mutate(
-    across(PISCIVORE:SECONDARY,\(x)ifelse(is.na(x),0,x)),
-    REGION = factor(REGION,c('MARIAN','SAMOA','PRIAs','NWHI','MHI'))) |>
-  rowwise() |>
-  mutate(
-    PLANK_rel = PLANKTIVORE / sum(c_across(PISCIVORE:SECONDARY))) |>
-  ungroup() |>
-  arrange(REGION) |>
-  mutate(
-    ISLAND = factor(ISLAND,unique(ISLAND))
-  )
-  
-isl_pk_met <- ggplot(proc_reg) +
-  aes(x = ISLAND, y=PLANKTIVORE, colour = REGION) +
+isl_pk_met <- ggplot(proc_reg %>% filter(PLANKTIVORE>0)) +
+  aes(x = ISLAND, y=PLANKTIVORE, colour = region.col) +
   geom_jitter(
     width = 0.15,
     alpha = 0.2
   ) +
+  scale_colour_identity() + 
   scale_y_log10(
     minor_breaks = NULL,
-    labels = scales::trans_format("log10", scales::math_format(10^.x))
+    labels=scales::trans_format("log10", scales::math_format(10^.x)),
+    sec.axis = dup_axis(labels=scales::trans_format("log10", scales::math_format(10^.x)))
   ) +
-  labs(x = 'Island', y=expression(Planktivore~metabolic~rates~(kJ~m^-2~d^-1))) +
-  theme_minimal() +
+  coord_flip() +
+  labs(x = '', y=expression(Planktivore~metabolic~rates~(kJ~m^-2~d^-1))) +
   theme(
-    legend.position= 'none',
-    axis.text.x = element_text(angle = 90))
+    legend.position= 'none')
 
-(isl_pk_met)
+pdf(file = 'fig/planktivore_metabolic_island.pdf', height=9, width=5)
+print(isl_pk_met)
+dev.off()
