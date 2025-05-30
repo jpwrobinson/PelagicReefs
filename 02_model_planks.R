@@ -40,7 +40,7 @@ ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>%
                               'Swains  (Olohega)' ~ 'Swains',
                               'Ta’u' ~ 'Tau', .default = island2))
 
-# 6 missing islands in depth
+# 5 missing islands in depth
 unique(depth$ISLAND[!depth$ISLAND %in% ime$island2]) 
 # "Ofu & Olosega" "Lanai"         "Molokai"         "Tinian"        "Aguijan"     
 # islands %>%  filter(str_detect(island_name, 'kai')) %>% distinct(island_name) %>% data.frame
@@ -55,11 +55,14 @@ ime %>% filter(island2 %in% depth$ISLAND) %>%
   scale_color_gradientn(colors = rev(c("#043061", "#4475B4",'#FE9928', "#B2182B", "#670A1F")), name = 'Dist.to\nEquator')
 dev.off()
 
+## Creating island-level database of slope, IME variables, and oceanographic from Gove/Williams
 depth_ime<-depth %>% 
   filter(ISLAND %in% ime$island2) %>% 
+  group_by(ISLAND, DATE_, POP_STATUS) %>% 
+  summarise(SITE_SLOPE_400m_c = mean(SITE_SLOPE_400m_c)) %>% 
   mutate(island2 = ISLAND,
          month = month(DATE_),
-         date_ym = floor_date(DATE_, unit = "month")) %>% 
+         date_ym = floor_date(DATE_, unit = "month")) 
   # Bring IME variables
   left_join(ime, by = 'island2') %>% 
   left_join(ime_month %>% mutate(month = month_num, max_chl_month = Chl_max, ime_on = ifelse(is.na(keep_IME), 0, 1)) %>% 
@@ -70,7 +73,8 @@ depth_ime<-depth %>%
 
 depth_ime_scaled <- depth_ime %>% 
   mutate(ime_on = factor(ime_on)) %>% 
-  mutate(across(c(DEPTH_c, SITE_SLOPE_400m_c, mean_ime_percent, chl_island, max_chl_month, months_ime, sst_mean:mean_mld_3months), 
+  mutate(across(c(SITE_SLOPE_400m_c, mean_ime_percent, 
+                  chl_island, max_chl_month, months_ime, sst_mean:mean_mld_3months), 
                 ~scale(., center=TRUE, scale=TRUE)))
 
 # 29 islands, excluding 6 islands, mostly large MHI or Marianas
@@ -88,58 +92,34 @@ ime %>%
   labs( x= '', y = '')
 dev.off()
 
-# From Richardson sup mat 
-fix<- ~ DEPTH_c +
-  POP_STATUS +
-  SITE_SLOPE_400m_c +
-  # DEPTH_c:POP_STATUS +
-  #s(DEPTH_c, by=POP_STATUS) +
-  # s(DEPTH_c, SITE_SLOPE_400m_c)
-  (1|OBS_YEAR) +
-  # (1|OBS_YEAR:ECOREGION) +
-  # (1|OBS_YEAR:ISLAND) +
-  (1|ISLAND) +
-  # (1|ECOREGION)  +
-  (1|SITE) 
-  # (1|DIVER)
-  # (1+DEPTH_c||ISLAND)
 
-fix2 <- ~DEPTH_c +
+fix <- ~
   POP_STATUS +
   SITE_SLOPE_400m_c + 
-  chl_island + ## island avg max nearby chl-a
-  # max_chl_month + ## survey aligned nearby chl-a [monthly] [correlated with chl_island]
+  wave_energy_mean_kw_m1 + # wave energy at each island
+  ted_sum + # sum of tidal energy to island (internal wave energy)
+  ted_mean + # average tidal energy to island
+  mld + # average mixed layer depth around island
+  mean_mld_3months + # mixed layer depth 3 months prior to survey
   months_ime + ## duration of IME in months
   cv_chl + ## annual variation in nearby chl-a
   ime_on + ## was the IME pumping during fish survey
   mean_ime_percent + ## average increase in chl-a during IME months [relative to non-IME REF]
-  (1|OBS_YEAR) +
-  (1|ISLAND/SITE)
+  (1|REGION/ISLAND)
 
 # with Richardson covariates
-pos_form <- formula(paste(c('PLANKTIVORE', fix), collapse = " ")) # Formula for models with positive data only
-bin_form <- formula(paste(c('hu', fix), collapse = " "))
+pos_form <- formula(paste(c('chl_a_mg_m3_mean', fix), collapse = " ")) # Formula for models with positive data only
 
-# with IME covariates
-pos_form2 <- formula(paste(c('PLANKTIVORE', fix2), collapse = " ")) # Formula for models with positive data only
-bin_form2 <- formula(paste(c('hu', fix2), collapse = " "))
-
-
-m1<-brm(bf(pos_form, bin_form), family = hurdle_gamma, data = depth_ime_scaled,
+m1<-brm(bf(pos_form), family = gamma, data = depth_ime_scaled,
     chains = 3, iter = 2000, warmup = 500, cores = 4)
 
-m1_ime<-brm(bf(pos_form2, bin_form2), family = hurdle_gamma, data = depth_ime_scaled,
-        chains = 3, iter = 2000, warmup = 500, cores = 4)
+save(m1, file = 'results/mod_crep_chl_oceangr.rds')
 
-save(m1_ime, file = 'results/mod_ime_planktivore.rds')
-save(m1, file = 'results/mod_depth_planktivore.rds')
-
-summary(m1_ime)
-loo(m1, m1_ime)
-conditional_effects(m1_ime)
+summary(m1)
+conditional_effects(m1)
 
 # Extract posterior draws
-effects <- m1_ime %>%
+effects <- m1 %>%
   spread_draws(b_DEPTH_c, b_POP_STATUSU, b_SITE_SLOPE_400m_c, b_chl_island, b_months_ime, b_cv_chl) %>%  
   pivot_longer(cols = starts_with("b_"), names_to = "Variable", values_to = "Effect")
 
@@ -151,8 +131,8 @@ ggplot(effects, aes(x = Effect, y = Variable)) +
   theme_minimal()
 
 # Multipanel of conditional effects
-pdf(file = 'fig/ime_crep/ime_model_planktivore.pdf', height=7, width=12)
-ce<-plot(conditional_effects(m1_ime), plot=FALSE)
+pdf(file = 'fig/ime_crep/crep_island_chl_model.pdf', height=7, width=12)
+ce<-plot(conditional_effects(m1), plot=FALSE)
 do.call(gridExtra::grid.arrange, c(ce, ncol = 2))
 dev.off()
 
