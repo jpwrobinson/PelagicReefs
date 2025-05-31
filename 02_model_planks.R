@@ -11,23 +11,8 @@ source('00_oceanographic_load.R')
 
 # read ime and change island names
 ime<-read.csv(file = 'island_ime_dat.csv') %>% 
-  mutate(island2 = trimws(str_replace_all(island, 'Atoll', '')),
-         island2 = trimws(str_replace_all(island2, 'Island', '')),
-         island2 = trimws(str_replace_all(island2, 'Reef', '')),
-         island2 = trimws(str_replace_all(island2, '\\ and', '\\ &')),
-         island2 = case_match(island2, 
-                              'Hawai’i' ~ 'Hawaii',
-                              'French Frigate Shoals' ~ 'French Frigate',
-                              'Kaua’i' ~ 'Kauai',
-                              'Ni’ihau' ~ 'Niihau',
-                              'O’ahu' ~ 'Oahu',
-                              'Swains  (Olohega)' ~ 'Swains',
-                              'Ta’u' ~ 'Tau', .default = island2))
-
-ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% 
-  left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>% 
-  mutate(
-         island2 = trimws(str_replace_all(island, 'Atoll', '')),
+  mutate(reef_area_km2_log10 = log10(reef_area_km2),
+          island2 = trimws(str_replace_all(island, 'Atoll', '')),
          island2 = trimws(str_replace_all(island2, 'Island', '')),
          island2 = trimws(str_replace_all(island2, 'Reef', '')),
          island2 = trimws(str_replace_all(island2, '\\ and', '\\ &')),
@@ -58,24 +43,21 @@ dev.off()
 ## Creating island-level database of slope, IME variables, and oceanographic from Gove/Williams
 depth_ime<-depth %>% 
   filter(ISLAND %in% ime$island2) %>% 
-  group_by(ISLAND, DATE_, POP_STATUS) %>% 
+  group_by(ISLAND, REGION, POP_STATUS) %>% 
   summarise(SITE_SLOPE_400m_c = mean(SITE_SLOPE_400m_c)) %>% 
-  mutate(island2 = ISLAND,
-         month = month(DATE_),
-         date_ym = floor_date(DATE_, unit = "month")) 
+  mutate(island2 = ISLAND) %>% 
+  ungroup() %>% 
   # Bring IME variables
   left_join(ime, by = 'island2') %>% 
-  left_join(ime_month %>% mutate(month = month_num, max_chl_month = Chl_max, ime_on = ifelse(is.na(keep_IME), 0, 1)) %>% 
-              select(island2, month, max_chl_month, ime_on)) %>% 
   # Bring Gove, MLD and TD variables
-  left_join(island %>% mutate(ISLAND = island) %>% select(ISLAND, island_code, sst_mean:ted_sum)) %>% 
-  left_join(mld_recent %>% mutate(date_ym = Date, ISLAND = Island) %>% select(ISLAND, date_ym, mean_mld_3months))
+  left_join(island %>% mutate(ISLAND = island) %>% select(ISLAND, island_code, sst_mean:ted_sum), by = 'ISLAND') 
+  # left_join(mld_recent %>% mutate(date_ym = Date, ISLAND = Island) %>% select(ISLAND, date_ym, mean_mld_3months)) 
 
 depth_ime_scaled <- depth_ime %>% 
-  mutate(ime_on = factor(ime_on)) %>% 
-  mutate(across(c(SITE_SLOPE_400m_c, mean_ime_percent, 
-                  chl_island, max_chl_month, months_ime, sst_mean:mean_mld_3months), 
-                ~scale(., center=TRUE, scale=TRUE)))
+  filter(!is.na(ted_mean)) %>% 
+  mutate(across(c(reef_area_km2_log10, island_area_km2, SITE_SLOPE_400m_c, mean_ime_percent, 
+                  cv_chl, chl_island, months_ime, sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean:ted_sum), 
+                ~scale(., center=TRUE, scale=TRUE)[,1]))
 
 # 29 islands, excluding 6 islands, mostly large MHI or Marianas
 pdf(file = 'fig/crep_island_ime_oceanography.pdf', height=7, width=15)
@@ -94,23 +76,26 @@ dev.off()
 
 
 fix <- ~
+  reef_area_km2_log10 +
+  # island_area_km2 + [correlated with reef area]
   POP_STATUS +
   SITE_SLOPE_400m_c + 
   wave_energy_mean_kw_m1 + # wave energy at each island
-  ted_sum + # sum of tidal energy to island (internal wave energy)
+  # ted_sum + # sum of tidal energy to island (internal wave energy)
   ted_mean + # average tidal energy to island
   mld + # average mixed layer depth around island
-  mean_mld_3months + # mixed layer depth 3 months prior to survey
+  # mld_sd + # mixed layer depth 3 months prior to survey [correlated with MLD]
   months_ime + ## duration of IME in months
-  cv_chl + ## annual variation in nearby chl-a
-  ime_on + ## was the IME pumping during fish survey
-  mean_ime_percent + ## average increase in chl-a during IME months [relative to non-IME REF]
-  (1|REGION/ISLAND)
+  # cv_chl + ## annual variation in nearby chl-a
+  mean_ime_percent  ## average increase in chl-a during IME months [relative to non-IME REF]
+  # (1|REGION)
 
 # with Richardson covariates
 pos_form <- formula(paste(c('chl_a_mg_m3_mean', fix), collapse = " ")) # Formula for models with positive data only
 
-m1<-brm(bf(pos_form), family = gamma, data = depth_ime_scaled,
+hist(depth_ime_scaled$chl_a_mg_m3_mean)
+
+m1<-brm(bf(pos_form), family = Gamma(), data = depth_ime_scaled,
     chains = 3, iter = 2000, warmup = 500, cores = 4)
 
 save(m1, file = 'results/mod_crep_chl_oceangr.rds')
@@ -137,9 +122,10 @@ do.call(gridExtra::grid.arrange, c(ce, ncol = 2))
 dev.off()
 
 # Create pairs plot for IME ~ CREP covariates
-GGally::ggpairs(
+ggpairs(
   depth_ime %>% 
-    select(SITE_SLOPE_400m_c, chl_island, max_chl_month, months_ime, cv_chl, ime_on, mean_ime_percent),
+    select(reef_area_km2, island_area_km2, POP_STATUS, SITE_SLOPE_400m_c, wave_energy_mean_kw_m1, 
+           ted_sum, ted_mean, mld, mld_sd, months_ime, cv_chl, mean_ime_percent),
   lower = list(continuous = wrap("points", alpha = 0.5, size=.5)),  # Scatterplots in lower panels
   diag = list(continuous = wrap("barDiag", bins = 20)),    # Histograms on the diagonal
   upper = list(continuous = wrap("cor", size = 3))         # Correlations in upper panels

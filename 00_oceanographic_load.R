@@ -60,7 +60,7 @@ island %>%
          tidal_energy_sum_W_m1 = ted_sum,
          mixed_layer_depth_avg_m = mld,
          mixed_layer_depth_sd_m = mld_sd) %>% 
-  pivot_longer(-c(island_code, island, region,REGION, latitude, longitude, region.col), names_to = 'cov', values_to = 'val') %>% 
+  pivot_longer(-c(island_code, island, region,REGION, atoll_island, latitude, longitude, region.col), names_to = 'cov', values_to = 'val') %>% 
   ggplot(aes(island_code, val, fill=region.col), col='black') + geom_col() +
   facet_grid(~cov, scales='free') + 
   coord_flip() +
