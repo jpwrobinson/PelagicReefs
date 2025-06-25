@@ -22,7 +22,7 @@ island<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.x
 # NEW COVARIATES
 # mixed layer depth = shallower MLD helps upwelling to reach reefs, increases planktivores
 mld<-read.csv('data/crep_oceanographic/MLD_All_Islands-lrg_island_means.csv') %>% 
-  mutate(Date = as.Date(Date), year = year(Date), .before=Island, X=NULL) 
+  mutate(Date = as.Date(Date), year = year(Date), month = month(Date), time = as.numeric(Date), Island = factor(Island), .before=Island, X=NULL) 
 
 pdf(file = 'fig/crep_island_MLD.pdf', height=7, width=15)
 ggplot(mld, aes(Date, MLD)) + geom_line() + facet_wrap(~Island)
