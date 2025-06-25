@@ -22,16 +22,25 @@ island<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.x
 # NEW COVARIATES
 # mixed layer depth = shallower MLD helps upwelling to reach reefs, increases planktivores
 mld<-read.csv('data/crep_oceanographic/MLD_All_Islands-lrg_island_means.csv') %>% 
-  mutate(Date = as.Date(Date), year = year(Date), month = month(Date), time = as.numeric(Date), Island = factor(Island), .before=Island, X=NULL) 
+  mutate(Date = as.Date(Date), year = year(Date), month = month(Date), 
+         time = as.numeric(Date), Island = factor(Island), 
+         below_30m = ifelse(MLD > 30, 'deep', 'shallow'),
+         .before=Island, X=NULL) 
 
 pdf(file = 'fig/crep_island_MLD.pdf', height=7, width=15)
 ggplot(mld, aes(Date, MLD)) + geom_line() + facet_wrap(~Island)
 dev.off()
 
 # Island values - mean
-mld_avg<-mld %>% group_by(Island) %>% 
+mld_avg<-mld %>% group_by(Island, year) %>% 
   summarise(mld = mean(MLD),
-            mld_sd = sd(MLD))
+            mld_sd = sd(MLD),
+            mld_months_deep = n_distinct(Date[MLD > 30])) %>% 
+  group_by(Island) %>% 
+  summarise(mld = mean(mld),
+            mld_sd = mean(mld_sd),
+            mld_months_deep = mean(mld_months_deep)) 
+  
 
 # MLD mean over past 3 months (inclusive of that month)
 mld_recent<-mld %>% 
@@ -57,7 +66,7 @@ dev.off()
 
 island<-island %>% 
   left_join(mld_avg %>% rename(island = Island)) %>% 
-  left_join(tc %>% mutate(island_code = ISLAND) %>% select(-ISLAND)) %>% 
+  left_join(tc %>% mutate(island_code = ISLAND) %>% ungroup() %>% select(-ISLAND)) %>% 
   left_join(island_cols)
 
 
@@ -73,6 +82,7 @@ island %>%
          tidal_energy_mean_W_m1 = ted_mean,
          tidal_energy_sum_W_m1 = ted_sum,
          mixed_layer_depth_avg_m = mld,
+         mixed_layer_deep_months = mld_months_deep,
          mixed_layer_depth_sd_m = mld_sd) %>% 
   pivot_longer(-c(island_code, island, region,REGION, atoll_island, latitude, longitude, region.col), names_to = 'cov', values_to = 'val') %>% 
   ggplot(aes(island_code, val, fill=region.col), col='black') + geom_col() +
@@ -85,5 +95,5 @@ island %>%
 dev.off()
 
 source('pairs2.R')
-pairs2(island %>% select(ted_mean, ted_sum, mld, mld_sd, sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean,
+pairs2(island %>% select(ted_mean, ted_sum, mld, mld_sd,mld_months_deep, sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean,
                          irradiance_einsteins_m2_d1_mean, latitude, longitude) %>% na.omit())
