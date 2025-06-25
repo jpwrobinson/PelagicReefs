@@ -38,8 +38,22 @@ mld_recent<-mld %>%
   mutate(mean_mld_3months = zoo::rollmean(MLD, k = 3, align = "right", fill = NA))
 
 # tidal conversion = stronger means more internal wave action + mixing, increases planktivores
-tc<-read.csv('data/crep_oceanographic/TEDestimates_CREPislands.csv') %>% 
-  group_by(ISLAND) %>% summarise(ted_mean = mean(TED_MEAN), ted_sum = sum(TED_SUM))
+tc_all<-read.csv('data/crep_oceanographic/TEDestimates_CREPislands.csv') %>% 
+  left_join(island %>% mutate(ISLAND = island_code) %>% select(ISLAND, region))
+
+tc<-tc_all %>% 
+  group_by(ISLAND, region) %>% 
+  summarise(ted_mean = mean(TED_MEAN), ted_sum = sum(TED_SUM), ted_sd = sd(TED_SUM), n_grids = n_distinct(GRID_ID))
+
+pdf(file = 'fig/crep_island_TC.pdf', height=7, width=15)
+ggplot(tc_all, aes(fct_reorder(ISLAND, TED_SUM), TED_SUM, col=region)) + #geom_boxplot() +
+  ggdist::stat_halfeye() +
+  labs(x = '', y = 'Tidal energy (sum)', col='') + theme(legend.position = c(0.5, 0.7))
+
+ggplot(tc_all, aes(TED_SUM, fill=region)) + #geom_boxplot() +
+  geom_density() + facet_grid(ISLAND ~ region, scales='free') +
+  labs(x = 'Tidal energy (sum)', col='') + theme(legend.position = 'none')
+dev.off()
 
 island<-island %>% 
   left_join(mld_avg %>% rename(island = Island)) %>% 
