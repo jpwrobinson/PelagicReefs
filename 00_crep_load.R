@@ -12,6 +12,10 @@ depth<-read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>%
 depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR) %>% 
   write.csv('data/richardson_2023/crep_lat_lon_site.csv', row.names=FALSE)
 
+depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR, SITE_SLOPE_400m) %>% 
+  write.csv('data/richardson_2023/richardson_crep_site_slope_400m.csv', row.names=FALSE)
+
+
 depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR) %>% 
   group_by(ISLAND) %>% 
   summarise(LONGITUDE = mean(LONGITUDE), LATITUDE = mean(LATITUDE)) %>% 
