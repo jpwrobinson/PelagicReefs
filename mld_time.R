@@ -10,6 +10,7 @@ mld<-mld %>% group_by(Island) %>%
   mutate(month_mean = mean(MLD)) %>% 
   ungroup() %>% 
   mutate(anomaly = MLD - month_mean) %>% 
+  group_by(Island) %>% mutate(anomaly_s = scale(anomaly)[,1]) %>% 
   left_join(island %>% rename(Island = island) %>% select(Island, region)) 
 
 
@@ -21,10 +22,10 @@ mld<-mld %>% group_by(Island) %>%
 # 
 # save(m1, file = 'results/mld_time_mod.rds')
 
-m2<-gam(anomaly ~ s(time_num, by = factor(Island)) + s(time_num, by = factor(region)),
-          correlation = corAR1(form = ~ time_num | Island), data=mld)
-
-save(m2, file = 'results/mld_anomaly_time_mod.rds')
+# m2<-gam(anomaly ~ s(time_num, by = factor(Island)) + s(time_num, by = factor(region)),
+#           correlation = corAR1(form = ~ time_num | Island), data=mld)
+# 
+# save(m2, file = 'results/mld_anomaly_time_mod.rds')
 
 
 # 1. Explore MLD with season model (m1)
@@ -78,35 +79,45 @@ dev.off()
 # 2. Explore MLD with anomaly model (m2)
 load(file = 'results/mld_anomaly_time_mod.rds')
 hist(resid(m2))
-plot(m2)
+# plot(m2)
 summary(m2)
 
 # get predicted temporal MLD anomaly
 df2<-expand.grid(Island = unique(mld$Island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
+df2$date<-rep(seq(min(mld$Date), max(mld$Date), length.out=100), each = length(unique(mld$Island)))
+df2<-df2 %>% left_join(island %>% rename(Island = island) %>% select(Island, region)) 
 df2$MLD_pred<-predict(m2, newdata = df2, type='response')
 df2$se<-predict(m2, newdata = df2, type='response', se.fit = TRUE)$se.fit
 df2$MLD_lower<-with(df2, MLD_pred - 2*se)
 df2$MLD_upper<-with(df2, MLD_pred + 2*se)
-df2<-df2 %>% left_join(island %>% rename(Island = island) %>% select(Island, region)) 
 
-ggplot(df2, aes(time_num, MLD_pred, col=Island)) + geom_line() + facet_wrap(~region)
+ggplot(df2, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=Island)) + 
+  geom_line(aes(col=Island)) + geom_ribbon(alpha=0.5) + facet_wrap(~region)
 
 
 df3<-expand.grid(Island = unique(mld$Island)[1], region = unique(mld$region), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
+df3$date<-rep(seq(min(mld$Date), max(mld$Date), length.out=100), each = length(unique(mld$region)))
 df3$MLD_pred<-predict(m2, newdata = df3, type='response')
+df3$se<-predict(m2, newdata = df3, type='response', se.fit = TRUE)$se.fit
+df3$MLD_lower<-with(df3, MLD_pred - 2*se)
+df3$MLD_upper<-with(df3, MLD_pred + 2*se)
 
-ggplot(df3, aes(time_num, MLD_pred, col=region)) + geom_line()
+ggplot(df3, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=region)) + 
+  geom_line(aes(col=region)) + geom_ribbon(alpha=0.5) + facet_wrap(~region)
+
+# MLD is getting deeper over time?
 
 # add categorical vars 
 df2<-df2 %>% left_join(island %>% rename(Island = island) %>% select(Island, region))
 
-regs<-unique(df$region)
+regs<-unique(df2$region)
 for(i in 1:length(regs)){
   
-  gg<-ggplot(df2 %>% filter(region %in% regs[i]), aes(time_num, MLD_pred, col=Island)) + 
+  gg<-ggplot(df2 %>% filter(region %in% regs[i]), aes(date, MLD_pred, col=Island)) + 
     geom_line() + 
-    geom_text_repel(data = df2 %>% filter(region %in% regs[i] & time_num == max(df2$time_num)), aes(label = Island), nudge_x = 0.25, size=3, segment.colour = NA) +
+    geom_text_repel(data = df2 %>% filter(region %in% regs[i] & date == max(df2$date)), aes(label = Island), nudge_x = 0.25, size=3, segment.colour = NA) +
     labs(x = '', y = 'Mixed layer depth anomaly (predicted)', subtitle = regs[i]) +
+    scale_x_date(date_breaks = '5 years', date_labels = '%Y') +
     theme(legend.position = 'none') 
   
   assign(paste0('gg', regs[i]), gg)
@@ -114,4 +125,12 @@ for(i in 1:length(regs)){
 
 pdf(file = 'fig/mld_anomaly_trend.pdf', height=5, width=20)
 plot_grid(ggMariana, ggHawaii, `ggNorthwestern Hawaiian`, ggEquatorial, ggSamoa, nrow=1)
+
+ggplot(df3, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=region)) + 
+  geom_line(aes(col=region)) + geom_ribbon(alpha=0.5) + facet_wrap(~region, nrow=1) +
+  labs(x = '', y = 'Mixed layer depth anomaly (predicted)', subtitle = 'MLD anomaly by region') +
+  scale_x_date(date_breaks = '5 years', date_labels = '%Y') +
+  theme(legend.position = 'none')
+  
+
 dev.off()
