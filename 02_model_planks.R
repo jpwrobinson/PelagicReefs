@@ -10,20 +10,7 @@ source('00_crep_load.R')
 source('00_oceanographic_load.R')
 
 # read ime and change island names
-ime<-read.csv(file = 'island_ime_dat.csv') %>% 
-  mutate(reef_area_km2_log10 = log10(reef_area_km2),
-          island2 = trimws(str_replace_all(island, 'Atoll', '')),
-         island2 = trimws(str_replace_all(island2, 'Island', '')),
-         island2 = trimws(str_replace_all(island2, 'Reef', '')),
-         island2 = trimws(str_replace_all(island2, '\\ and', '\\ &')),
-         island2 = case_match(island2, 
-                              'Hawai’i' ~ 'Hawaii',
-                              'French Frigate Shoals' ~ 'French Frigate',
-                              'Kaua’i' ~ 'Kauai',
-                              'Ni’ihau' ~ 'Niihau',
-                              'O’ahu' ~ 'Oahu',
-                              'Swains  (Olohega)' ~ 'Swains',
-                              'Ta’u' ~ 'Tau', .default = island2))
+ime<-read.csv(file = 'island_ime_dat.csv') 
 
 # 5 missing islands in depth
 unique(depth$ISLAND[!depth$ISLAND %in% ime$island2]) 

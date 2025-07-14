@@ -31,7 +31,21 @@ chl_ime<-chl_ime %>%
          type = ifelse(islands$island_1_or_reef_0 == 1, 'Island', 'Reef'),
          island_area_km2 = islands$island_area_obtained_either_from_the_nunn_database_or_from_the_island_contour_km2,
          reef_area_km2 = islands$island_reef_area_calculated_from_gebco_500_m_resolution_as_the_area_of_pixels_above_30_m_depth_including_emerged_lands_km2) %>% 
-  pivot_longer(Jan:Dec, names_to = 'month', values_to = 'chl_ime')
+  pivot_longer(Jan:Dec, names_to = 'month', values_to = 'chl_ime') %>% 
+  # fix island names to match CREP
+  mutate(
+       island = trimws(str_replace_all(island, 'Atoll', '')),
+       island = trimws(str_replace_all(island, 'Island', '')),
+       island = trimws(str_replace_all(island, 'Reef', '')),
+       island = trimws(str_replace_all(island, '\\ and', '\\ &')),
+       island = case_match(island, 
+                            'Hawai’i' ~ 'Hawaii',
+                            'French Frigate Shoals' ~ 'French Frigate',
+                            'Kaua’i' ~ 'Kauai',
+                            'Ni’ihau' ~ 'Niihau',
+                            'O’ahu' ~ 'Oahu',
+                            'Swains  (Olohega)' ~ 'Swains',
+                            'Ta’u' ~ 'Tau', .default = island))
 
 # chl_ime = Chl averaged within IME mask
 # Chl_REF = Chl averaged within REF mask
