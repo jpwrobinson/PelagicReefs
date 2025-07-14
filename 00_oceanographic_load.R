@@ -57,16 +57,24 @@ tc<-tc_all %>%
 pdf(file = 'fig/crep_island_TC.pdf', height=7, width=15)
 ggplot(tc_all, aes(fct_reorder(ISLAND, TED_SUM), TED_SUM, col=region)) + #geom_boxplot() +
   ggdist::stat_halfeye() +
-  labs(x = '', y = 'Tidal energy (sum)', col='') + theme(legend.position = c(0.5, 0.7))
+  labs(x = '', y = 'Tidal energy (sum)', col='') + 
+  theme(legend.position.inside = c(0.5, 0.7))
 
 ggplot(tc_all, aes(TED_SUM, fill=region)) + #geom_boxplot() +
   geom_density() + facet_grid(ISLAND ~ region, scales='free') +
-  labs(x = 'Tidal energy (sum)', col='') + theme(legend.position = 'none')
+  labs(x = 'Tidal energy (sum)', col='') + 
+  theme(legend.position = 'none')
+
+ggplot(tc_all, aes(TED_SUM, TED_MEAN, col=region)) + #geom_boxplot() +
+  geom_point() + 
+  facet_grid( ~ region, scales='free') +
+  labs(x = 'Tidal energy (sum)', y='Tidal energy (mean)') + 
+  theme(legend.position = 'none')
 dev.off()
 
 island<-island %>% 
   left_join(mld_avg %>% rename(island = Island)) %>% 
-  left_join(tc %>% mutate(island_code = ISLAND) %>% ungroup() %>% select(-ISLAND)) %>% 
+  left_join(tc %>% mutate(island_code = ISLAND) %>% ungroup() %>% select(-ISLAND, -ted_sd)) %>% 
   left_join(island_cols)
 
 
@@ -89,11 +97,15 @@ island %>%
   facet_grid(~cov, scales='free') + 
   coord_flip() +
   scale_fill_identity() +
-  theme(legend.position = 'none') +
+  theme(legend.position.inside = NULL) +
   scale_y_continuous(expand=c(0,0)) +
   labs( x= '', y = '')
 dev.off()
 
 source('pairs2.R')
-pairs2(island %>% select(ted_mean, ted_sum, mld, mld_sd,mld_months_deep, sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean,
-                         irradiance_einsteins_m2_d1_mean, latitude, longitude) %>% na.omit())
+pdf(file = 'fig/crep_island_correlations.pdf', height=7, width=15)
+pairs2(island %>% select(ted_mean, ted_sum, mld, mld_sd,mld_months_deep,
+                         sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean,
+                         irradiance_einsteins_m2_d1_mean, latitude, longitude) %>%
+         na.omit())
+dev.off()

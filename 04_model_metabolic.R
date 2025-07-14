@@ -23,22 +23,26 @@ depth<- depth %>%
   left_join(island %>% mutate(ISLAND = island) %>% select(ISLAND, island_code, sst_mean:ted_sum)) %>% 
   left_join(mld_recent %>% mutate(date_ym = Date, ISLAND = Island, mld_survey = MLD) %>% select(ISLAND, date_ym, mean_mld_3months, mld_survey))
 
-#€# scale and center cont. covariates
+# scale and center cont. covariates
 depth_scaled <- depth %>% 
   mutate(reef_area_km2 = log10(reef_area_km2), 
-         across(c(DEPTH_c, SITE_SLOPE_400m, sst_mean:reef_area_km2, mld:mld_survey), 
+         across(c(DEPTH_c, HARD_CORAL, SITE_SLOPE_400m, 
+                  sst_mean:reef_area_km2, mld:mld_survey), 
                 ~scale(., center=TRUE, scale=TRUE)))
 
 # explanatory covariate structure
 fix2 <- ~ DEPTH_c +
+  HARD_CORAL +
   atoll_island +
   reef_area_km2 +
   POP_STATUS +
   SITE_SLOPE_400m + 
   chl_a_mg_m3_mean +
-  wave_energy_mean_kw_m1 + # wave energy at each island
-  ted_sum * # sum of tidal energy to island (internal wave energy)
-  mld_survey + # mixed layer depth at survey
+  sst_mean + # mean sea surface temp at island
+  wave_energy_mean_kw_m1 + # mean wave energy at island
+  ted_sum + # sum of tidal energy to island (internal wave energy)
+  ted_mean + # mean of tidal energy to island (internal wave energy)
+  mld_survey + # mixed layer depth at survey date (island-level)
   mld + # average mixed layer depth around island
   (1|OBS_YEAR) +
   (1|REGION/ISLAND)
@@ -61,12 +65,12 @@ conditional_effects(m1)
 
 # Extract posterior draws
 effects <- m1 %>%
-  spread_draws(b_atoll_islandIsland, b_DEPTH_c, b_SITE_SLOPE_400m, b_reef_area_km2,
-               b_chl_a_mg_m3_mean, b_wave_energy_mean_kw_m1, b_ted_sum, b_ted_sum, b_mld, b_mld_survey) %>%  
+  spread_draws(b_atoll_islandIsland, b_DEPTH_c, b_SITE_SLOPE_400m, b_HARD_CORAL, b_reef_area_km2,
+               b_chl_a_mg_m3_mean, b_wave_energy_mean_kw_m1, b_ted_mean, b_ted_sum, b_mld, b_mld_survey) %>%  
   pivot_longer(cols = starts_with("b_"), names_to = "Variable", values_to = "Effect") %>% 
   mutate(Variable = str_replace_all(Variable, 'b_', ''),
          var_fac = factor(Variable, 
-                             levels = rev(c('DEPTH_c', 'SITE_SLOPE_400m', 'atoll_islandIsland','reef_area_km2',
+                             levels = rev(c('DEPTH_c', 'SITE_SLOPE_400m', 'atoll_islandIsland','reef_area_km2','HARD_CORAL',
                                         'ted_mean', 'mld', 'mld_survey','chl_a_mg_m3_mean', 'wave_energy_mean_kw_m1','ted_sum'))))
 
 # Plot effect sizes
