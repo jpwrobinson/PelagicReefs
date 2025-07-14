@@ -83,7 +83,8 @@ levs<-island %>% distinct(region, island_code, latitude) %>%
   group_by(region) %>% arrange(island_code, latitude, .by_group=TRUE) %>% pull(island_code)
 
 pdf(file = 'fig/crep_island_oceanography.pdf', height=7, width=15)
-# Island mean values
+print(
+  # Island mean values
 island %>% 
   mutate(island_code = factor(island_code, levels = rev(levs))) %>% 
   rename(
@@ -100,12 +101,14 @@ island %>%
   theme(legend.position.inside = NULL) +
   scale_y_continuous(expand=c(0,0)) +
   labs( x= '', y = '')
+)
 dev.off()
 
-source('pairs2.R')
+
 pdf(file = 'fig/crep_island_correlations.pdf', height=7, width=15)
-pairs2(island %>% select(ted_mean, ted_sum, mld, mld_sd,mld_months_deep,
+print(
+  pairs2(island %>% select(ted_mean, ted_sum, mld, mld_sd,mld_months_deep,
                          sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean,
                          irradiance_einsteins_m2_d1_mean, latitude, longitude) %>%
-         na.omit())
+         na.omit()))
 dev.off()
