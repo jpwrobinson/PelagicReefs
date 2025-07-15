@@ -101,8 +101,9 @@ seas<-chl_ime %>%
          months_ime = n_distinct(month[which(!is.na(keep_IME))])) %>%  # number of months with IME 
   # filter(keep_IME == 1) %>% 
   group_by(island, lon, lat, type, island_area_km2, reef_area_km2, chl_island, cv_chl, chl_ime, chl_no_ime, months_ime) %>% 
-  summarise(cv_ime = sd(Chl_increase_nearby, na.rm=TRUE)/mean(Chl_increase_nearby, na.rm=TRUE) * 100, 
-            mean_ime_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean IME relative to REF, %
+  summarise(cv_ime = sd(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE)/mean(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE) * 100, 
+            mean_ime_percent = mean(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE), # mean IME relative to REF, %
+            mean_chl_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean Chl relative to REF, %
             max_ime_percent = max(Chl_increase_nearby, na.rm=TRUE), # max IME relative to REF, %
             total_ime_chl_tCm = sum(total_chl_ime_tC_per_m, na.rm=TRUE), # total annual chl-a produced in IME 
             total_increase_chl_tCm = sum(total_chl_increase_tC_per_m, na.rm=TRUE) # total annual chl-a increase in IME 
