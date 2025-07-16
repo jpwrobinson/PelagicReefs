@@ -79,7 +79,7 @@ m<-brm(mean_chl_percent ~ geomorphic_type * reef_area_km2 + island_area_km2 +
        family = lognormal(), data = dat_scaled,
        chains = 3, iter = 3000, warmup = 500, cores = 4)
 
-save(m, file = 'results/mod_ime_crep_attributes.rds')
+save(dat, dat_scaled, m, file = 'results/mod_ime_crep_attributes.rds')
 
 summary(m)
 pp_check(m)
@@ -117,7 +117,7 @@ m2<-brm(Chl_increase_nearby ~ s(month_num, bs = 'cc', k=12) +
        data = dat_scaled_month,
        chains = 3, iter = 2000, warmup = 500, cores = 4)
 
-save(m2, file = 'results/mod_ime_month_crep_attributes.rds')
+save(dat_month, dat_scaled_month, m2, file = 'results/mod_ime_month_crep_attributes.rds')
 
 summary(m2)
 pp_check(m2)
