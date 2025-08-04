@@ -1,4 +1,5 @@
 library(tidyverse)
+library(modelr)
 theme_set(theme_classic())
 library(GGally)
 library(ggrepel)

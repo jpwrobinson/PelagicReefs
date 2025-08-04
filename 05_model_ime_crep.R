@@ -77,43 +77,53 @@ hist(dat_month$Chl_increase_nearby)
 
 ggplot(dat, aes(mld, mean_chl_percent, col=REGION)) + geom_point()
 
-# basic model fitting Chl increase (%) by  island and biophysical covariates
-m<-brm(mean_chl_percent ~ geomorphic_type * reef_area_km2 + island_area_km2 + 
-         bathymetric_slope + population_status +
-         # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
-         chl_a_mg_m3_mean + mld + ted_mean +
-         (1 | REGION),
-       family = lognormal(), data = dat_scaled,
-       chains = 3, iter = 3000, warmup = 500, cores = 4)
-
-save(dat, dat_scaled, m, file = 'results/mod_ime_crep_attributes.rds')
-
-summary(m)
-pp_check(m)
-conditional_effects(m)
-
-# Extract posterior draws
-effects <- m %>%
-  gather_draws(b_geomorphic_typeIsland, b_reef_area_km2, b_island_area_km2,
-               b_bathymetric_slope, b_population_statusU,
-               b_chl_a_mg_m3_mean, b_ted_mean, b_mld) %>%  
-  mutate(.variable = str_replace_all(.variable, 'b_', ''),
-         var_fac = factor(.variable, 
-                          levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2',
-                                         'bathymetric_slope', 'population_statusU',
-                                         'ted_mean', 'mld','chl_a_mg_m3_mean', 'wave_energy_mean_kw_m1'))))
-
-# Plot effect sizes
-pdf(file = 'fig/ime_db/ime_crep_model.pdf', height=5, width=6)
-ggplot(effects, aes(x = .value, y = var_fac)) +
-  stat_halfeye(.width = c(0.5, 0.95)) +  
-  geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
-  labs(x = "Effect size", y = "") 
-  
-dev.off()
+# # basic model fitting Chl increase (%) by  island and biophysical covariates
+# m<-brm(mean_chl_percent ~ geomorphic_type * reef_area_km2 + island_area_km2 + 
+#          bathymetric_slope + population_status +
+#          # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
+#          chl_a_mg_m3_mean + mld + ted_mean +
+#          (1 | REGION),
+#        family = lognormal(), data = dat_scaled,
+#        chains = 3, iter = 3000, warmup = 500, cores = 4)
+# 
+# save(dat, dat_scaled, m, file = 'results/mod_ime_crep_attributes.rds')
+# 
+# summary(m)
+# pp_check(m)
+# conditional_effects(m)
+# 
+# # Extract posterior draws
+# effects <- m %>%
+#   gather_draws(b_geomorphic_typeIsland, b_reef_area_km2, b_island_area_km2,
+#                b_bathymetric_slope, b_population_statusU,
+#                b_chl_a_mg_m3_mean, b_ted_mean, b_mld) %>%  
+#   mutate(.variable = str_replace_all(.variable, 'b_', ''),
+#          var_fac = factor(.variable, 
+#                           levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2',
+#                                          'bathymetric_slope', 'population_statusU',
+#                                          'ted_mean', 'mld','chl_a_mg_m3_mean', 'wave_energy_mean_kw_m1'))))
+# 
+# # Plot effect sizes
+# pdf(file = 'fig/ime_db/ime_crep_model.pdf', height=5, width=6)
+# ggplot(effects, aes(x = .value, y = var_fac)) +
+#   stat_halfeye(.width = c(0.5, 0.95)) +  
+#   geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
+#   labs(x = "Effect size", y = "") 
+#   
+# dev.off()
 
 
 # basic model fitting Chl increase (%) by island and biophysical covariates
+m2_linear<-brm(Chl_increase_nearby ~ 
+                 geomorphic_type * reef_area_km2 + island_area_km2 + 
+                 bathymetric_slope + population_status +
+                 # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
+                 chl_a_mg_m3_mean + mld + ted_mean +
+                 (1 | island / REGION),
+               family = lognormal(),
+               data = dat_scaled_month,
+               chains = 3, iter = 2000, warmup = 500, cores = 4)
+
 m2_smooth<-brm(Chl_increase_nearby ~ 
           geomorphic_type + s(reef_area_km2, k=3) + s(island_area_km2, k=3) + 
           s(bathymetric_slope, k=3) + population_status +
@@ -143,11 +153,10 @@ pp_check(checker)
 conditional_effects(checker)
 bayes_R2(checker)
 
-# compare month with MLD model
-loo_month <- loo(m2_month)
+# compare smooth vs linear
 loo_linear <- loo(m2_linear)
 loo_smooth <- loo(m2_smooth)
-loo_compare(loo_linear, loo_smooth, loo_month)
+loo_compare(loo_linear, loo_smooth)
 
 # Extract posterior draws
 effects2 <- m2_linear %>%
@@ -158,7 +167,7 @@ effects2 <- m2_linear %>%
          var_fac = factor(.variable, 
                           levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2',
                                          'bathymetric_slope', 'population_statusU',
-                                         'ted_mean', 'mld','chl_a_mg_m3_mean', 'wave_energy_mean_kw_m1'))))
+                                         'ted_mean', 'mld','chl_a_mg_m3_mean'))))
 
 # Plot effect sizes
 pdf(file = 'fig/ime_db/ime_month_crep_model.pdf', height=5, width=6)
@@ -168,6 +177,24 @@ ggplot(effects2, aes(x = .value, y = var_fac)) +
   labs(x = "Effect size", y = "") 
 
 dev.off()
+
+# Get conditional effects
+source('func_mod_conditional.R')
+mld_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'mld')
+ted_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'ted_mean')
+chl_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'chl_a_mg_m3_mean')
+
+ggplot(mld_pred, aes(raw, estimate__, ymax= upper95, ymin = lower95)) + 
+  geom_ribbon(alpha=0.1) +
+  geom_line()
+
+ggplot(ted_pred, aes(raw, estimate__, ymax= upper95, ymin = lower95)) + 
+  geom_ribbon(alpha=0.1) +
+  geom_line() 
+
+ggplot(chl_pred, aes(raw, estimate__, ymax= upper95, ymin = lower95)) + 
+  geom_ribbon(alpha=0.1) +
+  geom_line() 
 
 
 # What about lags [month is better than MLD...but not a process]
