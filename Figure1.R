@@ -28,8 +28,8 @@ gA<-ggplot(dat, aes(mean_chl_percent, fct_reorder(island, max))) +
 
 
 # Panel B = drivers of IME [monthly and time-averaged]
-bayes<-data.frame(b = c(bayes_R2(m)[,'Estimate'], bayes_R2(m2_linear)[,'Estimate']),
-                  mod = c('Annual mean', 'Monthly mean'),
+bayes<-data.frame(b = c(bayes_R2(m2_smooth)[,'Estimate'], bayes_R2(m2_linear)[,'Estimate']),
+                  mod = c('Smooth monthly mean', 'Linear monthly mean'),
                   x = 7, y = c(2,1))
 
 # Extract posterior draws
@@ -61,8 +61,28 @@ gB<-ggplot(effects %>% filter(mod=='Monthly mean'),
                             'Uninhabited', 'Bathymetric slope', 'Island area', 'Reef area', 'Island')) +
   theme(legend.position = c(.9,.9), legend.title = element_blank())
 
+# Get conditional effects
+source('func_mod_conditional.R')
+mld_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'mld')
+ted_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'ted_mean')
+chl_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'chl_a_mg_m3_mean')
+dd<-rbind(mld_pred %>% select(-mld) %>% mutate(var = 'Mixed layer depth, m') , 
+          ted_pred %>% select(-ted_mean) %>% mutate(var = 'Tidal energy, ?'), 
+          chl_pred %>% select(-chl_a_mg_m3_mean) %>% mutate(var = 'chl-a, mg_m3'))
+
+gC<-ggplot(dd, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100)) + 
+  geom_ribbon(alpha=0.1) +
+  geom_line() + 
+  labs(y = 'chl-a enhancement, %', x = '') +
+  scale_y_continuous(labels = label_percent()) +
+  facet_grid(~var, scales='free_x', switch = 'x') +
+  theme(strip.placement = 'bottom', strip.background = element_blank())
+
+
+
 pdf(file = 'fig/Figure1.pdf', height=5, width=7)
-plot_grid(gA, gB)
+rhs<-plot_grid(gB, gC, nrow=2, labels=c('b', 'c'))
+plot_grid(gA, rhs, nrow=1, labels='a')
 dev.off()
 
 
