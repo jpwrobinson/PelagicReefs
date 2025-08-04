@@ -28,7 +28,7 @@ gA<-ggplot(dat, aes(mean_chl_percent, fct_reorder(island, max))) +
 
 
 # Panel B = drivers of IME [monthly and time-averaged]
-bayes<-data.frame(b = c(bayes_R2(m)[,'Estimate'], bayes_R2(m2)[,'Estimate']),
+bayes<-data.frame(b = c(bayes_R2(m)[,'Estimate'], bayes_R2(m2_linear)[,'Estimate']),
                   mod = c('Annual mean', 'Monthly mean'),
                   x = 7, y = c(2,1))
 
@@ -38,7 +38,7 @@ effects <- rbind(
   gather_draws(b_geomorphic_typeIsland, b_reef_area_km2, b_island_area_km2,
                b_bathymetric_slope, b_population_statusU,
                b_chl_a_mg_m3_mean, b_ted_mean, b_mld) %>% mutate(mod = 'Annual mean'),
-  m2 %>%
+  m2_linear %>%
     gather_draws(b_geomorphic_typeIsland, b_reef_area_km2, b_island_area_km2,
                  b_bathymetric_slope, b_population_statusU,
                  b_chl_a_mg_m3_mean, b_ted_mean, b_mld) %>% mutate(mod = 'Monthly mean')) %>% 
@@ -48,13 +48,15 @@ effects <- rbind(
                                          'bathymetric_slope', 'population_statusU',
                                          'ted_mean', 'mld','chl_a_mg_m3_mean', 'wave_energy_mean_kw_m1'))))
 
-gB<-ggplot(effects, aes(x = .value, y = var_fac, col=mod)) +
-  geom_text(data = bayes, aes(x = x, y = y, label = paste0(round(b*100,1),'% ', mod)), size=3) + 
+gB<-ggplot(effects %>% filter(mod=='Monthly mean'), 
+           aes(x = .value, y = var_fac, col=mod)) +
+  # geom_text(data = bayes %>% filter(mod=='Monthly mean'), 
+            # aes(x = x, y = y, label = paste0(round(b*100,1),'% ', mod)), size=3) + 
   geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
   stat_pointinterval(.width = c(0.5, 0.95), position = position_dodge(width=0.5)) +  
-  labs(x = "Posterior effect on chl-a enhancement", y = "") +
-  scale_colour_manual(values = c('#737373', '#d94801')) +
-  scale_x_continuous(limits=c(-8, 8)) +
+  labs(x = "Effect on chl-a enhancement", y = "") +
+  scale_colour_manual(values = c('#737373', '#d94801'), guide=NULL) +
+  scale_x_continuous(limits=c(-1.5, 1.5)) +
   scale_y_discrete(labels =c('chl-a conc.', 'Mixed layer depth', 'Tidal energy',
                             'Uninhabited', 'Bathymetric slope', 'Island area', 'Reef area', 'Island')) +
   theme(legend.position = c(.9,.9), legend.title = element_blank())

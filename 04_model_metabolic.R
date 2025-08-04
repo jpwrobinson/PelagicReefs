@@ -28,7 +28,7 @@ depth_scaled <- depth %>%
   mutate(reef_area_km2 = log10(reef_area_km2), 
          across(c(DEPTH_c, HARD_CORAL, SITE_SLOPE_400m, 
                   sst_mean:reef_area_km2, mld:mld_survey), 
-                ~scale(., center=TRUE, scale=TRUE)))
+                ~scale(., center=TRUE, scale=TRUE)[,1]))
 
 # explanatory covariate structure
 fix2 <- ~ DEPTH_c +
