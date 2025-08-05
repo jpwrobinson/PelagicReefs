@@ -25,7 +25,9 @@ gA<-ggplot(dat, aes(mean_chl_percent, fct_reorder(island, max))) +
         axis.ticks.x.top = element_blank(),
         axis.text.x.top = element_text(size=8))
 
-
+ggplot(dat_month, aes(month_num, Chl_increase_nearby, group=island, col=REGION)) + 
+  geom_line() + 
+  facet_grid(~REGION)
 
 # Panel B = drivers of IME [monthly and time-averaged]
 bayes<-data.frame(b = c(bayes_R2(m2_smooth)[,'Estimate'], bayes_R2(m2_linear)[,'Estimate']),
@@ -33,24 +35,19 @@ bayes<-data.frame(b = c(bayes_R2(m2_smooth)[,'Estimate'], bayes_R2(m2_linear)[,'
                   x = 7, y = c(2,1))
 
 # Extract posterior draws
-effects <- rbind(
-  m %>%
-  gather_draws(b_geomorphic_typeIsland, b_reef_area_km2, b_island_area_km2,
-               b_bathymetric_slope, b_population_statusU,
-               b_chl_a_mg_m3_mean, b_ted_mean, b_mld) %>% mutate(mod = 'Annual mean'),
-  m2_linear %>%
+effects <- m2_linear %>%
     gather_draws(b_geomorphic_typeIsland, b_reef_area_km2, b_island_area_km2,
                  b_bathymetric_slope, b_population_statusU,
-                 b_chl_a_mg_m3_mean, b_ted_mean, b_mld) %>% mutate(mod = 'Monthly mean')) %>% 
+                 b_chl_a_mg_m3_mean, b_ted_mean, b_mld) %>% mutate(mod = 'Monthly mean') %>% 
   mutate(.variable = str_replace_all(.variable, 'b_', ''),
          var_fac = factor(.variable, 
                           levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2',
                                          'bathymetric_slope', 'population_statusU',
-                                         'ted_mean', 'mld','chl_a_mg_m3_mean', 'wave_energy_mean_kw_m1'))))
+                                         'ted_mean', 'mld','chl_a_mg_m3_mean'))))
 
-gB<-ggplot(effects %>% filter(mod=='Monthly mean'), 
+gB<-ggplot(effects, 
            aes(x = .value, y = var_fac, col=mod)) +
-  # geom_text(data = bayes %>% filter(mod=='Monthly mean'), 
+  # geom_text(data = bayes, 
             # aes(x = x, y = y, label = paste0(round(b*100,1),'% ', mod)), size=3) + 
   geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
   stat_pointinterval(.width = c(0.5, 0.95), position = position_dodge(width=0.5)) +  
@@ -80,10 +77,11 @@ gC<-ggplot(dd, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100)) 
 
 
 
-pdf(file = 'fig/Figure1.pdf', height=5, width=7)
+pdf(file = 'fig/Figure1.pdf', height=5, width=9)
 rhs<-plot_grid(gB, gC, nrow=2, labels=c('b', 'c'))
 plot_grid(gA, rhs, nrow=1, labels='a')
 dev.off()
 
+r2(m2_linear, by_component = TRUE) # 52% fixed effects. 63% full model.
 
 
