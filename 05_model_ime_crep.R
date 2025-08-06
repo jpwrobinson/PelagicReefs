@@ -17,6 +17,8 @@ dat<-ime_island %>% left_join(
   by = 'island') %>% 
   filter(!is.na(mld))
 
+ggplot(dat, aes(chl_a_mg_m3_mean, mean_ime_percent)) + geom_point()
+
 # dim(dat_month) = 360 (12 * 30)
 dat_month<-ime_month %>% 
   left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>% 

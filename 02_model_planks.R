@@ -17,16 +17,6 @@ unique(depth$ISLAND[!depth$ISLAND %in% ime$island2])
 # "Ofu & Olosega" "Lanai"         "Molokai"         "Tinian"        "Aguijan"     
 # islands %>%  filter(str_detect(island_name, 'kai')) %>% distinct(island_name) %>% data.frame
 
-pdf(file = 'fig/ime_db/noaa_months_max_chl.pdf', height=5, width=7)
-ime %>% filter(island2 %in% depth$ISLAND) %>% 
-  ggplot(aes(months_ime, chl_island, col=lat_neg*-1)) + 
-  geom_point(alpha=1) +
-  geom_text_repel(aes(label=island2), size=2) +
-  labs(x = 'Number of months IME present', y = 'Climatology: mean maximum chl-a, mg/m3') +
-  scale_x_continuous(breaks=seq(1, 12, 1)) +
-  scale_color_gradientn(colors = rev(c("#043061", "#4475B4",'#FE9928', "#B2182B", "#670A1F")), name = 'Dist.to\nEquator')
-dev.off()
-
 ## Creating island-level database of slope, IME variables, and oceanographic from Gove/Williams
 depth_ime<-depth %>% 
   filter(ISLAND %in% ime$island2) %>% 
