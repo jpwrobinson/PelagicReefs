@@ -19,7 +19,7 @@ g1<-ggplot(dat, aes(months_ime, chl_a_mg_m3_mean, col=region.col)) +
   scale_x_continuous(breaks=seq(1, 12, 1)) +
   scale_color_identity()
 
-g2<-ggplot(dat, aes(chl_a_mg_m3_mean, mean_ime_percent, col=region.col)) + 
+g2<-ggplot(dat, aes(chl_a_mg_m3_mean, mean_chl_percent, col=region.col)) + 
   geom_point(alpha=1) +
   geom_text_repel(aes(label=island), size=2) +
   labs(y = 'chl-a enhancement, %', x = 'Mean chl-a, mg/m3') +
