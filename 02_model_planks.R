@@ -10,35 +10,12 @@ source('00_crep_load.R')
 source('00_oceanographic_load.R')
 
 # read ime and change island names
-ime<-read.csv(file = 'island_ime_dat.csv') %>% 
-  mutate(reef_area_km2_log10 = log10(reef_area_km2),
-          island2 = trimws(str_replace_all(island, 'Atoll', '')),
-         island2 = trimws(str_replace_all(island2, 'Island', '')),
-         island2 = trimws(str_replace_all(island2, 'Reef', '')),
-         island2 = trimws(str_replace_all(island2, '\\ and', '\\ &')),
-         island2 = case_match(island2, 
-                              'Hawai’i' ~ 'Hawaii',
-                              'French Frigate Shoals' ~ 'French Frigate',
-                              'Kaua’i' ~ 'Kauai',
-                              'Ni’ihau' ~ 'Niihau',
-                              'O’ahu' ~ 'Oahu',
-                              'Swains  (Olohega)' ~ 'Swains',
-                              'Ta’u' ~ 'Tau', .default = island2))
+ime<-read.csv(file = 'island_ime_dat.csv') 
 
 # 5 missing islands in depth
 unique(depth$ISLAND[!depth$ISLAND %in% ime$island2]) 
 # "Ofu & Olosega" "Lanai"         "Molokai"         "Tinian"        "Aguijan"     
 # islands %>%  filter(str_detect(island_name, 'kai')) %>% distinct(island_name) %>% data.frame
-
-pdf(file = 'fig/ime_db/noaa_months_max_chl.pdf', height=5, width=7)
-ime %>% filter(island2 %in% depth$ISLAND) %>% 
-  ggplot(aes(months_ime, chl_island, col=lat_neg*-1)) + 
-  geom_point(alpha=1) +
-  geom_text_repel(aes(label=island2), size=2) +
-  labs(x = 'Number of months IME present', y = 'Climatology: mean maximum chl-a, mg/m3') +
-  scale_x_continuous(breaks=seq(1, 12, 1)) +
-  scale_color_gradientn(colors = rev(c("#043061", "#4475B4",'#FE9928', "#B2182B", "#670A1F")), name = 'Dist.to\nEquator')
-dev.off()
 
 ## Creating island-level database of slope, IME variables, and oceanographic from Gove/Williams
 depth_ime<-depth %>% 

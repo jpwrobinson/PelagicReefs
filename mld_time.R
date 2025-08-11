@@ -13,7 +13,6 @@ mld<-mld %>% group_by(Island) %>%
   group_by(Island) %>% mutate(anomaly_s = scale(anomaly)[,1]) %>% 
   left_join(island %>% rename(Island = island) %>% select(Island, region)) 
 
-
 # What is change in MLD over time? seasonality and long-term trend
 # 
 # m1<-gam(MLD ~ s(time_num, by = Island) + s(month, bs = 'cc', k = 12, by = Island), 

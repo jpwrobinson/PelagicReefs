@@ -31,7 +31,21 @@ chl_ime<-chl_ime %>%
          type = ifelse(islands$island_1_or_reef_0 == 1, 'Island', 'Reef'),
          island_area_km2 = islands$island_area_obtained_either_from_the_nunn_database_or_from_the_island_contour_km2,
          reef_area_km2 = islands$island_reef_area_calculated_from_gebco_500_m_resolution_as_the_area_of_pixels_above_30_m_depth_including_emerged_lands_km2) %>% 
-  pivot_longer(Jan:Dec, names_to = 'month', values_to = 'chl_ime')
+  pivot_longer(Jan:Dec, names_to = 'month', values_to = 'chl_ime') %>% 
+  # fix island names to match CREP
+  mutate(
+       island = trimws(str_replace_all(island, 'Atoll', '')),
+       island = trimws(str_replace_all(island, 'Island', '')),
+       island = trimws(str_replace_all(island, 'Reef', '')),
+       island = trimws(str_replace_all(island, '\\ and', '\\ &')),
+       island = case_match(island, 
+                            'Hawai’i' ~ 'Hawaii',
+                            'French Frigate Shoals' ~ 'French Frigate',
+                            'Kaua’i' ~ 'Kauai',
+                            'Ni’ihau' ~ 'Niihau',
+                            'O’ahu' ~ 'Oahu',
+                            'Swains  (Olohega)' ~ 'Swains',
+                            'Ta’u' ~ 'Tau', .default = island))
 
 # chl_ime = Chl averaged within IME mask
 # Chl_REF = Chl averaged within REF mask
@@ -87,8 +101,9 @@ seas<-chl_ime %>%
          months_ime = n_distinct(month[which(!is.na(keep_IME))])) %>%  # number of months with IME 
   # filter(keep_IME == 1) %>% 
   group_by(island, lon, lat, type, island_area_km2, reef_area_km2, chl_island, cv_chl, chl_ime, chl_no_ime, months_ime) %>% 
-  summarise(cv_ime = sd(Chl_increase_nearby, na.rm=TRUE)/mean(Chl_increase_nearby, na.rm=TRUE) * 100, 
-            mean_ime_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean IME relative to REF, %
+  summarise(cv_ime = sd(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE)/mean(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE) * 100, 
+            mean_ime_percent = mean(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE), # mean IME relative to REF, %
+            mean_chl_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean Chl relative to REF, %
             max_ime_percent = max(Chl_increase_nearby, na.rm=TRUE), # max IME relative to REF, %
             total_ime_chl_tCm = sum(total_chl_ime_tC_per_m, na.rm=TRUE), # total annual chl-a produced in IME 
             total_increase_chl_tCm = sum(total_chl_increase_tC_per_m, na.rm=TRUE) # total annual chl-a increase in IME 
