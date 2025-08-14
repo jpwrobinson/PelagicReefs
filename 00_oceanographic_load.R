@@ -5,17 +5,38 @@ source('00_plot_theme.R')
 # Climatological covariates from Gove et al. 2013
 island<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.xlsx', sheet=2) %>% 
   clean_names() %>% 
-  mutate(island = recode(island, 'French Frigate Shoals' = 'French Frigate'))
+  mutate(island = recode(island, 'French Frigate Shoals' = 'French Frigate',
+                         'Pearl & Hermes Reef' = 'Pearl & Hermes'))
 
 island2<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.xlsx', sheet=3) %>% 
   clean_names() %>% 
-  mutate(island = recode(location_name, 'French Frigate Shoals' = 'French Frigate',
-                         'Pearl & Hermes Reef' = 'Pearl & Hermes',
-                         'Maui, Lanai, Molokai, Lanai, Kahoolawe' = 'Maui',
-                         'Saipan, Tinian, Aguijan' = 'Saipan',
-                         'Ofu, Olosega, Tau' = 'Tau'))
+  mutate(island = island_name, 
+         geomorphic_type = ifelse(str_detect(island_type, 'island',), 'Island', 'Atoll'),
+         island = recode(island, 'French Frigate Shoals' = 'French Frigate',
+                         'Pearl & Hermes Reef' = 'Pearl & Hermes'))
 
-island<-left_join(island, island2 %>% select(-location_name, -location_code, -region, -lat, -lon))
+# This is island level covariates 
+island<- 
+  left_join(island, island2 %>% select(-island_name, -island_type, -latitude, -longitude)) %>%
+  mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
+         island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
+         island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
+
+
+# Read in island complex level covariates
+island_C<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.xlsx', sheet=4) %>% 
+  clean_names() %>% select(-region) %>% 
+  mutate(island_group = recode(location_name, 'French Frigate Shoals' = 'French Frigate',
+                         'Pearl & Hermes Reef' = 'Pearl & Hermes',
+                         'Maui, Lanai, Molokai, Lanai, Kahoolawe' = 'Maui_C',
+                         'Saipan, Tinian, Aguijan' = 'Saipan_C',
+                         'Ofu, Olosega, Tau' = 'Tau_C'))
+
+island_complex<-left_join(
+  island %>% group_by(island_group, region) %>% 
+  summarise(across(c(sst_mean:irradiance_einsteins_m2_d1_mean), ~ mean(.x))),
+  island_C %>% select(-location_name, -location_code))
+
 
 # We are investigating site-level predictors of planktivore abundance, biomass, composition and carbon flux.
 
@@ -33,9 +54,11 @@ island<-left_join(island, island2 %>% select(-location_name, -location_code, -re
 # mixed layer depth = shallower MLD helps upwelling to reach reefs, increases planktivores
 mld<-read.csv('data/crep_oceanographic/MLD_All_Islands-lrg_island_means.csv') %>% 
   mutate(Date = as.Date(Date), year = year(Date), month = month(Date), 
-         time = as.numeric(Date), Island = factor(Island), 
-         below_30m = ifelse(MLD > 30, 'deep', 'shallow'),
-         .before=Island, X=NULL) 
+         time = as.numeric(Date), below_30m = ifelse(MLD > 30, 'deep', 'shallow'),
+         .before=Island, X=NULL) %>% 
+  mutate(island_group = ifelse(Island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', Island),
+         island_group = ifelse(Island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
+         island_group = ifelse(Island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
 
 pdf(file = 'fig/crep_island_MLD.pdf', height=7, width=15)
 print(
@@ -52,6 +75,15 @@ mld_avg<-mld %>% group_by(Island, year) %>%
   summarise(mld = mean(mld),
             mld_sd = mean(mld_sd),
             mld_months_deep = mean(mld_months_deep)) 
+
+mld_avg_C<- mld %>% group_by(island_group, year) %>% 
+  summarise(mld = mean(MLD),
+            mld_sd = sd(MLD),
+            mld_months_deep = n_distinct(Date[MLD > 30])) %>% 
+  group_by(island_group) %>% 
+  summarise(mld = mean(mld),
+            mld_sd = mean(mld_sd),
+            mld_months_deep = mean(mld_months_deep)) 
   
 mld_month<-mld %>% group_by(Island, month) %>% 
   summarise(mld = mean(MLD),
@@ -63,10 +95,17 @@ mld_recent<-mld %>%
 
 # tidal conversion = stronger means more internal wave action + mixing, increases planktivores
 tc_all<-read.csv('data/crep_oceanographic/TEDestimates_CREPislands.csv') %>% 
-  left_join(island %>% mutate(ISLAND = island_code) %>% select(ISLAND, region))
+  left_join(island %>% mutate(ISLAND = island_code, island = island) %>% select(ISLAND, island, region)) %>% 
+  mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
+         island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
+         island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
 
 tc<-tc_all %>% 
   group_by(ISLAND, region) %>% 
+  summarise(ted_mean = mean(TED_MEAN), ted_sum = sum(TED_SUM), ted_sd = sd(TED_SUM), n_grids = n_distinct(GRID_ID))
+
+tc_C<-tc_all %>% 
+  group_by(island_group, region) %>% 
   summarise(ted_mean = mean(TED_MEAN), ted_sum = sum(TED_SUM), ted_sd = sd(TED_SUM), n_grids = n_distinct(GRID_ID))
 
 pdf(file = 'fig/crep_island_TC.pdf', height=7, width=15)
@@ -87,9 +126,15 @@ ggplot(tc_all, aes(TED_SUM, TED_MEAN, col=region)) + #geom_boxplot() +
   theme(legend.position = 'none')
 dev.off()
 
+# add MLD and TC to island and island complex
 island<-island %>% 
   left_join(mld_avg %>% rename(island = Island)) %>% 
   left_join(tc %>% mutate(island_code = ISLAND) %>% ungroup() %>% select(-ISLAND, -ted_sd)) %>% 
+  left_join(island_cols)
+
+island_complex<-island_complex %>% 
+  left_join(mld_avg_C) %>% 
+  left_join(tc_C %>% ungroup() %>% select(-ted_sd, -region), by = 'island_group') %>% 
   left_join(island_cols)
 
 

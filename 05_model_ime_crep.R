@@ -6,18 +6,29 @@ source('00_plot_theme.R')
 source('00_oceanographic_load.R')
 
 # ime = mean upwelling %
-ime_island<-read.csv(file = 'island_ime_dat.csv') 
-ime_month<-read.csv(file = 'island_ime_month_dat.csv')
+ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
+ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)
 
 hist(ime_island$mean_ime_percent) # Gamma
 
 # dim(dat) = 30 islands
 dat<-ime_island %>% left_join(
-  island %>% select(island, island_code, REGION, region.col, sst_mean:ted_sum),
+  island_complex %>% ungroup() %>% 
+    mutate(island = str_replace_all(island_group, '_C', '')) %>%
+    select(island, REGION, region.col, sst_mean:ted_sum),
   by = 'island') %>% 
   filter(!is.na(mld))
 
+# missing CREP from modelled dataset
+island %>% filter(!island %in% dat$island) %>% data.frame
 
+# 6 missing CREP islands in IME dataset
+unique(island$island[!island$island %in% ime_island$island]) 
+# "Ofu & Olosega" "Lanai"         "Molokai"         "Tinian"        "Aguijan"     "Maro Reef
+# but these are because IME dataset contains IME for 'lead' island (Maui, Saipan, Tau)
+
+ime_island %>%  filter(str_detect(island, 'ala')) %>% 
+  distinct(island) %>% data.frame
 
 
 # csv
@@ -28,9 +39,9 @@ ggplot(dat, aes(chl_a_mg_m3_mean, mean_ime_percent)) + geom_point()
 # dim(dat_month) = 360 (12 * 30)
 dat_month<-ime_month %>% 
   left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>% 
-  left_join(island %>% 
-              select(island, island_code, REGION, region.col, 
-                     sst_mean:ted_sum, -mld, -mld_sd),
+  left_join(island_complex %>% ungroup() %>% 
+              mutate(island = str_replace_all(island_group, '_C', '')) %>%
+              select(island, REGION, region.col, sst_mean:ted_sum, -mld, -mld_sd),
   by = 'island') %>% 
   left_join(mld_month %>% ungroup() %>% 
               mutate(island=Island, month_num=month) %>% 
@@ -58,30 +69,24 @@ dev.off()
 
 
 dat_scaled<-dat %>%  
-  select(island:island_area_km2, mean_chl_percent, island_code:ted_sum) %>% 
+  select(island:island_area_km2, mean_chl_percent, REGION:ted_sum) %>% 
   mutate(reef_area_km2 = log10(reef_area), island_area_km2 = log10(island_area_km2+1)) %>% 
   mutate(across(c(island_area_km2, reef_area_km2, sst_mean:ted_sum, -geomorphic_type,-population_status, -mean_chl_percent), 
                 ~scale(., center=TRUE, scale=TRUE))) %>% na.omit()
 
 dat_scaled_month<-dat_month %>% 
-  select(island:island_area_km2, month, month_num, Chl_increase_nearby, chl_anom, island_code:mld_lag2) %>% 
+  select(island:island_area_km2, month, month_num, Chl_increase_nearby, chl_anom, REGION:mld_lag2) %>% 
   mutate(reef_area_km2 = log10(reef_area), island_area_km2 = log10(island_area_km2+1)) %>% 
   mutate(across(c(month_num, island_area_km2, reef_area_km2, sst_mean:irradiance_einsteins_m2_d1_mean, 
                   bathymetric_slope, ted_mean:mld_lag2), 
                 ~terra::scale(., center=TRUE, scale=TRUE)[,1])) %>% na.omit()
-
-# 6 missing CREP islands in IME dataset
-unique(island$island[!island$island %in% ime_island$island]) 
-# "Ofu & Olosega" "Lanai"         "Molokai"         "Tinian"        "Aguijan"     "Maro Reef
-ime_island %>%  filter(str_detect(island, 'ala')) %>% 
-  distinct(island) %>% data.frame
 
 # Create pairs plot for IME covariates
 pairs2(
   dat_scaled_month %>% 
     select(island_area_km2, reef_area_km2, bathymetric_slope,
              sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
-             chl_a_mg_m3_mean, mld, mld_anom, ted_mean, ted_sum))
+             chl_a_mg_m3_mean, mld, ted_mean, ted_sum))
 
 ggplot(dat_month, aes(month, mld, group=island)) +
   geom_line() + facet_grid(~REGION)
@@ -129,7 +134,7 @@ ggplot(dat, aes(mld, mean_chl_percent, col=REGION)) + geom_point()
 
 
 # basic model fitting Chl increase (%) by island and biophysical covariates
-m2_linear<-brm(chl_anom ~ 
+m2_linear<-brm(Chl_increase_nearby ~ 
                  geomorphic_type * reef_area_km2 + island_area_km2 + 
                  bathymetric_slope + population_status +
                  # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
