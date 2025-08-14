@@ -17,6 +17,12 @@ dat<-ime_island %>% left_join(
   by = 'island') %>% 
   filter(!is.na(mld))
 
+
+
+
+# csv
+dat %>% distinct(island, lat, lon) %>% write.csv('ime_crep_lat_lon.csv', row.names=FALSE)
+
 ggplot(dat, aes(chl_a_mg_m3_mean, mean_ime_percent)) + geom_point()
 
 # dim(dat_month) = 360 (12 * 30)
