@@ -32,7 +32,7 @@ ime_island %>%  filter(str_detect(island, 'ala')) %>%
 
 
 # csv
-dat %>% distinct(island, lat, lon) %>% write.csv('ime_crep_lat_lon.csv', row.names=FALSE)
+dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_crep_lat_lon.csv', row.names=FALSE)
 
 ggplot(dat, aes(chl_a_mg_m3_mean, mean_ime_percent)) + geom_point()
 
