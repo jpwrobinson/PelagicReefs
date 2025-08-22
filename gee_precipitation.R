@@ -130,8 +130,8 @@ task <- ee_table_to_drive(
 task$start()
 ee_monitoring()
 
-# data copied from Drive into repo
-island_monthly_df <- read.csv('data/gee-exports/island_monthly_precip_2025_08_21_16_57_24.csv') %>% 
+# data copied from Drive into repo 
+island_monthly_df <- read.csv('data/gee-exports/island_monthly_precip_2025_08_22_12_30_23.csv') %>% 
   select(count, island, lat, lon, mean, month, year) %>% 
   mutate(
     year  = as.integer(year),
@@ -153,9 +153,9 @@ island_monthly_df <- read.csv('data/gee-exports/island_monthly_precip_2025_08_21
 #   ) %>%
 #   arrange(island, year, month)
 
-# ---- Monthly climatology (avg across years) 
+# ---- Monthly climatology (avg across years). n = 26 islands.
 clim_monthly <- island_monthly_df %>%
-  filter(!n_pixel == 0) %>% 
+  filter(!n_pixel == 0) %>% # This drops Baker, Laysan, Maug, Necker, Nihoa
   group_by(island, month, n_pixel) %>%
   summarize(avg_monthly_mm = mean(monthly_total_mm, na.rm = TRUE)) %>%
   mutate(month_label = factor(month, levels = 1:12, labels = month.abb)) %>%
