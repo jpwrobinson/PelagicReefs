@@ -46,6 +46,10 @@ dat_month<-ime_month %>%
   left_join(mld_month %>% ungroup() %>% 
               mutate(island=Island, month_num=month) %>% 
               select(month_num, island, mld)) %>% 
+  left_join(precip %>% ungroup() %>% 
+              mutate(month_num=month) %>% 
+              select(month_num, island, avg_monthly_mm)) %>% 
+  mutate(avg_monthly_mm = ifelse(is.na(avg_monthly_mm), 0, avg_monthly_mm)) %>% 
   filter(!is.na(mld)) %>% 
   group_by(island) %>% 
   mutate(chl_anom = Chl_max - chl_a_mg_m3_mean,
@@ -79,12 +83,12 @@ dat_scaled_month<-dat_month %>%
   mutate(reef_area_km2 = log10(reef_area), island_area_km2 = log10(island_area_km2+1)) %>% 
   mutate(across(c(month_num, island_area_km2, reef_area_km2, sst_mean:irradiance_einsteins_m2_d1_mean, 
                   bathymetric_slope, ted_mean:mld_lag2), 
-                ~terra::scale(., center=TRUE, scale=TRUE)[,1])) %>% na.omit()
+                ~terra::scale(., center=TRUE, scale=TRUE)[,1])) 
 
 # Create pairs plot for IME covariates
 pairs2(
   dat_scaled_month %>% 
-    select(island_area_km2, reef_area_km2, bathymetric_slope,
+    select(island_area_km2, reef_area_km2, bathymetric_slope,avg_monthly_mm,
              sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
              chl_a_mg_m3_mean, mld, ted_mean, ted_sum))
 
@@ -99,7 +103,7 @@ ggplot(dat, aes(mld, mean_chl_percent, col=REGION)) + geom_point()
 
 # basic model fitting Chl increase (%) by island and biophysical covariates
 m2_linear<-brm(Chl_increase_nearby ~ 
-                 geomorphic_type * reef_area_km2 + island_area_km2 + 
+                 geomorphic_type * reef_area_km2 + island_area_km2 + avg_monthly_mm +
                  bathymetric_slope + population_status +
                  # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
                  chl_a_mg_m3_mean + mld + ted_mean +
@@ -109,7 +113,7 @@ m2_linear<-brm(Chl_increase_nearby ~
                chains = 3, iter = 2000, warmup = 500, cores = 4)
 
 m2_smooth<-brm(Chl_increase_nearby ~ 
-          geomorphic_type + s(reef_area_km2, k=3) + s(island_area_km2, k=3) + 
+          geomorphic_type + s(reef_area_km2, k=3) + s(island_area_km2, k=3) + s(avg_monthly_mm, k=3) +
           s(bathymetric_slope, k=3) + population_status +
          # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
          s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(ted_mean, k=3) +
@@ -120,7 +124,7 @@ m2_smooth<-brm(Chl_increase_nearby ~
 
 # use month smoother instead of MLD
 m2_month_full<-brm(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc', k=12) + 
-          geomorphic_type * reef_area_km2 + island_area_km2 + 
+          geomorphic_type * reef_area_km2 + island_area_km2 + avg_monthly_mm +
           bathymetric_slope + population_status +
           # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
           chl_a_mg_m3_mean + ted_mean + mld +
@@ -131,7 +135,7 @@ m2_month_full<-brm(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc', k=
 
 # smooth MLD as seasonal
 m2_mld_smoo<-brm(Chl_increase_nearby ~ 
-                     geomorphic_type * reef_area_km2 + island_area_km2 + 
+                     geomorphic_type * reef_area_km2 + island_area_km2 + avg_monthly_mm +
                      bathymetric_slope + population_status +
                      # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
                      chl_a_mg_m3_mean + ted_mean + s(mld) +

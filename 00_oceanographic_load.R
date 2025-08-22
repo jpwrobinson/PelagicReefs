@@ -51,7 +51,18 @@ island_complex<-left_join(
 # bathymetry = potential for internal waves to reach reef zones
 
 # NEW COVARIATES
-# mixed layer depth = shallower MLD helps upwelling to reach reefs, increases planktivores
+
+# 1. island precipitation
+precip<-read.csv(file = 'data/gee-exports/crep_monthly_precipitation_mm.csv') %>% 
+  mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
+         island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
+         island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
+
+precip_ann<-precip %>% group_by(island) %>% summarise(avg_monthly_mm = mean(avg_monthly_mm))
+precip_ann_C<-precip %>% group_by(island_group) %>% summarise(avg_monthly_mm = mean(avg_monthly_mm))
+
+
+# 2. mixed layer depth = shallower MLD helps upwelling to reach reefs, increases planktivores
 mld<-read.csv('data/crep_oceanographic/MLD_All_Islands-lrg_island_means.csv') %>% 
   mutate(Date = as.Date(Date), year = year(Date), month = month(Date), 
          time = as.numeric(Date), below_30m = ifelse(MLD > 30, 'deep', 'shallow'),
@@ -126,13 +137,15 @@ ggplot(tc_all, aes(TED_SUM, TED_MEAN, col=region)) + #geom_boxplot() +
   theme(legend.position = 'none')
 dev.off()
 
-# add MLD and TC to island and island complex
+# add precip, MLD and TC to island and island complex
 island<-island %>% 
+  left_join(precip_ann) %>% 
   left_join(mld_avg %>% rename(island = Island)) %>% 
   left_join(tc %>% mutate(island_code = ISLAND) %>% ungroup() %>% select(-ISLAND, -ted_sd)) %>% 
   left_join(island_cols)
 
 island_complex<-island_complex %>% 
+  left_join(precip_ann_C) %>% 
   left_join(mld_avg_C) %>% 
   left_join(tc_C %>% ungroup() %>% select(-ted_sd, -region), by = 'island_group') %>% 
   left_join(island_cols)

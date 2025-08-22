@@ -149,15 +149,11 @@ island_monthly_df <- read.csv('data/gee-exports/island_monthly_precip_2025_08_21
 
 # ---- Monthly climatology (avg across years) 
 clim_monthly <- island_monthly_df %>%
+  filter(!n_pixel == 0) %>% 
   group_by(island, month, n_pixel) %>%
   summarize(avg_monthly_mm = mean(monthly_total_mm, na.rm = TRUE)) %>%
   mutate(month_label = factor(month, levels = 1:12, labels = month.abb)) %>%
   select(island, n_pixel, month, month_label, avg_monthly_mm)
 
-# ---- Annual from the monthly climatology
-clim_annual <- clim_monthly %>%
-  group_by(island) %>%
-  summarize(mean_annual_mm = sum(avg_monthly_mm))
-
-# Baker and Maug have NA precipitation because they do not overlap with a pixel (ie islands too small / land area not given pixel)
+# Baker has NA precipitation because they do not overlap with a pixel (ie islands too small / land area not given pixel)
 write.csv(clim_monthly, file = 'data/gee-exports/crep_monthly_precipitation_mm.csv', row.names=FALSE)
