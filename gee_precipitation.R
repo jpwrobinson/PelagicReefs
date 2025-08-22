@@ -1,10 +1,13 @@
 library(rgee)
+# Initialize Earth Engine
+ee_Initialize(drive = TRUE,gcs = FALSE)
+
+
 library(tidyverse)
 library(sf)
 library(purrr)
 
-# Initialize Earth Engine
-ee_Initialize()
+
 
 # Read your islands
 # CSV format: Name,Lat,Lon
@@ -60,19 +63,17 @@ monthly_total_img <- ee_utils_pyfunc(function(ym) {
   d <- ee$Dictionary(ym)
   y <- ee$Number(d$get('y'))
   m <- ee$Number(d$get('m'))
+  
   start <- ee$Date$fromYMD(y, m, 1)
   end   <- start$advance(1, 'month')
-  ic_m  <- chirps$filterDate(start, end)$select('precipitation')
   
-  # If no images, create a 0-band with correct projection so reduceRegions won't fail
-  img <- ee$Algorithms$If(
-    ic_m$size()$gt(0),
-    ee$Image(ic_m$sum())$rename('precip_mm'),
-    ee$Image$constant(0)$rename('precip_mm')$reproject(ref_proj)
-  )
+  # Filter CHIRPS for this month and sum daily precipitation
+  img <- chirps$filterDate(start, end)$select('precipitation')$sum()
   
-  ee$Image(img)$set('year', y)$set('month', m)
+  # Set month/year properties
+  img$set('year', y)$set('month', m)
 })
+
 
 # ---- Build server-side list of (year,month)
 ym_list <- ee$List$sequence(start_year, end_year)$map(
@@ -88,33 +89,65 @@ monthly_ic <- ee$ImageCollection$fromImages(ym_list$map(monthly_total_img))
 # ---- Zonal stats per island: mean across pixels (mm/month per island)
 # NOTE: if you truly want area-scaled totals, change Reducer$mean() → Reducer$sum()
 island_monthly_fc <- monthly_ic$map(
-  ee_utils_pyfunc(function(img)
-    img$reduceRegions(
+  ee_utils_pyfunc(function(img) {
+    
+    # Reduce over islands to get mean and pixel count
+    reduced <- img$reduceRegions(
       collection = islands_ee,
       reducer = ee$Reducer$mean()$combine(
         reducer2 = ee$Reducer$count(),
-        sharedInputs = TRUE),
-      scale      = 5566, # ~5.56 km (CHIRPS ~0.05°)
-      tileScale  = 2
-    )$map(ee_utils_pyfunc(function(f)
-      f$set('year', img$get('year'))$set('month', img$get('month'))
-    ))
-  )
+        sharedInputs = TRUE
+      ),
+      scale = 5566,   # CHIRPS resolution ~5.56 km
+      tileScale = 2
+    )
+    
+    # Add year and month properties to each island
+    reduced$map(
+      ee_utils_pyfunc(function(f) {
+        f$set('year', img$get('year'))$
+          set('month', img$get('month'))
+      })
+    )
+    
+  })
 )$flatten()
 
-# ---- Bring to R and TIDY
-island_monthly_df <- ee_as_sf(island_monthly_fc) %>%
-  st_drop_geometry() %>%
-  transmute(
-    island = island,
+# Export to Google Drive
+task <- ee_table_to_drive(
+  collection = island_monthly_fc,
+  description = 'island_monthly_precip',
+  folder = 'GEE_exports',
+  fileFormat = 'CSV'
+)
+
+task$start()
+ee_monitoring()
+
+# alt version running locally
+island_monthly_df <- read.csv('data/gee-exports/island_monthly_precip_2025_08_21_16_57_24.csv') %>% 
+  select(count, island, lat, lon, mean, month, year) %>% 
+  mutate(
     year  = as.integer(year),
     month = as.integer(month),
     monthly_total_mm = mean,   # mean of monthly totals across pixels
     n_pixel = count   # number of pixels
   ) %>%
+  select(-count, -mean) %>% 
   arrange(island, year, month)
 
-# ---- Monthly climatology (avg across years) — long format, helpful names
+
+# local side version
+# island_monthly_df <- ee_as_sf(island_monthly_fc) %>% 
+#   transmute(
+#     year  = as.integer(year),
+#     month = as.integer(month),
+#     monthly_total_mm = mean,   # mean of monthly totals across pixels
+#     n_pixel = count   # number of pixels
+#   ) %>%
+#   arrange(island, year, month)
+
+# ---- Monthly climatology (avg across years) 
 clim_monthly <- island_monthly_df %>%
   group_by(island, month, n_pixel) %>%
   summarize(avg_monthly_mm = mean(monthly_total_mm, na.rm = TRUE)) %>%
@@ -126,6 +159,5 @@ clim_annual <- clim_monthly %>%
   group_by(island) %>%
   summarize(mean_annual_mm = sum(avg_monthly_mm))
 
-# Quick sanity peek
-head(clim_monthly)
-head(clim_annual)
+# Baker and Maug have NA precipitation because they do not overlap with a pixel (ie islands too small / land area not given pixel)
+write.csv(clim_monthly, file = 'data/gee-exports/crep_monthly_precipitation_mm.csv', row.names=FALSE)
