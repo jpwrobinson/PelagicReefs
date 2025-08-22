@@ -11,7 +11,7 @@ library(purrr)
 
 # Read your islands
 # CSV format: Name,Lat,Lon
-islands_dat <- read.csv("ime_crep_lat_lon.csv")
+islands_dat <- read.csv("ime_island_crep_lat_lon.csv")
 
 # shapefiles from https://www.sciencebase.gov/catalog/item/63bdf25dd34e92aad3cda273
 # Global Islands database from USGS
@@ -27,23 +27,29 @@ islands_dat <- read.csv("ime_crep_lat_lon.csv")
 
 islands<-st_read("spatial/usgs_islands/merged/islands.shp") 
  
-list<-islands_dat$island[islands_dat$geomorphic_type=='Island']
+lister<-islands_dat$island[islands_dat$geomorphic_type=='Island']
 
 # filter islands. doing this manually to catch all islands. atolls are missed and excluded.
-islands2<-islands %>%  filter(Name_USGSO %in% list) %>% mutate(island = Name_USGSO)
-islands3<-islands %>%  filter(NAME_wcmcI %in% c('Howland', 'Alamagan', 'Swains', 'Tau')) %>% mutate(island = NAME_wcmcI)
+islands2<-islands %>%  filter(Name_USGSO %in% lister) %>% mutate(island = Name_USGSO)
+islands3<-islands %>%  filter(NAME_wcmcI %in% c('Howland', 'Alamagan', 'Swains', 'Tau', 'Laysan', 'Nihoa')) %>% mutate(island = NAME_wcmcI)
 # Maug - multiple islands but drop those caught from Belize
 maug<-islands %>% filter(str_detect(NAME_wcmcI, 'Maug')) %>% filter(!str_detect(NAME_wcmcI, 'Mauger')) %>% mutate(island = 'Maug')
+# Necker in NWHI
+necker<-islands %>% filter(str_detect(NAME_wcmcI, 'Mokumanamana')) %>% mutate(island = 'Necker')
+ofu<-islands %>% filter(NAME_wcmcI %in% c('Nuusilaelae Island', 'Olosega')) %>% mutate(island = 'Ofu & Olosega')
 
-# bind
-isl_dat<-bind_rows(islands2, islands3, maug) %>% 
+# Nuusilaelae Island is misnamed in island database. Confirmed with map plots that it is Ofu.
+# islands %>% filter(str_detect(NAME_wcmcI, 'Manua'))
+
+# bind. n = 33
+isl_dat<-bind_rows(islands2, islands3, maug, necker, ofu) %>% 
   left_join(islands_dat) 
 
-# only atolls missing
+# all atolls missing
 islands_dat %>% filter(!island %in% isl_dat$island)
 
 # Convert to EE FeatureCollection
-islands_ee <- sf_as_ee(isl_dat %>% select(geometry, island, lat, lon))
+islands_ee <- sf_as_ee(isl_dat %>% mutate(lat = latitude, lon = longitude) %>% select(geometry, island, lat, lon))
 
 # -------------------------
 # 3. Load CHIRPS daily data
@@ -124,7 +130,7 @@ task <- ee_table_to_drive(
 task$start()
 ee_monitoring()
 
-# alt version running locally
+# data copied from Drive into repo
 island_monthly_df <- read.csv('data/gee-exports/island_monthly_precip_2025_08_21_16_57_24.csv') %>% 
   select(count, island, lat, lon, mean, month, year) %>% 
   mutate(
