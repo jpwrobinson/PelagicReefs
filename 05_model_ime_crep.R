@@ -5,7 +5,7 @@ source('00_plot_theme.R')
 # exp. vars = MLD + tidal conversion
 source('00_oceanographic_load.R')
 
-# ime = mean upwelling %
+# ime = mean upwelling %664
 ime_island<-read.csv(file = 'island_ime_dat.csv') 
 ime_month<-read.csv(file = 'island_ime_month_dat.csv')
 
@@ -16,6 +16,10 @@ dat<-ime_island %>% left_join(
   island %>% select(island, island_code, REGION, region.col, sst_mean:ted_sum),
   by = 'island') %>% 
   filter(!is.na(mld))
+
+# missing islands
+island$island[!island$island %in% ime_island$island]
+ime_island %>%  filter(str_detect(island, 'L')) %>% distinct(island) %>% data.frame
 
 ggplot(dat, aes(chl_a_mg_m3_mean, mean_ime_percent)) + geom_point()
 
