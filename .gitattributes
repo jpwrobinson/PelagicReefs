@@ -2,3 +2,5 @@
 data/noaa-crep/NOAA_PACIFIC_RAMP_FISH_SPC_2010_2017_SCI_DATA_.csv filter=lfs diff=lfs merge=lfs -text
 data/noaa-crep/NCRMP.nSPC.site_meancount_species-size.rds filter=lfs diff=lfs merge=lfs -text
 data/noaa-crep/crep_full_merged.csv filter=lfs diff=lfs merge=lfs -text
+*island_monthly_precip_2025_08_21_16_57_24.csv filter=lfs diff=lfs merge=lfs -text
+*island_monthly_precip_2025_08_22_12_30_23.csv filter=lfs diff=lfs merge=lfs -text
