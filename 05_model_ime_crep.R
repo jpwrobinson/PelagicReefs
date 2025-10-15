@@ -5,15 +5,9 @@ source('00_plot_theme.R')
 # exp. vars = MLD + tidal conversion
 source('00_oceanographic_load.R')
 
-<<<<<<< HEAD
-# ime = mean upwelling %664
-ime_island<-read.csv(file = 'island_ime_dat.csv') 
-ime_month<-read.csv(file = 'island_ime_month_dat.csv')
-=======
 # ime = mean upwelling %
 ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
 ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)
->>>>>>> 588a952374103691df361be3df97dc9b7860fdf2
 
 hist(ime_island$mean_ime_percent) # Gamma
 
@@ -25,11 +19,11 @@ dat<-ime_island %>% left_join(
   by = 'island') %>% 
   filter(!is.na(mld))
 
-<<<<<<< HEAD
+
 # missing islands
 island$island[!island$island %in% ime_island$island]
 ime_island %>%  filter(str_detect(island, 'L')) %>% distinct(island) %>% data.frame
-=======
+
 # missing CREP from modelled dataset
 island %>% filter(!island %in% dat$island) %>% data.frame
 
@@ -45,7 +39,7 @@ ime_island %>%  filter(str_detect(island, 'ala')) %>%
 # csv
 dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
 island %>% distinct(island, latitude, longitude, REGION, geomorphic_type) %>% write.csv('ime_island_crep_lat_lon.csv', row.names=FALSE)
->>>>>>> 588a952374103691df361be3df97dc9b7860fdf2
+
 
 ggplot(dat, aes(chl_a_mg_m3_mean, mean_ime_percent)) + geom_point()
 
