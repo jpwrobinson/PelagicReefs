@@ -19,6 +19,11 @@ dat<-ime_island %>% left_join(
   by = 'island') %>% 
   filter(!is.na(mld))
 
+
+# missing islands
+island$island[!island$island %in% ime_island$island]
+ime_island %>%  filter(str_detect(island, 'L')) %>% distinct(island) %>% data.frame
+
 # missing CREP from modelled dataset
 island %>% filter(!island %in% dat$island) %>% data.frame
 
@@ -34,6 +39,7 @@ ime_island %>%  filter(str_detect(island, 'ala')) %>%
 # csv
 dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
 island %>% distinct(island, latitude, longitude, REGION, geomorphic_type) %>% write.csv('ime_island_crep_lat_lon.csv', row.names=FALSE)
+
 
 ggplot(dat, aes(chl_a_mg_m3_mean, mean_ime_percent)) + geom_point()
 
