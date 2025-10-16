@@ -42,14 +42,14 @@ dat_month<-ime_month %>%
   left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>% 
   left_join(island_complex %>% ungroup() %>% 
               mutate(island = str_replace_all(island_group, '_C', '')) %>%
-              select(island, REGION, region.col, sst_mean:ted_sum, -mld, -mld_sd),
+              select(island, REGION, region.col, sst_mean:ted_sum, -mld, -mld_sd, -avg_monthly_mm),
   by = 'island') %>% 
   left_join(mld_month %>% ungroup() %>% 
               mutate(island=Island, month_num=month) %>% 
               select(month_num, island, mld)) %>% 
   left_join(precip %>% ungroup() %>% 
               mutate(month_num=month) %>% 
-              select(month_num, island, avg_monthly_mm)) %>% 
+              select(month_num, island, avg_monthly_mm), by = c('month_num', 'island')) %>% 
   mutate(avg_monthly_mm = ifelse(is.na(avg_monthly_mm), 0, avg_monthly_mm)) %>% 
   filter(!is.na(mld)) %>% 
   group_by(island) %>% 
