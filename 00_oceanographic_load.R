@@ -100,6 +100,15 @@ mld_month<-mld %>% group_by(Island, month) %>%
   summarise(mld = mean(MLD),
             mld_sd = sd(MLD)) 
 
+mld<-mld %>% group_by(Island) %>% 
+  mutate(time_num = scale(time)[,1]) %>% 
+  group_by(Island, month) %>% 
+  mutate(month_mean = mean(MLD)) %>% 
+  ungroup() %>% 
+  mutate(anomaly = MLD - month_mean) %>% 
+  group_by(Island) %>% mutate(anomaly_s = scale(anomaly)[,1]) %>% 
+  left_join(island %>% rename(Island = island) %>% select(Island, region)) 
+
 # MLD mean over past 3 months (inclusive of that month)
 mld_recent<-mld %>% 
   mutate(mean_mld_3months = zoo::rollmean(MLD, k = 3, align = "right", fill = NA))

@@ -30,8 +30,8 @@ ggplot(dat_month, aes(month_num, Chl_increase_nearby, group=island, col=REGION))
   facet_grid(~REGION)
 
 # Panel B = drivers of IME [monthly and time-averaged]
-bayes<-data.frame(b = c(bayes_R2(m2_smooth)[,'Estimate'], bayes_R2(m2_linear)[,'Estimate']),
-                  mod = c('Smooth monthly mean', 'Linear monthly mean'),
+bayes<-data.frame(b = c(bayes_R2(m2_smooth)[,'Estimate'], bayes_R2(m2_smooth_month)[,'Estimate']),
+                  mod = c('Smooth', 'Smooth with month'),
                   x = 7, y = c(2,1))
 
 # Extract posterior draws
@@ -60,9 +60,9 @@ gB<-ggplot(effects,
 
 # Get conditional effects
 source('func_mod_conditional.R')
-mld_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'mld')
-ted_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'ted_mean')
-chl_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'chl_a_mg_m3_mean')
+mld_pred<-mod_post(mod = m2_smooth, dat_raw = dat_month, var = 'mld')
+ted_pred<-mod_post(mod = m2_smooth, dat_raw = dat_month, var = 'ted_mean')
+chl_pred<-mod_post(mod = m2_smooth, dat_raw = dat_month, var = 'chl_a_mg_m3_mean')
 dd<-rbind(mld_pred %>% select(-mld) %>% mutate(var = 'Mixed layer depth, m') , 
           ted_pred %>% select(-ted_mean) %>% mutate(var = 'Tidal energy, ?'), 
           chl_pred %>% select(-chl_a_mg_m3_mean) %>% mutate(var = 'chl-a, mg_m3'))
