@@ -147,7 +147,8 @@ m2_smooth<-brm(Chl_increase_nearby ~
           s(reef_area_km2, by = geomorphic_type, k=3) + s(island_area_km2, k=3) + s(avg_monthly_mm, k=3) +
           s(bathymetric_slope, k=3) + population_status +
          # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
-         s(chl_a_mg_m3_mean, k=3) + s(mld, by =island, k=3) + s(ted_mean, k=3) +
+           # for mld by island, use factor-smooth that pools towards global smooth
+         s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(mld, by =island, k=3, bs = 'cs') + s(ted_mean, k=3) +
          (1 | island / REGION),
        family = lognormal(),
        data = dat_scaled_month,
@@ -168,7 +169,7 @@ m2_smooth_month<-brm(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc', 
                  s(reef_area_km2, by = geomorphic_type, k=3) + s(island_area_km2, k=3) + s(avg_monthly_mm, k=3) +
                  s(bathymetric_slope, k=3) + population_status +
                  # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
-                 s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(ted_mean, k=3) +
+                 s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(ted_mean, k=3) + 
                  (1 | island / REGION),
                family = lognormal(),
                data = dat_scaled_month,
@@ -176,6 +177,7 @@ m2_smooth_month<-brm(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc', 
 
 
 save(dat_month, dat_scaled_month, m2_linear, m2_smooth, m2_linear_month,m2_smooth_month, file = 'results/mod_ime_month_crep_attributes.rds')
+# load(file = 'results/mod_ime_month_crep_attributes.rds')
 
 checker<-m2_smooth
 summary(checker)
