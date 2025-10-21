@@ -164,18 +164,19 @@ island_complex<-island_complex %>%
 levs<-island %>% distinct(region, island_code, latitude) %>% 
   group_by(region) %>% arrange(island_code, latitude, .by_group=TRUE) %>% pull(island_code)
 
-pdf(file = 'fig/crep_island_oceanography.pdf', height=7, width=15)
+pdf(file = 'fig/crep_island_oceanography.pdf', height=6, width=17)
 print(
   # Island mean values
 island %>% 
   mutate(island_code = factor(island_code, levels = rev(levs))) %>% 
   rename(
-         tidal_energy_mean_W_m1 = ted_mean,
-         tidal_energy_sum_W_m1 = ted_sum,
-         mixed_layer_depth_avg_m = mld,
-         mixed_layer_deep_months = mld_months_deep,
-         mixed_layer_depth_sd_m = mld_sd) %>% 
-  pivot_longer(-c(island_code, island, region,REGION, geomorphic_type, latitude, longitude, region.col, island_group), names_to = 'cov', values_to = 'val') %>% 
+         tidal_mean_W_m1 = ted_mean,
+         tidal_sum_W_m1 = ted_sum,
+         mld_avg_m = mld,
+         n_months_deep_mld = mld_months_deep,
+         mld_sd_m = mld_sd) %>% 
+  pivot_longer(-c(island_code, island, region,REGION, geomorphic_type, latitude, longitude, 
+                  region.col, island_group, n_grids, irradiance_einsteins_m2_d1_mean), names_to = 'cov', values_to = 'val') %>% 
   ggplot(aes(island_code, val, fill=region.col), col='black') + geom_col() +
   facet_grid(~cov, scales='free') + 
   coord_flip() +
