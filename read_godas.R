@@ -21,4 +21,9 @@ plot(jan)
 
 # overlay reefs
 source('00_oceanographic_load.R')
-points(island$longitude, island$latitude)
+latlon<-c(island$longitude, island$latitude)
+points(latlon)
+
+terra::extract(jan, latlon) %>% head
+
+# need to align projection systems
