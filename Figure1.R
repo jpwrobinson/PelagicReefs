@@ -76,6 +76,23 @@ gC<-ggplot(dd, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100)) 
   theme(strip.placement = 'bottom', strip.background = element_blank())
 
 
+mld_pred<-mod_post_island(mod = m2_smooth, dat_raw = dat_month, var = 'mld')
+
+mld_pred <- mld_pred %>% group_by(island) %>% 
+  mutate(y1 = estimate__[which.min(mld)], y2 = estimate__[which.max(mld)], diff = y2 - y1, 
+         col = ifelse(diff < 0, 'red3', 'blue4'))
+
+ggplot(mld_pred, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100, fill=col)) + 
+  geom_ribbon(alpha=0.1) +
+  geom_line() + 
+  labs(y = 'chl-a enhancement, %', x = 'mixed layer depth') +
+  scale_y_continuous(labels = label_percent()) +
+  scale_x_continuous(limits=c(1, 70)) +
+  scale_fill_identity() +
+  facet_wrap(.~island, scales='free') +
+  theme(strip.placement = 'bottom', strip.background = element_blank())
+
+
 
 pdf(file = 'fig/Figure1.pdf', height=5, width=9)
 rhs<-plot_grid(gB, gC, nrow=2, labels=c('b', 'c'))

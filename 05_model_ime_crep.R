@@ -147,7 +147,8 @@ m2_smooth<-brm(Chl_increase_nearby ~
           s(reef_area_km2, by = geomorphic_type, k=3) + s(island_area_km2, k=3) + s(avg_monthly_mm, k=3) +
           s(bathymetric_slope, k=3) + population_status +
          # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
-         s(chl_a_mg_m3_mean, k=3) + s(mld, by =island, k=3) + s(ted_mean, k=3) +
+           # for mld by island, use factor-smooth that pools towards global smooth
+         s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(mld, by =island, k=3, bs = 'cs') + s(ted_mean, k=3) +
          (1 | island / REGION),
        family = lognormal(),
        data = dat_scaled_month,
@@ -168,7 +169,7 @@ m2_smooth_month<-brm(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc', 
                  s(reef_area_km2, by = geomorphic_type, k=3) + s(island_area_km2, k=3) + s(avg_monthly_mm, k=3) +
                  s(bathymetric_slope, k=3) + population_status +
                  # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
-                 s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(ted_mean, k=3) +
+                 s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(ted_mean, k=3) + 
                  (1 | island / REGION),
                family = lognormal(),
                data = dat_scaled_month,
@@ -176,6 +177,7 @@ m2_smooth_month<-brm(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc', 
 
 
 save(dat_month, dat_scaled_month, m2_linear, m2_smooth, m2_linear_month,m2_smooth_month, file = 'results/mod_ime_month_crep_attributes.rds')
+# load(file = 'results/mod_ime_month_crep_attributes.rds')
 
 checker<-m2_smooth
 summary(checker)
@@ -195,6 +197,7 @@ loo_month_full <- loo(m2_linear_month)
 loo_mld_smoo <- loo(m2_smooth_month)
 loo_compare(loo_linear, loo_smooth, loo_month_full, loo_mld_smoo)
 
+
 # Covariate relative effects - doesn't seem to work with smooths
 # mfx <- avg_slopes(m2_smooth, newdata = dat_scaled_month)
 # mfx
@@ -210,15 +213,51 @@ effects2 <- m2_linear %>%
                                          'bathymetric_slope', 'population_statusU',
                                          'ted_mean', 'mld','chl_a_mg_m3_mean'))))
 
+effects3 <- m2_smooth %>%
+  gather_draws(bs_sisland_area_km2_1,
+               bs_sbathymetric_slope_1, b_population_statusU,
+               bs_schl_a_mg_m3_mean_1, bs_sted_mean_1, bs_smld_1) %>%  
+  mutate(.variable = str_replace_all(.variable, 'b_', ''),
+         .variable = str_replace_all(.variable, 'bs_s', ''),
+         .variable = str_replace_all(.variable, '_1', ''),
+         var_fac = factor(.variable, 
+                          levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2',
+                                         'bathymetric_slope', 'population_statusU',
+                                         'ted_mean', 'mld','chl_a_mg_m3_mean'))))
+
 # Plot effect sizes
 pdf(file = 'fig/ime_db/ime_month_crep_model.pdf', height=5, width=6)
-ggplot(effects2, aes(x = .value, y = var_fac)) +
+ggplot(effects3, aes(x = .value, y = var_fac)) +
   stat_halfeye(.width = c(0.5, 0.95)) +  
   geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
   labs(x = "Effect size", y = "") 
 
 dev.off()
 
+
+# Get posterior draws of each smoother's fitted contribution
+sm <- conditional_smooths(m2_smooth, summary = FALSE)
+
+# For each smooth: compute variance across its fitted effect
+smooth_var <- map_dbl(sm, ~{
+  df <- .x
+  var(df$estimate__, na.rm = TRUE)
+})
+
+# Scale to relative proportions
+rel_var <- smooth_var / sum(smooth_var)
+
+# Tidy result
+var_exp<-data.frame(
+  smooth = names(sm),
+  var_explained = smooth_var,
+  rel_var = rel_var
+)
+
+var_exp$var<-c('Reef area\n(by geomorphic)', 'Island area', 'Precipitation', 'Bathymetric slope', 'chl-a mean', 'Mixed layer depth', 'Mixed layer depth\n(by island)', 'Tidal energy')
+
+
+ggplot(var_exp, aes(fct_reorder(var, -rel_var), rel_var)) + geom_col() + scale_y_continuous(labels=label_percent())
 
 # What about lags [month is better than MLD...but not a process]
 m2_mld0<-brm(Chl_increase_nearby ~ mld, family = lognormal(), data = dat_scaled_month,
