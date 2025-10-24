@@ -235,6 +235,9 @@ ggplot(effects3, aes(x = .value, y = var_fac)) +
 dev.off()
 
 
+
+## Variance explained = the variance across fitted effects, relative to total variance in the model fixed effects
+## So this is an R2 within the total model R2?? Need to check.
 # Get posterior draws of each smoother's fitted contribution
 sm <- conditional_smooths(m2_smooth, summary = FALSE)
 
