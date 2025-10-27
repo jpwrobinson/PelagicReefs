@@ -1,42 +1,8 @@
 library(tidyverse)
 library(janitor)
 source('00_plot_theme.R')
-
-# Climatological covariates from Gove et al. 2013
-island<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.xlsx', sheet=2) %>% 
-  clean_names() %>% 
-  mutate(island = recode(island, 'French Frigate Shoals' = 'French Frigate',
-                         'Pearl & Hermes Reef' = 'Pearl & Hermes'))
-
-island2<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.xlsx', sheet=3) %>% 
-  clean_names() %>% 
-  mutate(island = island_name, 
-         geomorphic_type = ifelse(str_detect(island_type, 'island',), 'Island', 'Atoll'),
-         island = recode(island, 'French Frigate Shoals' = 'French Frigate',
-                         'Pearl & Hermes Reef' = 'Pearl & Hermes'))
-
-# This is island level covariates 
-island<- 
-  left_join(island, island2 %>% select(-island_name, -island_type, -latitude, -longitude)) %>%
-  mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
-         island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
-         island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
-
-
-# Read in island complex level covariates
-island_C<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.xlsx', sheet=4) %>% 
-  clean_names() %>% select(-region) %>% 
-  mutate(island_group = recode(location_name, 'French Frigate Shoals' = 'French Frigate',
-                         'Pearl & Hermes Reef' = 'Pearl & Hermes',
-                         'Maui, Lanai, Molokai, Lanai, Kahoolawe' = 'Maui_C',
-                         'Saipan, Tinian, Aguijan' = 'Saipan_C',
-                         'Ofu, Olosega, Tau' = 'Tau_C'))
-
-island_complex<-left_join(
-  island %>% group_by(island_group, region) %>% 
-  summarise(across(c(sst_mean:irradiance_einsteins_m2_d1_mean), ~ mean(.x))),
-  island_C %>% select(-location_name, -location_code))
-
+source('00_islands.R')
+source('read_godas.R')
 
 # We are investigating site-level predictors of planktivore abundance, biomass, composition and carbon flux.
 
@@ -95,11 +61,13 @@ mld_avg_C<- mld %>% group_by(island_group, year) %>%
   summarise(mld = mean(mld),
             mld_sd = mean(mld_sd),
             mld_months_deep = mean(mld_months_deep)) 
-  
+
+# MLD by month  
 mld_month<-mld %>% group_by(Island, month) %>% 
   summarise(mld = mean(MLD),
             mld_sd = sd(MLD)) 
 
+# MLD anomaly
 mld<-mld %>% group_by(Island) %>% 
   mutate(time_num = scale(time)[,1]) %>% 
   group_by(Island, month) %>% 
@@ -108,6 +76,7 @@ mld<-mld %>% group_by(Island) %>%
   mutate(anomaly = MLD - month_mean) %>% 
   group_by(Island) %>% mutate(anomaly_s = scale(anomaly)[,1]) %>% 
   left_join(island %>% rename(Island = island) %>% select(Island, region)) 
+
 
 # MLD mean over past 3 months (inclusive of that month)
 mld_recent<-mld %>% 
@@ -146,16 +115,19 @@ ggplot(tc_all, aes(TED_SUM, TED_MEAN, col=region)) + #geom_boxplot() +
   theme(legend.position = 'none')
 dev.off()
 
-# add precip, MLD and TC to island and island complex
+
+# add precip, SSH, MLD and TC to island and island complex
 island<-island %>% 
   left_join(precip_ann) %>% 
   left_join(mld_avg %>% rename(island = Island)) %>% 
+  left_join(ssh_vals) %>% 
   left_join(tc %>% mutate(island_code = ISLAND) %>% ungroup() %>% select(-ISLAND, -ted_sd)) %>% 
   left_join(island_cols)
 
 island_complex<-island_complex %>% 
   left_join(precip_ann_C) %>% 
   left_join(mld_avg_C) %>% 
+  left_join(ssh_vals_C) %>% 
   left_join(tc_C %>% ungroup() %>% select(-ted_sd, -region), by = 'island_group') %>% 
   left_join(island_cols)
 
@@ -172,6 +144,7 @@ island %>%
   rename(
          tidal_mean_W_m1 = ted_mean,
          tidal_sum_W_m1 = ted_sum,
+         sea_surface_height_m = ssh,
          mld_avg_m = mld,
          n_months_deep_mld = mld_months_deep,
          mld_sd_m = mld_sd) %>% 
