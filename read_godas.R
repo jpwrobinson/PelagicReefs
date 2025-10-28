@@ -70,8 +70,8 @@ ssh_vals_C<-ssh_vals_m_C %>% group_by(island_group) %>% summarise(ssh = mean(ssh
 
 
 # Read directly from NOAA via HTTPS [shell script using wget in godas folder]
-file.list <- list.files('data/godas') %>%
-  .[str_detect(., 'dbss_obml') & !. %in% 'dbss_obml.mon.ltm.1991-2020.nc']
+file.list <- list.files('data/godas', pattern = 'dbss_obml')
+file.list <- setdiff(file.list, 'dbss_obml.mon.ltm.1991-2020.nc')
 
 mld_vals_m<-numeric()
 for (i in 1:length(file.list)){
@@ -102,3 +102,4 @@ tt<-mld_vals_m %>%
 
 ggplot(tt, aes(mld, mld2)) + geom_point() + facet_wrap(~island)
 tt %>% group_by(island) %>% summarise(cor(mld, mld2)) %>% data.frame
+with(tt %>% na.omit, cor(mld, mld2))
