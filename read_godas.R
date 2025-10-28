@@ -27,3 +27,25 @@ points(latlon)
 terra::extract(jan, latlon) %>% head
 
 # need to align projection systems
+
+
+## Alternative approoach through NOAA EDS package
+# https://github.com/krtanaka/eds
+library(eds)
+
+eds_parameter <- data.frame(
+  Dataset = c("Bathymetry_ETOPO_2022_v1_15s", "Sea_Surface_Temperature_OISST_Monthly"),
+  Download = c("YES", "YES"),
+  Frequency = c("Climatology", "Monthly"),
+  URL = c("https://coastwatch.pfeg.noaa.gov/erddap/", "https://upwell.pfeg.noaa.gov/erddap/"),
+  Dataset_ID = c("ETOPO_2022_v1_15s", "noaa_psl_4af9_4ab0_ab10"),
+  Fields = c("z", "sst"),
+  Summaries = c(NA, "mean;q05;q95;sd"),
+  Mask = c(FALSE, FALSE)
+)
+
+df <- subset(df, region == "MHI")
+
+run_eds(lon = island$longitude,
+        lat = island$latitude,
+        unit = island$island)
