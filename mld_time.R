@@ -5,14 +5,6 @@ library(gratia)
 # LOAD 
 source('00_oceanographic_load.R')
 # source('00_crep_load.R')
-mld<-mld %>% group_by(Island) %>% 
-  mutate(time_num = scale(time)[,1]) %>% 
-  group_by(Island, month) %>% 
-  mutate(month_mean = mean(MLD)) %>% 
-  ungroup() %>% 
-  mutate(anomaly = MLD - month_mean) %>% 
-  group_by(Island) %>% mutate(anomaly_s = scale(anomaly)[,1]) %>% 
-  left_join(island %>% rename(Island = island) %>% select(Island, region)) 
 
 # What is change in MLD over time? seasonality and long-term trend
 # 

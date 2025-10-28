@@ -52,20 +52,9 @@ island_complex %>% filter(island_group %in% c('Laysan', 'Necker', 'Nihoa', 'Wake
 # crep_depth<-read.csv('data/noaa-crep/crep_bathymetry_merged.csv')
 # island %>% filter(!island %in% crep$ISLAND) %>% distinct(island) %>% data.frame
 
-# csv
+# csv of modelled data
 dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
 island %>% distinct(island, latitude, longitude, REGION, geomorphic_type) %>% write.csv('ime_island_crep_lat_lon.csv', row.names=FALSE)
-
-
-mld<-mld %>% group_by(Island) %>% 
-  mutate(time_num = scale(time)[,1]) %>% 
-  group_by(Island, month) %>% 
-  mutate(month_mean = mean(MLD)) %>% 
-  ungroup() %>% 
-  mutate(anomaly = MLD - month_mean) %>% 
-  group_by(Island) %>% mutate(anomaly_s = scale(anomaly)[,1]) %>% 
-  left_join(island %>% rename(Island = island) %>% select(Island, region)) 
-
 
 # dim(dat_month) = 360 (12 * 30)
 dat_month<-ime_month %>% 
@@ -77,6 +66,8 @@ dat_month<-ime_month %>%
   left_join(mld_month %>% ungroup() %>% 
               mutate(island=Island, month_num=month) %>% 
               select(month_num, island, mld)) %>% 
+  left_join(ssh_vals_m %>% ungroup() %>% 
+              select(island, month_num, ssh)) %>% 
   left_join(precip %>% ungroup() %>% 
               mutate(month_num=month) %>% 
               select(month_num, island, avg_monthly_mm), by = c('month_num', 'island')) %>% 
@@ -122,7 +113,7 @@ pairs2(
   dat_scaled_month %>% filter(!is.na(ted_sum)) %>% 
     select(island_area_km2, reef_area_km2, bathymetric_slope,avg_monthly_mm,
              sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
-             chl_a_mg_m3_mean, mld, ted_mean, ted_sum))
+             chl_a_mg_m3_mean, mld, ssh, ted_mean, ted_sum))
 dev.off()
 
 ggplot(dat_month, aes(month, mld, group=island)) +

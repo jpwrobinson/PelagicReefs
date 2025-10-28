@@ -11,23 +11,32 @@ library(terra)
 
 ssh<-rast('data/godas/sshg.mon.ltm.1991-2020.nc')
 
-plot(ssh) # this is a layer for each month
-names(ssh)
-crs(ssh)
+# plot(ssh) # this is a layer for each month
+# names(ssh)
+# crs(ssh)
 
 # work with January to start
-jan<-ssh$sshg_1
-plot(jan)
+# jan<-ssh$sshg_1
+# plot(jan)
 
 # overlay reefs
-source('00_oceanographic_load.R')
-latlon<-c(island$longitude, island$latitude)
-points(latlon)
+source('00_islands.R')
+latlon<-data.frame(lon = island$longitude, lat = island$latitude, island_group=island$island_group)
+# align projection systems - longitude wrap
+latlon$lon<-ifelse(latlon$lon < 0, 360+latlon$lon, latlon$lon)
+# points(latlon)
 
-terra::extract(jan, latlon) %>% head
+ssh_vals_m<-terra::extract(ssh, latlon[,1:2]) %>% select(starts_with('sshg')) %>% 
+  mutate(mean_annual_ssh =rowMeans(across(everything())), island = island$island, island_group=latlon$island_group) %>% 
+  pivot_longer(-c(mean_annual_ssh, island, island_group), names_to = 'month', values_to = 'ssh') %>% 
+  mutate(month_num = as.numeric(str_replace_all(month, 'sshg_', '')),
+         month = month.abb[month_num])
 
-# need to align projection systems
+ssh_vals_m_C<-ssh_vals_m %>% group_by(island_group, month_num, month) %>% 
+  summarise(ssh = mean(ssh))
 
+ssh_vals<-ssh_vals_m %>% group_by(island) %>% summarise(ssh = mean(ssh))
+ssh_vals_C<-ssh_vals_m_C %>% group_by(island_group) %>% summarise(ssh = mean(ssh))
 
 ## Alternative approoach through NOAA EDS package
 # https://github.com/krtanaka/eds
