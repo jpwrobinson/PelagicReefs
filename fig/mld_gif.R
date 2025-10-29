@@ -49,7 +49,10 @@ giffer<-function(raster, time_step){
                            limits=c(0, 100), breaks=c(0, 25, 50, 75, 100), 
                            labels=c('0 m', '25 m', '50 m', '75 m', '100+ m'), direction = 1, na.value = "grey80") +
       theme_void() +
-      theme(legend.text = element_text(color='white'))
+      theme(legend.text = element_text(color='white'),
+            panel.background = element_rect(fill = "black"),
+            plot.background  = element_rect(fill = "black"),
+            panel.grid       = element_blank())
     
     ggsave(sprintf(paste0("frames/", time_step, "/frame_%03d.png"), i), p, width = 8, height = 4, dpi = 150)
     
@@ -66,19 +69,25 @@ frames <- list.files("frames", full.names = TRUE, pattern = "*.png")
 img_list <- lapply(frames, image_read)
 img_joined <- image_join(img_list)
 img_animated <- image_morph(img_joined, frames = 1) %>% image_animate(fps = 20)
-image_write(img_animated, "mld_animation.gif")
+image_write(img_animated, "gif/mld_animation.gif")
 
+# Month-year recent
+frames <- list.files("frames", full.names = TRUE, pattern = "*.png")
+img_list <- lapply(frames[200:340], image_read)
+img_joined <- image_join(img_list)
+img_animated <- image_morph(img_joined, frames = 1) %>% image_animate(fps = 20)
+image_write(img_animated, "gif/mld_animation_recent.gif")
 
 # Month
 frames <- list.files("frames/month", full.names = TRUE, pattern = "*.png")
 img_list <- lapply(frames, image_read)
 img_joined <- image_join(img_list)
 img_animated <- image_animate(img_joined, fps = 5)
-image_write(img_animated, "mld_month_animation.gif")
+image_write(img_animated, "gif/mld_month_animation.gif")
 
 # Year
 frames <- list.files("frames/year", full.names = TRUE, pattern = "*.png")
 img_list <- lapply(frames, image_read)
 img_joined <- image_join(img_list)
-img_animated <- image_animate(fps = 5)
-image_write(img_animated, "mld_month_animation.gif")
+img_animated <- image_animate(img_joined, fps = 5)
+image_write(img_animated, "gif/mld_year_animation.gif")
