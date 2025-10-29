@@ -55,29 +55,4 @@ vals <- terra::extract(mld_mhi$mlotst_1, isl, touches = TRUE, bind=TRUE,
 }) 
 
 # TODO : fix the bind and test if mask and extract are equivalent
-# TODO: 
 
-
-library(magick)
-dir.create("frames", showWarnings = FALSE)
-
-for(i in 3:dim(mld_df)[2]){
-  mld_df$mld<-mld_df[,i]
-  
-  p<-ggplot() +
-  geom_raster(data = mld_df, aes(x = x, y = y, fill = mld)) +
-  coord_sf() +
-  scale_fill_viridis_c(name = "Mixed Layer Depth (m)", direction = -1, na.value = "grey80") +
-  theme_void()
-  
-  ggsave(sprintf("frames/frame_%03d.png", i), p, width = 8, height = 4, dpi = 150)
-  
-}
-
-
-# Read all frames and join into a GIF
-frames <- list.files("frames", full.names = TRUE, pattern = "*.png")
-img_list <- lapply(frames, image_read)
-img_joined <- image_join(img_list)
-img_animated <- image_animate(img_joined, fps = 10)
-image_write(img_animated, "mld_animation.gif")
