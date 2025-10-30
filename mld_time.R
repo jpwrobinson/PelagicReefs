@@ -8,15 +8,17 @@ source('00_oceanographic_load.R')
 
 # What is change in MLD over time? seasonality and long-term trend
 # 
-# m1<-gam(MLD ~ s(time_num, by = Island) + s(month, bs = 'cc', k = 12, by = Island), 
-#           correlation = corAR1(form = ~ time_num | Island),
-#           data=mld, family = Gamma)
-# 
-# save(m1, file = 'results/mld_time_mod.rds')
+mld$island<-factor(mld$island)
 
-# m2<-gam(anomaly ~ s(time_num, by = factor(Island)) + s(time_num, by = factor(region)),
-#           correlation = corAR1(form = ~ time_num | Island), data=mld)
-# 
+m1<-gam(MLD ~ s(time_num, by = island) + s(month, bs = 'cc', k = 12, by = island),
+          correlation = corAR1(form = ~ time_num | island),
+          data=mld, family = Gamma)
+
+save(m1, file = 'results/mld_time_mod.rds')
+
+# m2<-gam(anomaly ~ s(time_num, by = factor(island)) + s(time_num, by = factor(region)),
+#           correlation = corAR1(form = ~ time_num | island), data=mld)
+#
 # save(m2, file = 'results/mld_anomaly_time_mod.rds')
 
 

@@ -71,36 +71,36 @@ ggplot(ssh_vals_m, aes(month_num, ssh, group=island)) + geom_line() + facet_wrap
 
 
 # Read directly from NOAA via HTTPS [shell script using wget in godas folder]
-file.list <- list.files('data/godas', pattern = 'dbss_obml')
-file.list <- setdiff(file.list, 'dbss_obml.mon.ltm.1991-2020.nc')
-
-mld_vals_m<-numeric()
-for (i in 1:length(file.list)){
-  nc<-terra::rast(paste0('data/godas/', file.list[i]))
-  yr<-str_split_fixed(file.list[i], '\\.', 3)[,2]
-  
-  vals<-terra::extract(nc, latlon[,1:2]) %>% select(starts_with('dbss_obml')) %>% 
-    mutate(island = island$island, island_group=latlon$island_group) %>% 
-    pivot_longer(-c(island, island_group), names_to = 'month', values_to = 'mld') %>% 
-    mutate(month_num = as.numeric(str_replace_all(month, 'dbss_obml_', '')),
-           month = month.abb[month_num],
-           year = yr)
-  
-  mld_vals_m<-rbind(mld_vals_m, vals)
-}
-
-
-mld_vals_m_C<-mld_vals_m %>% group_by(island_group, month_num, month) %>% 
-  summarise(mld = mean(mld))
-
-mld_vals<-mld_vals_m %>% group_by(island) %>% summarise(mld = mean(mld))
-mld_vals_C<-mld_vals_m_C %>% group_by(island_group) %>% summarise(mld = mean(mld))
-
-
-## comparing with mld loaded in 00_oceanographic_load.R
-tt<-mld_vals_m %>% 
-  left_join(mld_month %>% mutate(mld2 = mld, month_num = month, island=Island) %>% select(island,month_num, mld2)) 
-
-ggplot(tt, aes(mld, mld2)) + geom_point() + facet_wrap(~island)
-tt %>% group_by(island) %>% summarise(cor(mld, mld2)) %>% data.frame
-with(tt %>% na.omit, cor(mld, mld2))
+# file.list <- list.files('data/godas', pattern = 'dbss_obml')
+# file.list <- setdiff(file.list, 'dbss_obml.mon.ltm.1991-2020.nc')
+# 
+# mld_vals_m<-numeric()
+# for (i in 1:length(file.list)){
+#   nc<-terra::rast(paste0('data/godas/', file.list[i]))
+#   yr<-str_split_fixed(file.list[i], '\\.', 3)[,2]
+#   
+#   vals<-terra::extract(nc, latlon[,1:2]) %>% select(starts_with('dbss_obml')) %>% 
+#     mutate(island = island$island, island_group=latlon$island_group) %>% 
+#     pivot_longer(-c(island, island_group), names_to = 'month', values_to = 'mld') %>% 
+#     mutate(month_num = as.numeric(str_replace_all(month, 'dbss_obml_', '')),
+#            month = month.abb[month_num],
+#            year = yr)
+#   
+#   mld_vals_m<-rbind(mld_vals_m, vals)
+# }
+# 
+# 
+# mld_vals_m_C<-mld_vals_m %>% group_by(island_group, month_num, month) %>% 
+#   summarise(mld = mean(mld))
+# 
+# mld_vals<-mld_vals_m %>% group_by(island) %>% summarise(mld = mean(mld))
+# mld_vals_C<-mld_vals_m_C %>% group_by(island_group) %>% summarise(mld = mean(mld))
+# 
+# 
+# ## comparing with mld loaded in 00_oceanographic_load.R
+# tt<-mld_vals_m %>% 
+#   left_join(mld_month %>% mutate(mld2 = mld, month_num = month, island=Island) %>% select(island,month_num, mld2)) 
+# 
+# ggplot(tt, aes(mld, mld2)) + geom_point() + facet_wrap(~island)
+# tt %>% group_by(island) %>% summarise(cor(mld, mld2)) %>% data.frame
+# with(tt %>% na.omit, cor(mld, mld2))

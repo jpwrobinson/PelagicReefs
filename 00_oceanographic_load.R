@@ -2,7 +2,6 @@ library(tidyverse)
 library(janitor)
 source('00_plot_theme.R')
 source('00_islands.R')
-source('read_godas.R')
 
 # We are investigating site-level predictors of planktivore abundance, biomass, composition and carbon flux.
 
@@ -29,26 +28,28 @@ precip_ann_C<-precip %>% group_by(island_group) %>% summarise(avg_monthly_mm = m
 
 
 # 2. mixed layer depth = shallower MLD helps upwelling to reach reefs, increases planktivores
-mld<-read.csv('data/crep_oceanographic/MLD_All_Islands-lrg_island_means.csv') %>% 
-  mutate(Date = as.Date(Date), year = year(Date), month = month(Date), 
+# mld<-read.csv('data/crep_oceanographic/MLD_All_Islands-lrg_island_means.csv') %>% 
+mld<-read.csv('data/glorys/mld_1993-2021_glory_island.csv') %>% 
+  mutate(Date = as.Date(time), year = year(Date), month = month(Date), 
+         MLD = mean, mean = NULL,
          time = as.numeric(Date), below_30m = ifelse(MLD > 30, 'deep', 'shallow'),
-         .before=Island, X=NULL) %>% 
-  mutate(island_group = ifelse(Island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', Island),
-         island_group = ifelse(Island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
-         island_group = ifelse(Island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
+         .before=island) %>% 
+  mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
+         island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
+         island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
 
 pdf(file = 'fig/crep_island_MLD.pdf', height=7, width=15)
 print(
-  ggplot(mld, aes(Date, MLD)) + geom_line() + facet_wrap(~Island)
+  ggplot(mld, aes(Date, MLD)) + geom_line() + facet_wrap(~island)
 )
 dev.off()
 
 # Island values - mean
-mld_avg<-mld %>% group_by(Island, year) %>% 
+mld_avg<-mld %>% group_by(island, year) %>% 
   summarise(mld = mean(MLD),
             mld_sd = sd(MLD),
             mld_months_deep = n_distinct(Date[MLD > 30])) %>% 
-  group_by(Island) %>% 
+  group_by(island) %>% 
   summarise(mld = mean(mld),
             mld_sd = mean(mld_sd),
             mld_months_deep = mean(mld_months_deep)) 
@@ -63,19 +64,19 @@ mld_avg_C<- mld %>% group_by(island_group, year) %>%
             mld_months_deep = mean(mld_months_deep)) 
 
 # MLD by month  
-mld_month<-mld %>% group_by(Island, month) %>% 
+mld_month<-mld %>% group_by(island, month) %>% 
   summarise(mld = mean(MLD),
             mld_sd = sd(MLD)) 
 
 # MLD anomaly
-mld<-mld %>% group_by(Island) %>% 
+mld<-mld %>% group_by(island) %>% 
   mutate(time_num = scale(time)[,1]) %>% 
-  group_by(Island, month) %>% 
+  group_by(island, month) %>% 
   mutate(month_mean = mean(MLD)) %>% 
   ungroup() %>% 
   mutate(anomaly = MLD - month_mean) %>% 
-  group_by(Island) %>% mutate(anomaly_s = scale(anomaly)[,1]) %>% 
-  left_join(island %>% rename(Island = island) %>% select(Island, region)) 
+  group_by(island) %>% mutate(anomaly_s = scale(anomaly)[,1]) %>% 
+  left_join(island %>% select(island, region)) 
 
 
 # MLD mean over past 3 months (inclusive of that month)
@@ -115,11 +116,13 @@ ggplot(tc_all, aes(TED_SUM, TED_MEAN, col=region)) + #geom_boxplot() +
   theme(legend.position = 'none')
 dev.off()
 
+## Sea Surface Height
+source('read_ssh_godas.R')
 
 # add precip, SSH, MLD and TC to island and island complex
 island<-island %>% 
   left_join(precip_ann) %>% 
-  left_join(mld_avg %>% rename(island = Island)) %>% 
+  left_join(mld_avg) %>% 
   left_join(ssh_vals) %>% 
   left_join(tc %>% mutate(island_code = ISLAND) %>% ungroup() %>% select(-ISLAND, -ted_sd)) %>% 
   left_join(island_cols)
@@ -150,7 +153,7 @@ island %>%
          mld_sd_m = mld_sd) %>% 
   pivot_longer(-c(island_code, island, region,REGION, geomorphic_type, latitude, longitude, 
                   region.col, island_group, n_grids, irradiance_einsteins_m2_d1_mean), names_to = 'cov', values_to = 'val') %>% 
-  ggplot(aes(island_code, val, fill=region.col), col='black') + geom_col() +
+  ggplot(aes(island_code, val, fill=region.col)) + geom_col() +
   facet_grid(~cov, scales='free') + 
   coord_flip() +
   scale_fill_identity() +
@@ -163,7 +166,7 @@ dev.off()
 
 pdf(file = 'fig/crep_island_correlations.pdf', height=7, width=15)
 print(
-  pairs2(island %>% select(ted_mean, ted_sum, mld, mld_sd,mld_months_deep,
+  pairs2(island %>% select(ted_mean, ted_sum, mld, mld_sd,mld_months_deep,ssh,
                          sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean,
                          irradiance_einsteins_m2_d1_mean, reef_area, latitude, longitude) %>%
          na.omit()))
