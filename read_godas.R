@@ -36,6 +36,7 @@ ssh_vals_m_C<-ssh_vals_m %>% group_by(island_group, month_num, month) %>%
 ssh_vals<-ssh_vals_m %>% group_by(island) %>% summarise(ssh = mean(ssh))
 ssh_vals_C<-ssh_vals_m_C %>% group_by(island_group) %>% summarise(ssh = mean(ssh))
 
+ggplot(ssh_vals_m, aes(month_num, ssh, group=island)) + geom_line() + facet_wrap(~island, scales='free')
 
 # Long-term monthly means for ocean mixed layer depth below sea surface (m) for 1991-2020
 # 0.333 degree latitude x 1.0 degree longitude global grid (418x360)

@@ -42,22 +42,23 @@ island_complex<-left_join(
 # 
 # # shapefiles from https://www.sciencebase.gov/catalog/item/63bdf25dd34e92aad3cda273
 # # Global Islands database from USGS
-# # Sayre, R., 2023, Global Islands: U.S. Geological Survey data release, https://doi.org/10.5066/P91ZCSGM. 
+# # Sayre, R., 2023, Global Islands: U.S. Geological Survey data release, https://doi.org/10.5066/P91ZCSGM.
 # # https://gkhub.earthobservations.org/records/5wg96-bvv84?package=7yjze-2g558
 # 
 # # islands_big <- st_read("spatial/usgs_islands/usgs_globalislandsv2_bigislands.shp")
 # # islands_small <- st_read("spatial/usgs_islands/usgs_globalislandsv2_smallislands.shp")
 # # islands_verysmall <- st_read("spatial/usgs_islands/usgs_globalislandsv2_verysmallislands.shp")
-# # 
+# #
 # # islands <- bind_rows(islands_big, islands_small, islands_verysmall)
 # # st_write(islands, "spatial/usgs_islands/merged/islands.shp")
 # 
-# islands<-st_read("spatial/usgs_islands/merged/islands.shp") 
+# islands<-st_read("spatial/usgs_islands/merged/islands.shp")
 # 
 # lister<-islands_dat$island[islands_dat$geomorphic_type=='Island']
 # 
 # # filter islands. doing this manually to catch all islands. atolls are missed and excluded.
-# islands2<-islands %>%  filter(Name_USGSO %in% lister) %>% mutate(island = Name_USGSO)
+# islands2<-islands %>%  filter(Name_USGSO %in% lister) %>% mutate(island = Name_USGSO) %>%
+#         filter(!island == 'Baker')
 # islands3<-islands %>%  filter(NAME_wcmcI %in% c('Howland', 'Alamagan', 'Swains', 'Tau', 'Laysan', 'Nihoa')) %>% mutate(island = NAME_wcmcI)
 # # Maug - multiple islands but drop those caught from Belize
 # maug<-islands %>% filter(str_detect(NAME_wcmcI, 'Maug')) %>% filter(!str_detect(NAME_wcmcI, 'Mauger')) %>% mutate(island = 'Maug')
@@ -68,12 +69,23 @@ island_complex<-left_join(
 # # Nuusilaelae Island is misnamed in island database. Confirmed with map plots that it is Ofu.
 # # islands %>% filter(str_detect(NAME_wcmcI, 'Manua'))
 # 
+# # checked Baker is correct lat-lon (out of 18 possible Bakers)
+# baker<-islands %>% filter(NAME_wcmcI == 'Baker' & OBJECTID == 799) %>% mutate(island='Baker')
+# 
 # # bind. n = 33
-# isl_dat<-bind_rows(islands2, islands3, maug, necker, ofu) %>% 
-#   left_join(islands_dat) 
+# isl_dat<-bind_rows(islands2, islands3, maug, necker, ofu, baker) %>%
+#   left_join(islands_dat)
 # 
 # # all atolls missing
 # islands_dat %>% filter(!island %in% isl_dat$island)
 # 
 # # save isl_dat
 # saveRDS(isl_dat, file = 'data/noaa_island_shp.rds')
+
+
+# get coords to check locations
+# rs<-islands %>% filter(str_detect(Name_USGSO, 'Baker'))
+# isl_ll <- st_transform(rs, crs = 4326)
+# centroids <- st_centroid(isl_ll$geometry)
+# coords <- st_coordinates(centroids)
+# rs$coords<-coords
