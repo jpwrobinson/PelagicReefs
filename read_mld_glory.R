@@ -74,30 +74,46 @@ ggplot(cropper_df) + geom_tile( aes(x=x, y = y, fill=mlotst_1), col='white') +
   coord_sf(crs = st_crs(cropper),xlim = c(min(focal$x) - res[1],max(focal$x) + res[1]), ylim = c(min(focal$y) - res[1],max(focal$y) + res[2])) +
   scale_fill_viridis_c(name = "Mixed Layer Depth (m)", direction = -1, na.value = "grey80")
 
-
 ## value output version that we can assign to each island
-vals <- terra::extract(mld_crep$mlotst_1, buf, touches = TRUE, bind=TRUE, 
-                       fun = function(x) {
-    c(mean = mean(x, na.rm = TRUE),
-    sd   = sd(x, na.rm = TRUE),
-    median = median(x, na.rm = TRUE),
-    n_cells = n_distinct(x[!is.na(x)]),
-    na_cells = n_distinct(x[is.na(x)]))
-}) %>% as.data.frame() %>% 
-  filter(!(island == 'Ofu & Olosega' & mlotst_1.3 == 4)) %>%  # drop one of Ofu/Olosega as these are captured as one island (take max cells)
-  distinct(island, REGION, mlotst_1,mlotst_1.1, mlotst_1.2, mlotst_1.3, mlotst_1.4)
+## this function loops through each layer, or takes the first layer
+mld_extract<-function(raster, buffer, test=TRUE){
+  
+  output<-numeric()
+  nvar<-names(raster)
+  if(test==TRUE){nvar = 1}
+  
+  for(i in 1:length(nvar)){
+    
+    raster$mld<-raster[[i]]
+    
+    vals <- terra::extract(raster$mld, buffer, touches = TRUE, bind=TRUE, 
+                           fun = function(x) {
+        c(mean = mean(x, na.rm = TRUE),
+        sd   = sd(x, na.rm = TRUE),
+        median = median(x, na.rm = TRUE),
+        n_cells = n_distinct(x[!is.na(x)]),
+        na_cells = n_distinct(x[is.na(x)]))
+    }) %>% as.data.frame() %>% 
+      filter(!(island == 'Ofu & Olosega' & mld.3 == 4)) %>%  # drop one of Ofu/Olosega as these are captured as one island (take max cells)
+      distinct(island, REGION, mld,mld.1, mld.2, mld.3, mld.4) %>% 
+      mutate(time = times[i])
+    
+    
+    output<-rbind(output, vals)  
+    print(paste0('Completed ', nvar[i]))
+  }
+  
+  names(output)[c(3:7)]<-c('mean', 'sd', 'median', 'n_cells', 'na_cells')
+  return(output)
+  }
 
-names(vals)[c(3:7)]<-c('mean', 'sd', 'median', 'n_cells', 'na_cells')
+vals<-mld_extract(raster=mld_crep, buffer=buf, test=FALSE)
+write.csv(vals, file = 'data/glorys/mld_1993-2021_glory_island.csv')
 
-vals %>%filter(!is.na(mean)) %>% 
-  as.data.frame() %>% 
-  write.csv('mld_glory_islands.csv', row.names=FALSE)
-
-vals %>% arrange(-n_cells)
-
-## Missing Lisianski. Ofu&Olosega only has 1 cell?
 ## Generate a PDF with each page = 1 island with MLD cells
 isls<-unique(vals$island)
+vals_test<-mld_extract(raster=mld_crep, buffer=buf, test = TRUE)
+vals_test %>% arrange(-n_cells)
 
 pdf(file = 'fig/mld_island_cells.pdf', height=5, width=9)
 
@@ -109,9 +125,9 @@ for(i in 1:length(isls)){
   
   p<-ggplot(focal) + geom_tile(aes(x=x, y = y, fill=mlotst_1)) +
     geom_sf(data =isl_mercator %>% filter(island==isls[i])) +
-    geom_sf(data = buf, color = "black", alpha=0.5) +
-    geom_sf(data = isl, color = "black") +
-    annotate('text', -Inf, Inf, label=paste0('N cells: ', vals$n_cells[vals$island==isls[i]]), vjust=0, hjust=1) +
+    geom_sf(data = buf %>% filter(island==isls[i]), color = "black", alpha=0.5) +
+    geom_sf(data = isl %>% filter(island==isls[i]), color = "black") +
+    annotate('text', -Inf, Inf, label=paste0('N cells: ', vals_test$n_cells[vals_test$island==isls[i]]), vjust=0, hjust=1) +
     labs(subtitle = isls[i]) +
     scale_fill_viridis_c(name = "Mixed Layer Depth (m)", direction = -1, na.value = "grey80") 
 
@@ -119,3 +135,22 @@ for(i in 1:length(isls)){
 }  
 
 dev.off()
+
+## Compare MLD with Dani's version
+mld1<-read.csv('data/crep_oceanographic/MLD_All_Islands-lrg_island_means.csv') %>% 
+  filter(Island %in% isls) %>% 
+  clean_names() %>% 
+  mutate(date = as.Date(date), year = year(date), month = month(date), 
+         time = as.numeric(date))
+
+mld2<-read.csv('data/glorys/mld_1993-2021_glory_island.csv') %>% 
+  mutate(mld = mean, date = as.Date(time), year = year(date), month = month(date), 
+                time = as.numeric(date))
+
+mld2<-mld2 %>% left_join(mld1 %>% mutate(mld_org = mld) %>% select(island, date, mld_org))
+
+pdf(file = 'mld_pixel_compare.pdf', height = 7 , width = 11)
+ggplot(mld2, aes(mld_org, mld)) + geom_point() + facet_wrap(~island, scales='free')
+dev.off()
+
+mld2 %>% group_by(island) %>% summarise(cor(mld_org, mld)) %>% data.frame
