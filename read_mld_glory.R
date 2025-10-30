@@ -3,7 +3,9 @@ library(sf)
 # get reef lat lon and island shapes
 source('00_islands.R')
 isl<-readRDS('data/noaa_island_shp.rds') # shapefiles
-latlon<-data.frame(lon = island$longitude, lat = island$latitude, island_group=island$island_group)
+latlon<-data.frame(lon = island$longitude, lat = island$latitude, 
+                   REGION = island$region,
+                   island_group=island$island_group, island=island$island)
 # align projection systems - longitude wrap
 latlon$lon<-ifelse(latlon$lon < 0, 360+latlon$lon, latlon$lon)
 
@@ -40,7 +42,7 @@ ggplot(data=latlon) +
 
 # identify the cells that intersect each island polygon
 # project for buffer and metres
-mld_crep <- terra::project(mld_crep, "EPSG:3857")      # Project web Mercator (meters)
+mld_crep <- terra::project(mld_crep, "EPSG:3857")      # Project to web Mercator (meters)
 isl_mercator <- isl %>% st_transform(terra::crs(mld_crep))
 
 # set buffer around islands
@@ -76,16 +78,22 @@ ggplot(cropper_df) + geom_tile( aes(x=x, y = y, fill=mlotst_1), col='white') +
 
 ## value output version that we can assign to each island
 ## this function loops through each layer, or takes the first layer
-mld_extract<-function(raster, buffer, test=TRUE){
+mld_extract<-function(raster, buffer, latlon, test=TRUE){
   
   output<-numeric()
   nvar<-names(raster)
+  
+  # align coords for atoll extract (point-based)
+  raster84 <- terra::project(raster, "EPSG:4326")      # Project to WGS 84
+  ll<-cbind(lon = latlon$lon180, lat = latlon$lat)
+  
   if(test==TRUE){nvar = 1}
   
   for(i in 1:length(nvar)){
     
     raster$mld<-raster[[i]]
     
+    # extract MLD from island buffers
     vals <- terra::extract(raster$mld, buffer, touches = TRUE, bind=TRUE, 
                            fun = function(x) {
         c(mean = mean(x, na.rm = TRUE),
@@ -98,6 +106,17 @@ mld_extract<-function(raster, buffer, test=TRUE){
       distinct(island, REGION, mld,mld.1, mld.2, mld.3, mld.4) %>% 
       mutate(time = times[i])
     
+    # now get atolls
+    if(!is.null(latlon)){
+      
+      raster84$mld<-raster84[[i]]
+      vals2 <- terra::extract(raster84$mld, ll) %>% 
+        as.data.frame() %>% 
+        mutate(island = latlon$island, REGION = latlon$REGION, mld.1=NA, mld.2=NA, mld.3=NA, mld.4=NA, time = times[i])
+    
+      vals<-rbind(vals, vals2 %>% select(names(vals)))
+    }
+    
     
     output<-rbind(output, vals)  
     print(paste0('Completed ', nvar[i]))
@@ -107,12 +126,17 @@ mld_extract<-function(raster, buffer, test=TRUE){
   return(output)
   }
 
-vals<-mld_extract(raster=mld_crep, buffer=buf, test=FALSE)
+atolls<-latlon %>% filter(!island %in% isl$island)
+# unwrap longitude
+atolls$lon180<-with(atolls, ifelse(lon > 180, lon - 360, lon))
+
+
+vals<-mld_extract(raster=mld_crep, buffer=buf, latlon=atolls, test=FALSE)
 write.csv(vals, file = 'data/glorys/mld_1993-2021_glory_island.csv')
 
 ## Generate a PDF with each page = 1 island with MLD cells
 isls<-unique(vals$island)
-vals_test<-mld_extract(raster=mld_crep, buffer=buf, test = TRUE)
+vals_test<-mld_extract(raster=mld_crep, buffer=buf, latlon = atolls, test = TRUE)
 vals_test %>% arrange(-n_cells)
 
 pdf(file = 'fig/mld_island_cells.pdf', height=5, width=9)
@@ -138,7 +162,6 @@ dev.off()
 
 ## Compare MLD with Dani's version
 mld1<-read.csv('data/crep_oceanographic/MLD_All_Islands-lrg_island_means.csv') %>% 
-  filter(Island %in% isls) %>% 
   clean_names() %>% 
   mutate(date = as.Date(date), year = year(date), month = month(date), 
          time = as.numeric(date))
@@ -149,8 +172,8 @@ mld2<-read.csv('data/glorys/mld_1993-2021_glory_island.csv') %>%
 
 mld2<-mld2 %>% left_join(mld1 %>% mutate(mld_org = mld) %>% select(island, date, mld_org))
 
-pdf(file = 'mld_pixel_compare.pdf', height = 7 , width = 11)
-ggplot(mld2, aes(mld_org, mld)) + geom_point() + facet_wrap(~island, scales='free')
+pdf(file = 'fig/mld_pixel_compare.pdf', height = 7 , width = 11)
+ggplot(mld2 %>% filter(!is.na(mld_org)), aes(mld_org, mld)) + geom_point(size=.5) + facet_wrap(~island, scales='free')
 dev.off()
 
-mld2 %>% group_by(island) %>% summarise(cor(mld_org, mld)) %>% data.frame
+mld2 %>% filter(!is.na(mld_org)) %>%  group_by(island) %>% summarise(cor(mld_org, mld)) %>% data.frame
