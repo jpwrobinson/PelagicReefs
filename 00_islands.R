@@ -35,6 +35,12 @@ island_complex<-left_join(
     summarise(across(c(sst_mean:irradiance_einsteins_m2_d1_mean), ~ mean(.x))),
   island_C %>% select(-location_name, -location_code))
 
+## Nihoa doesn't have bathymetry but does have reef and island area in a separate table
+island_complex$reef_area[island_complex$island_group=='Nihoa']<-island$reef_area[island$island=='Nihoa']
+island_complex$geomorphic_type[island_complex$island_group=='Nihoa']<-island$geomorphic_type[island$island=='Nihoa']
+island_complex$lat[island_complex$island_group=='Nihoa']<-island$latitude[island$island=='Nihoa']
+island_complex$lon[island_complex$island_group=='Nihoa']<-island$longitude[island$island=='Nihoa']
+island_complex$population_status[island_complex$island_group=='Nihoa']<-'U'
 
 
 ## Island shapefiles
