@@ -30,6 +30,7 @@ precip_ann_C<-precip %>% group_by(island_group) %>% summarise(avg_monthly_mm = m
 # 2. mixed layer depth = shallower MLD helps upwelling to reach reefs, increases planktivores
 # mld<-read.csv('data/crep_oceanographic/MLD_All_Islands-lrg_island_means.csv') %>% 
 mld<-read.csv('data/glorys/mld_1993-2021_glory_island.csv') %>% 
+  filter(island != 'Maro Reef') %>% 
   mutate(Date = as.Date(time), year = year(Date), month = month(Date), 
          MLD = mean, mean = NULL,
          time = as.numeric(Date), below_30m = ifelse(MLD > 30, 'deep', 'shallow'),
@@ -68,7 +69,7 @@ mld_month<-mld %>% group_by(island, month) %>%
   summarise(mld = mean(MLD),
             mld_sd = sd(MLD)) 
 
-# MLD anomaly
+# MLD anomaly: MLD difference from monthly mean at each island
 mld<-mld %>% group_by(island) %>% 
   mutate(time_num = scale(time)[,1]) %>% 
   group_by(island, month) %>% 
