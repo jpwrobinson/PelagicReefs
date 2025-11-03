@@ -1,5 +1,14 @@
 source('00_plot_theme.R')
 
+options(mc.cores = 4)
+rstan::rstan_options(auto_write = TRUE)
+Sys.setenv(STAN_NUM_THREADS = "4")
+stan_model_args <- list(
+  cpp_options = list(STAN_THREADS = TRUE)
+)
+options(brms.backend = "cmdstanr")
+cmdstanr::set_cmdstan_path()
+
 # Is the strength of upwelling (IME) linked to MLD and tidal conversion?
 
 # exp. vars = MLD + tidal conversion
@@ -127,10 +136,14 @@ m2_linear<-brm(bf(Chl_increase_nearby ~
                  chl_a_mg_m3_mean + mld + 
                  mi(ted_mean) + 
                  #ssh + 
-                 (1 | island / REGION),
+                 (1 + mld | island / REGION),
                  family = lognormal()
                  ) +
                  bf(ted_mean | mi() ~ reef_area_km2),
+               prior = c(
+                 prior(normal(0, 1), class = "b", resp = 'Chlincreasenearby'),
+                 prior(exponential(1), class = "sd", resp = 'Chlincreasenearby')
+               ),
                data = dat_scaled_month,
                # backend = "cmdstanr",
                chains = 3, iter = 2000, warmup = 500, cores = 4)
@@ -140,23 +153,34 @@ m2_smooth<-brm(bf(Chl_increase_nearby ~
           # s(bathymetric_slope, k=3) + population_status +
          # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
            # for mld by island, use factor-smooth that pools towards global smooth
-         s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(mld, by =island, k=3, bs = 'cs') + #s(ted_mean, k=3) +
+         s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(mld, by = island, bs = 'cs', k=3) + #s(ted_mean, k=3) +
           mi(ted_mean) + 
          (1 | island / REGION),
          family = lognormal()
          ) +
        bf(ted_mean | mi() ~ reef_area_km2),
+       prior = c(
+         prior(normal(0, 1), class = "b", resp = 'Chlincreasenearby'),
+         prior(exponential(1), class = "sd", resp = 'Chlincreasenearby')
+       ),
        data = dat_scaled_month,
-       chains = 3, iter = 2000, warmup = 500, cores = 4)
+       chains = 3, iter = 2000, warmup = 500, cores = 4, backend = "cmdstanr", threads = threading(4))
 
 # use month smoother instead of MLD
-m2_linear_month<-brm(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc', k=12) + 
+m2_linear_month<-brm(bf(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc', k=12) + 
           geomorphic_type * reef_area_km2 + island_area_km2 + avg_monthly_mm +
           # bathymetric_slope + population_status +
           # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
-          chl_a_mg_m3_mean + ted_mean + mld +
-          (1 | island / REGION),
-        family = lognormal(),
+          chl_a_mg_m3_mean + mld +
+            mi(ted_mean) + 
+          (1 + mld | island / REGION),
+          family = lognormal()
+          ) +
+            bf(ted_mean | mi() ~ reef_area_km2),
+          prior = c(
+            prior(normal(0, 1), class = "b", resp = 'Chlincreasenearby'),
+            prior(exponential(1), class = "sd", resp = 'Chlincreasenearby')
+          ),
         data = dat_scaled_month,
         chains = 3, iter = 2000, warmup = 500, cores = 4)
 
@@ -174,9 +198,9 @@ m2_smooth_month<-brm(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc', 
 save(dat_month, dat_scaled_month, m2_linear, m2_smooth, m2_linear_month,m2_smooth_month, file = 'results/mod_ime_month_crep_attributes.rds')
 # load(file = 'results/mod_ime_month_crep_attributes.rds')
 
-checker<-m2_smooth
+checker<-m2_linear
 summary(checker)
-pp_check(checker)
+pp_check(checker, resp = 'Chlincreasenearby')
 conditional_effects(checker)
 bayes_R2(checker)
 
@@ -187,10 +211,13 @@ acf(res_mean, main = "ACF of model residuals")
 
 # compare smooth vs linear
 loo_linear <- loo(m2_linear, newdata = dat_scaled_month %>% na.omit())
-loo_smooth <- loo(m2_smooth)
-loo_month_full <- loo(m2_linear_month)
+loo_smooth <- loo(m2_smooth, newdata = dat_scaled_month %>% na.omit())
+loo_month_full <- loo(m2_linear_month, newdata = dat_scaled_month %>% na.omit())
 loo_mld_smoo <- loo(m2_smooth_month)
-loo_compare(loo_linear, loo_smooth, loo_month_full, loo_mld_smoo)
+loo_compare(loo_linear, loo_smooth, loo_month_full)
+
+## Linear model is marginally preferred to smooths (after including mld ~ island as random). 
+## Month models work better but are captuing an unknown process.
 
 
 # Covariate relative effects - doesn't seem to work with smooths
@@ -199,22 +226,23 @@ loo_compare(loo_linear, loo_smooth, loo_month_full, loo_mld_smoo)
 
 # For linear model, extract posterior draws
 effects2 <- m2_linear %>%
-  gather_draws(b_geomorphic_typeIsland, b_reef_area_km2, b_island_area_km2,
-               # b_bathymetric_slope, b_population_statusU,
-               b_chl_a_mg_m3_mean, b_ted_mean, b_mld) %>%  
-  mutate(.variable = str_replace_all(.variable, 'b_', ''),
+  gather_draws(b_Chlincreasenearby_geomorphic_typeIsland, b_Chlincreasenearby_reef_area_km2, b_Chlincreasenearby_island_area_km2,
+               # b_Chlincreasenearby_bathymetric_slope, b_Chlincreasenearby_population_statusU,
+               b_Chlincreasenearby_chl_a_mg_m3_mean, bsp_Chlincreasenearby_mited_mean, b_Chlincreasenearby_mld) %>%  
+  mutate(.variable = str_replace_all(.variable, 'b_Chlincreasenearby_', ''),
+         .variable = str_replace_all(.variable, 'bsp_Chlincreasenearby_mi', ''),
          var_fac = factor(.variable, 
                           levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2',
                                          'bathymetric_slope', 'population_statusU',
                                          'ted_mean', 'mld','chl_a_mg_m3_mean'))))
 
 effects3 <- m2_smooth %>%
-  gather_draws( bs_sisland_area_km2_1,
-               # bs_sbathymetric_slope_1, b_population_statusU,
-               bs_savg_monthly_mm_1,
-               bs_schl_a_mg_m3_mean_1, bs_sted_mean_1, bs_smld_1) %>%  
-  mutate(.variable = str_replace_all(.variable, 'b_', ''),
-         .variable = str_replace_all(.variable, 'bs_s', ''),
+  gather_draws( bs_Chlincreasenearby_sisland_area_km2_1,
+               # bs_Chlincreasenearby_sbathymetric_slope_1, b_population_statusU,
+               bs_Chlincreasenearby_savg_monthly_mm_1,
+               bs_Chlincreasenearby_schl_a_mg_m3_mean_1, bsp_Chlincreasenearby_mited_mean, bs_Chlincreasenearby_smld_1) %>%  
+  mutate(.variable = str_replace_all(.variable, 'bs_Chlincreasenearby_s', ''),
+         .variable = str_replace_all(.variable, 'bsp_Chlincreasenearby_mi', ''),
          .variable = str_replace_all(.variable, '_1', ''),
          var_fac = factor(.variable, 
                           levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2',
@@ -223,6 +251,11 @@ effects3 <- m2_smooth %>%
 
 # Plot effect sizes
 pdf(file = 'fig/ime_db/ime_month_crep_model.pdf', height=5, width=6)
+ggplot(effects2, aes(x = .value, y = var_fac)) +
+  stat_halfeye(.width = c(0.5, 0.95)) +  
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
+  labs(x = "Effect size", y = "") 
+
 ggplot(effects3, aes(x = .value, y = var_fac)) +
   stat_halfeye(.width = c(0.5, 0.95)) +  
   geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
@@ -255,7 +288,7 @@ var_exp<-data.frame(
 
 var_exp$var<-c('Reef area\n(by geomorphic)', 'Island area', 'Precipitation', 
                # 'Bathymetric slope', 
-               'chl-a mean', 'Mixed layer depth', 'Mixed layer depth\n(by island)', 'Tidal energy')
+               'chl-a mean', 'Mixed layer depth', 'Mixed layer depth\n(by island)')#, 'Tidal energy')
 
 
 ggplot(var_exp, aes(fct_reorder(var, -rel_var), rel_var)) + geom_col() + scale_y_continuous(labels=label_percent())

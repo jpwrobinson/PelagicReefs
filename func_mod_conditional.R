@@ -26,11 +26,13 @@ mod_post<-function(mod, dat_raw, var){
 mod_post_island<-function(mod, dat_raw, var){
   
   # extract island-level covariates
-  nd<-mod$data %>% select(population_status:chl_a_mg_m3_mean, ted_mean, -avg_monthly_mm) %>% distinct() 
+  nd<-mod$data %>% select(geomorphic_type:chl_a_mg_m3_mean, ted_mean, -avg_monthly_mm, island, REGION) %>% distinct() 
 
   # add the mean monthly mm for each island
   avg_monthly_mm<-mod$data %>% group_by(island) %>% summarise(avg_monthly_mm = mean(avg_monthly_mm))
   nd<-nd %>% left_join(avg_monthly_mm)
+  
+  nd$population_status<-'U'
   
   N<-length(unique(nd$island))
 
