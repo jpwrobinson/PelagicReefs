@@ -86,12 +86,25 @@ gC<-ggplot(dd, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100)) 
   facet_grid(~var, scales='free_x', switch = 'x') +
   theme(strip.placement = 'bottom', strip.background = element_blank())
 
-# predict covariate by island
-mld_pred<-mod_post_island(mod = m2_linear, dat_raw = dat_month, var = 'mld')
 
-mld_pred <- mld_pred %>% group_by(island) %>% 
+
+pdf(file = 'fig/Figure1.pdf', height=5, width=9)
+rhs<-plot_grid(gB, gC, nrow=2, labels=c('b', 'c'))
+plot_grid(gA, rhs, nrow=1, labels='a')
+dev.off()
+
+r2(m2_linear, by_component = TRUE) # 52% fixed effects. 63% full model.
+
+
+
+#### Supplementary figs from IME model
+
+# predict mld by island
+mld_pred<-mod_post_island(mod = m2_linear_month, dat_raw = dat_month, var = 'mld') %>% group_by(island) %>% 
   mutate(y1 = estimate__[which.min(mld)], y2 = estimate__[which.max(mld)], diff = y2 - y1, 
          col = ifelse(diff < 0, 'red3', 'blue4'))
+
+month_pred<-mod_post_island(mod = m2_linear_month, dat_raw = dat_month, var = 'month_num') 
 
 pdf(file = 'fig/ime_mld_by_island.pdf', height = 7, width=12)
 ggplot(mld_pred, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100, fill=col)) + 
@@ -105,12 +118,15 @@ ggplot(mld_pred, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100,
   theme(strip.placement = 'bottom', strip.background = element_blank())
 dev.off()
 
-
-pdf(file = 'fig/Figure1.pdf', height=5, width=9)
-rhs<-plot_grid(gB, gC, nrow=2, labels=c('b', 'c'))
-plot_grid(gA, rhs, nrow=1, labels='a')
+pdf(file = 'fig/ime_month_by_island.pdf', height = 7, width=12)
+ggplot(month_pred, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100)) + 
+  geom_ribbon(alpha=0.1) +
+  geom_line() + 
+  labs(y = 'chl-a enhancement, %', x = 'month') +
+  scale_y_continuous(labels = label_percent()) +
+  scale_x_continuous(limits=c(1, 12)) +
+  scale_fill_identity() +
+  facet_wrap(.~island, scales='free') +
+  theme(strip.placement = 'bottom', strip.background = element_blank())
 dev.off()
-
-r2(m2_linear, by_component = TRUE) # 52% fixed effects. 63% full model.
-
 

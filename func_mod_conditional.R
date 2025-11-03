@@ -26,7 +26,8 @@ mod_post<-function(mod, dat_raw, var){
 mod_post_island<-function(mod, dat_raw, var){
   
   # extract island-level covariates
-  nd<-mod$data %>% select(geomorphic_type:chl_a_mg_m3_mean, ted_mean, -avg_monthly_mm, island, REGION) %>% distinct() 
+  nd<-mod$data %>% select(geomorphic_type:chl_a_mg_m3_mean, ted_mean, -avg_monthly_mm, island, REGION) %>% distinct() %>% 
+    mutate(ted_mean = ifelse(is.na(ted_mean), 0, ted_mean))
 
   # add the mean monthly mm for each island
   avg_monthly_mm<-mod$data %>% group_by(island) %>% summarise(avg_monthly_mm = mean(avg_monthly_mm))
@@ -50,13 +51,17 @@ mod_post_island<-function(mod, dat_raw, var){
   condo$upper50<-c2$upper__
   
   # clip each island to its observed MLD range
-  obs_range<-dat_raw %>% group_by(island) %>% summarise(min = min(mld), max = max(mld))
+  if(var != 'month_num'){
+  obs_range<-dat_raw %>% group_by(island) %>% summarise(min = min(!!sym(var)), max = max(!!sym(var)))
   
   condo <- condo %>%
     left_join(obs_range, by = "island") %>%
     filter(raw >= min, raw <= max) %>%
     select(-min, -max)
+  }
   
   return(condo)
 }
   
+
+
