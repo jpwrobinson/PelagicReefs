@@ -116,30 +116,36 @@ dev.off()
 hist(dat$mean_chl_percent)
 hist(dat_month$Chl_increase_nearby)
 
-dat_scaled_month %>% filter(!is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% dim
-dat_scaled_month %>% filter(!is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% distinct(island)
-# N = 352
-# N islands = 32
+dat_scaled_month %>% filter(!is.na(Chl_increase_nearby)) %>% dim # N = 388, 35 islands
+dat_scaled_month %>% filter(!is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% distinct(island) # N = 352, 32 islands
 
 # basic model fitting Chl increase (%) by island and biophysical covariates
-m2_linear<-brm(Chl_increase_nearby ~ 
+m2_linear<-brm(bf(Chl_increase_nearby ~ 
                  geomorphic_type * reef_area_km2 + island_area_km2 + avg_monthly_mm +
                  # bathymetric_slope + population_status + 
                  # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean + #rm for collinear reasons
-                 chl_a_mg_m3_mean + mld + ted_mean + #ssh + 
+                 chl_a_mg_m3_mean + mld + 
+                 mi(ted_mean) + 
+                 #ssh + 
                  (1 | island / REGION),
-               # family = lognormal(),
+                 family = lognormal()
+                 ) +
+                 bf(ted_mean | mi() ~ reef_area_km2),
                data = dat_scaled_month,
+               # backend = "cmdstanr",
                chains = 3, iter = 2000, warmup = 500, cores = 4)
 
-m2_smooth<-brm(Chl_increase_nearby ~ 
+m2_smooth<-brm(bf(Chl_increase_nearby ~ 
           s(reef_area_km2, by = geomorphic_type, k=3) + s(island_area_km2, k=3) + s(avg_monthly_mm, k=3) +
           # s(bathymetric_slope, k=3) + population_status +
          # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
            # for mld by island, use factor-smooth that pools towards global smooth
-         s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(mld, by =island, k=3, bs = 'cs') + s(ted_mean, k=3) +
+         s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(mld, by =island, k=3, bs = 'cs') + #s(ted_mean, k=3) +
+          mi(ted_mean) + 
          (1 | island / REGION),
-       family = lognormal(),
+         family = lognormal()
+         ) +
+       bf(ted_mean | mi() ~ reef_area_km2),
        data = dat_scaled_month,
        chains = 3, iter = 2000, warmup = 500, cores = 4)
 
@@ -180,7 +186,7 @@ res_mean <- rowMeans(res)
 acf(res_mean, main = "ACF of model residuals")
 
 # compare smooth vs linear
-loo_linear <- loo(m2_linear)
+loo_linear <- loo(m2_linear, newdata = dat_scaled_month %>% na.omit())
 loo_smooth <- loo(m2_smooth)
 loo_month_full <- loo(m2_linear_month)
 loo_mld_smoo <- loo(m2_smooth_month)

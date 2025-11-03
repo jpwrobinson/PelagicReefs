@@ -84,41 +84,9 @@ mld<-mld %>% group_by(island) %>%
 mld_recent<-mld %>% 
   mutate(mean_mld_3months = zoo::rollmean(MLD, k = 3, align = "right", fill = NA))
 
-# tidal conversion = stronger means more internal wave action + mixing, increases planktivores
-tc_all<-read.csv('data/crep_oceanographic/TEDestimates_CREPislands.csv') %>% 
-  left_join(island %>% mutate(ISLAND = island_code, island = island) %>% select(ISLAND, island, region)) %>% 
-  mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
-         island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
-         island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
-
-tc<-tc_all %>% 
-  group_by(ISLAND, region) %>% 
-  summarise(ted_mean = mean(TED_MEAN), ted_sum = sum(TED_SUM), ted_sd = sd(TED_SUM), n_grids = n_distinct(GRID_ID))
-
-tc_C<-tc_all %>% 
-  group_by(island_group, region) %>% 
-  summarise(ted_mean = mean(TED_MEAN), ted_sum = sum(TED_SUM), ted_sd = sd(TED_SUM), n_grids = n_distinct(GRID_ID))
-
-pdf(file = 'fig/crep_island_TC.pdf', height=7, width=15)
-ggplot(tc_all, aes(fct_reorder(ISLAND, TED_SUM), TED_SUM, col=region)) + #geom_boxplot() +
-  ggdist::stat_halfeye() +
-  labs(x = '', y = 'Tidal energy (sum)', col='') + 
-  theme(legend.position.inside = c(0.5, 0.7))
-
-ggplot(tc_all, aes(TED_SUM, fill=region)) + #geom_boxplot() +
-  geom_density() + facet_grid(ISLAND ~ region, scales='free') +
-  labs(x = 'Tidal energy (sum)', col='') + 
-  theme(legend.position = 'none')
-
-ggplot(tc_all, aes(TED_SUM, TED_MEAN, col=region)) + #geom_boxplot() +
-  geom_point() + 
-  facet_grid( ~ region, scales='free') +
-  labs(x = 'Tidal energy (sum)', y='Tidal energy (mean)') + 
-  theme(legend.position = 'none')
-dev.off()
-
 ## Sea Surface Height
 source('read_ssh_godas.R')
+source('read_tidal_energy.R')
 
 # add precip, SSH, MLD and TC to island and island complex
 island<-island %>% 
