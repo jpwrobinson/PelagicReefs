@@ -108,8 +108,24 @@ proc_reg <- crep_full |>
   mutate(ISLAND = factor(ISLAND,unique(ISLAND))) %>% 
   left_join(island_cols)
 
+# SITE SUM BIOMASS
+proc_biom <- crep_full |>
+  group_by(OBS_YEAR, REGION,ISLAND,SECTOR,REEF_ZONE,SITEVISITID,TROPHIC_BROAD) |>
+  summarise(biomass_g_m2 = sum(biomass_g_m2), .groups = 'drop') |>
+  pivot_wider(names_from  = TROPHIC_BROAD, values_from = biomass_g_m2) |>
+  mutate(
+    across(PISCIVORE:SECONDARY,\(x)ifelse(is.na(x),0,x)),
+    REGION = factor(REGION,c('MARIAN','SAMOA','PRIAs','NWHI','MHI'))) |>
+  rowwise() |>
+  mutate(PLANK_rel = PLANKTIVORE / sum(c_across(PISCIVORE:SECONDARY))) |>
+  ungroup() |>
+  arrange(REGION) |>
+  mutate(ISLAND = factor(ISLAND,unique(ISLAND))) %>% 
+  left_join(island_cols)
+
 write.csv(proc, file = 'data/metabolic/crep_island_metabolic_rates.csv', row.names=FALSE)
 write.csv(proc_reg, file = 'data/metabolic/crep_site_metabolic_rates.csv', row.names=FALSE)
+write.csv(proc_biom, file = 'data/metabolic/crep_site_biomass.csv', row.names=FALSE)
   
 ## Temporal patterns in planktivore community metabolic rates
 abs_comm_met <- 

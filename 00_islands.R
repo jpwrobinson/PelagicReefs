@@ -6,6 +6,13 @@ island<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.x
   mutate(island = recode(island, 'French Frigate Shoals' = 'French Frigate',
                          'Pearl & Hermes Reef' = 'Pearl & Hermes'))
 
+region_df<-island %>% distinct(island, region) %>% 
+  mutate(region2 = ifelse(str_detect(region, 'Haw*'), 'Hawaiian islands', region),
+         region2 = ifelse(str_detect(region, 'Mari*'), 'Mariana islands', region2),
+         region2 = ifelse(str_detect(island, 'John*'), 'Hawaiian islands', region2),
+         region2 = ifelse(str_detect(island, 'Baker|Howland|Swains'), 'Phoenix', region2),
+         region2 = ifelse(str_detect(island, 'Palmyra|Jarvis|Kingman'), 'Line islands', region2))
+
 island2<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.xlsx', sheet=3) %>% 
   clean_names() %>% 
   mutate(island = island_name, 

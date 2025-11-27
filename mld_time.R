@@ -4,7 +4,13 @@ library(gratia)
 
 # LOAD 
 source('00_oceanographic_load.R')
-# source('00_crep_load.R')
+
+pdf(file = 'fig/mld_obs_trend.pdf', height=9, width=20)
+ggplot(mld, aes(Date, MLD, col=REGION)) + geom_line() +
+  facet_wrap(~ island, scales='free') +
+  labs(x = '', y = 'Mixed layer depth, m') +
+  guides(colour='none')
+dev.off()
 
 # What is change in MLD over time? seasonality and long-term trend
 # 

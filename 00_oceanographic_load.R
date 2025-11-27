@@ -80,9 +80,13 @@ mld<-mld %>% group_by(island) %>%
   left_join(island %>% select(island, region)) 
 
 
-# MLD mean over past 3 months (inclusive of that month)
+# Dynamic indicators of MLD patterns:
+# 1. MLD mean over past 3 months (inclusive of that month)
+# 2. number of months with deep MLD over past 2 years
 mld_recent<-mld %>% 
-  mutate(mean_mld_3months = zoo::rollmean(MLD, k = 3, align = "right", fill = NA))
+  mutate(mld_deep = ifelse(MLD > 30, TRUE, FALSE),
+         mean_mld_3months = zoo::rollmean(MLD, k = 3, align = "right", fill = NA),
+         deep_mld_24months = zoo::rollsum(mld_deep, k = 24, align = "right", fill = NA))
 
 ## Sea Surface Height
 source('read_ssh_godas.R')
