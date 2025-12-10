@@ -12,15 +12,17 @@ priors <- c(
 # 1. Planktivore
 # model N = 2214
 m2_plank<-brm(planktivore_metab ~ 
-                    geomorphic_type + reef_area_km2 + island_area_km2 + avg_monthly_mm +
-                    site_bathy_400m + hard_coral + depth + population_status +
+                    geomorphic_type + #reef_area_km2 + 
+                    island_area_km2 + avg_monthly_mm +
+                    site_bathy_400m + hard_coral + depth + #population_status +
                     # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean + #rm for collinear reasons
-                    chl_a_mg_m3_mean + mld_survey + mld + #mld_deep + mld_recent +
+                    # chl_a_mg_m3_mean + 
+                    mld_amp*population_status + 
                     # mi(ted_mean) + 
                     #ssh + 
                     # (1 + mld | island / REGION),
                     (1|year) +
-                    (1|region2 / island),
+                    (1 | region2 / island),
                   family = lognormal(),
         data = plank_scaled,
         prior = priors,
@@ -33,12 +35,13 @@ m3_plank<-brm(planktivore_biom ~
                 geomorphic_type + reef_area_km2 + island_area_km2 + avg_monthly_mm +
                 site_bathy_400m + hard_coral + depth + population_status +
                 # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean + #rm for collinear reasons
-                chl_a_mg_m3_mean + mld_survey + mld + #mld_deep + mld_recent +
+                chl_a_mg_m3_mean + mld + #mld_deep + mld_recent +
                 # mi(ted_mean) + 
                 #ssh + 
                 # (1 + mld | island / REGION),
+                region2 +
                 (1|year) +
-                (1|region / island),
+                (1|island),
               family = lognormal(),
               data = plank_scaled,
               # backend = "cmdstanr",
@@ -51,6 +54,8 @@ checker<-m2_plank
 summary(checker)
 pp_check(checker, resp = 'planktivore_metab')
 conditional_effects(checker)
+# ranef(checker)
+random_effects(checker)
 bayes_R2(checker) 
 # metabolic = 54.6%
 # biomass = 15.3%
@@ -66,7 +71,7 @@ effects <- m2_plank %>%
                           levels = rev(c('Intercept', 'geomorphic_typeIsland','reef_area_km2','island_area_km2',
                                          'avg_monthly_mm', 'population_statusU',
                                          'site_bathy_400m', 'hard_coral', 'depth',
-                                         'mld_survey','mld_recent', 'mld_deep', 'mld','chl_a_mg_m3_mean')))) %>% 
+                                        'mld_amp','chl_a_mg_m3_mean')))) %>% 
   filter(!is.na(var_fac))
 
 # Plot effect sizes

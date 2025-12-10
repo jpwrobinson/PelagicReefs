@@ -1,7 +1,7 @@
 source('00_plot_theme.R')
 
 # Heenan et al. 2017
-crep<-read.csv('data/noaa-crep/NOAA_PACIFIC_RAMP_FISH_SPC_2010_2017_SCI_DATA_.csv') 
+# crep<-read.csv('data/noaa-crep/NOAA_PACIFIC_RAMP_FISH_SPC_2010_2017_SCI_DATA_.csv') 
 
 # laura richardson 2023 NEE
 depth<-read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>% 

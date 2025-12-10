@@ -6,6 +6,7 @@ library(bayesplot)
 source('00_oceanographic_load.R')
 crep<-read.csv(file = 'data/metabolic/crep_site_metabolic_rates.csv') 
 biom<-read.csv(file = 'data/metabolic/crep_site_biomass.csv') 
+source('00_ime_dataframe.R')
 
 depth<-read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>% 
   mutate(depth = DEPTH, 
@@ -22,7 +23,7 @@ depth<-read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>%
            year, date, month_num, date_ym, SITEVISITID) %>% 
   left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>% 
   select(region, island, SITEVISITID, year, date_ym, month, month_num, depth, hard_coral, site_bathy_400m, population_status) %>% 
-  left_join(region_df, by = 'island')
+  left_join(region_df %>% select(-region), by = 'island')
 
 
 # use depth dataset from Laura as basis for model. join predictors from Gove/Williams
@@ -40,7 +41,9 @@ depth<- depth %>%
   mutate(avg_monthly_mm = ifelse(is.na(avg_monthly_mm), 0, avg_monthly_mm)) %>% 
   left_join(mld_recent %>% mutate(date_ym = Date, mld_survey = MLD, 
                                   mld_recent = mean_mld_3months) %>% 
-              select(island, date_ym, mld_recent, mld_deep, mld_survey))
+              select(island, date_ym, mld_recent, mld_deep, mld_survey)) %>% 
+  left_join(dat %>% 
+              select(island_group, months_ime, mean_ime_percent, chl_ime))
 
 
 
@@ -62,10 +65,11 @@ plank_scaled <- plank %>%
 pdf(file = 'fig/crep_planktivore_cov_correlations.pdf', height=7, width=15)
 pairs2(
   plank_scaled %>% 
-    filter(!is.na(ted_mean)) %>% 
+    filter(!is.na(ted_mean) & !is.na(mean_ime_percent)) %>% 
     select(island_area_km2, reef_area_km2, site_bathy_400m,depth,hard_coral,
            avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
-           chl_a_mg_m3_mean, mld, mld_survey, mld_recent, mld_months_deep, ssh, ted_mean, ted_sum, month_num))
+           chl_a_mg_m3_mean, mean_ime_percent, chl_ime, months_ime,
+           mld_mean, mld_amp, mld_survey, mld_recent, mld_months_deep, ssh, ted_mean, ted_sum, month_num))
 dev.off()
 
 
@@ -90,5 +94,5 @@ pairs2(
     filter(!is.na(ted_mean)) %>% 
     select(island_area_km2, reef_area_km2, site_bathy_400m,depth,hard_coral,
            avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
-           chl_a_mg_m3_mean, mld, mld_survey, mld_recent, mld_deep, ssh, ted_mean, ted_sum, month_num))
+           chl_a_mg_m3_mean, mld_mean, mld_amp, mld_survey, mld_recent, mld_deep, ssh, ted_mean, ted_sum, month_num))
 dev.off()

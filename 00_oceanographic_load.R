@@ -46,14 +46,10 @@ print(
 dev.off()
 
 # Island values - mean
-mld_avg<-mld %>% group_by(island, year) %>% 
-  summarise(mld = mean(MLD),
+mld_avg<-mld %>% group_by(island) %>% 
+  summarise(mld_mean = mean(MLD),
             mld_sd = sd(MLD),
-            mld_months_deep = n_distinct(Date[MLD > 30])) %>% 
-  group_by(island) %>% 
-  summarise(mld = mean(mld),
-            mld_sd = mean(mld_sd),
-            mld_months_deep = mean(mld_months_deep)) 
+            mld_months_deep = n_distinct(Date[MLD > 30])) 
 
 mld_avg_C<- mld %>% group_by(island_group, year) %>% 
   summarise(mld = mean(MLD),
@@ -88,7 +84,12 @@ mld_recent<-mld %>%
          mean_mld_3months = zoo::rollmean(MLD, k = 3, align = "right", fill = NA),
          deep_mld_24months = zoo::rollsum(mld_deep, k = 24, align = "right", fill = NA))
 
-## Sea Surface Height
+# Seasonal amplitude (predicted)
+amp<-read.csv(file = 'results/mld_seasonal_pred.csv') %>% 
+  group_by(island) %>% 
+  summarise(mld_amp = max(MLD_pred) - min(MLD_pred))
+
+## Sea Surface Height + tidal energy (internal wave)
 source('read_ssh_godas.R')
 source('read_tidal_energy.R')
 
@@ -96,6 +97,7 @@ source('read_tidal_energy.R')
 island<-island %>% 
   left_join(precip_ann) %>% 
   left_join(mld_avg) %>% 
+  left_join(amp) %>% 
   left_join(ssh_vals) %>% 
   left_join(tc %>% mutate(island_code = ISLAND) %>% ungroup() %>% select(-ISLAND, -ted_sd)) %>% 
   left_join(island_cols)
@@ -121,7 +123,7 @@ island %>%
          tidal_mean_W_m1 = ted_mean,
          tidal_sum_W_m1 = ted_sum,
          sea_surface_height_m = ssh,
-         mld_avg_m = mld,
+         mld_avg_m = mld_mean,
          n_months_deep_mld = mld_months_deep,
          mld_sd_m = mld_sd) %>% 
   pivot_longer(-c(island_code, island, region,REGION, geomorphic_type, latitude, longitude, 
@@ -139,7 +141,7 @@ dev.off()
 
 pdf(file = 'fig/crep_island_correlations.pdf', height=7, width=15)
 print(
-  pairs2(island %>% select(ted_mean, ted_sum, mld, mld_sd,mld_months_deep,ssh,
+  pairs2(island %>% select(ted_mean, ted_sum, mld_mean, mld_sd,mld_months_deep,ssh,
                          sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean,
                          irradiance_einsteins_m2_d1_mean, reef_area, latitude, longitude) %>%
          na.omit()))

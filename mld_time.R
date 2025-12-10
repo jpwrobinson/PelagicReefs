@@ -50,6 +50,8 @@ ggplot(df2, aes(time_num, MLD_pred, col=island)) + geom_line() + facet_wrap(~reg
 df<-df %>% left_join(island %>% rename(island = island) %>% select(island, region)) %>% 
   mutate(month_name = month.abb[month])
 
+write.csv(df, file = 'results/mld_seasonal_pred.csv', row.names=FALSE)
+
 depth_survey<-read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>% 
   mutate(DATE_ = as.Date(DATE_, "%d/%m/%Y"), month = month(DATE_)) %>% 
   left_join(island %>% rename(ISLAND = island) %>% select(ISLAND, region)) %>% 
