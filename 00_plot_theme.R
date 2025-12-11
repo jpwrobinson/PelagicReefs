@@ -7,6 +7,12 @@ theme_set(theme_classic())
 library(GGally)
 library(ggrepel)
 library(cowplot)
+library(emmeans)
+library(mgcv)
+library(marginaleffects)
+library(gratia)
+
+
 source('pairs2.R')
 
 island_cols<-data.frame(region = c("Northwestern Hawaiian", "Hawaii", "Mariana", "Equatorial", "Samoa"),

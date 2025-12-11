@@ -49,6 +49,9 @@ dev.off()
 mld_avg<-mld %>% group_by(island) %>% 
   summarise(mld_mean = mean(MLD),
             mld_sd = sd(MLD),
+            mld_cv = mld_sd / mld_mean,
+            # mld_amp = (max(MLD, na.rm = TRUE) - min(MLD, na.rm = TRUE)) / 2,
+            # mld_rms = sqrt(mld_mean^2 + (mld_amp^2)/2),
             mld_months_deep = n_distinct(Date[MLD > 30])) 
 
 mld_avg_C<- mld %>% group_by(island_group, year) %>% 
@@ -85,8 +88,8 @@ mld_recent<-mld %>%
          deep_mld_24months = zoo::rollsum(mld_deep, k = 24, align = "right", fill = NA))
 
 # Seasonal amplitude (predicted)
-amp<-read.csv(file = 'results/mld_seasonal_pred.csv') %>% 
-  group_by(island) %>% 
+amp<-read.csv(file = 'results/mld_seasonal_pred.csv') %>%
+  group_by(island) %>%
   summarise(mld_amp = max(MLD_pred) - min(MLD_pred))
 
 ## Sea Surface Height + tidal energy (internal wave)
@@ -97,7 +100,7 @@ source('read_tidal_energy.R')
 island<-island %>% 
   left_join(precip_ann) %>% 
   left_join(mld_avg) %>% 
-  left_join(amp) %>% 
+  left_join(amp) %>%
   left_join(ssh_vals) %>% 
   left_join(tc %>% mutate(island_code = ISLAND) %>% ungroup() %>% select(-ISLAND, -ted_sd)) %>% 
   left_join(island_cols)
@@ -146,3 +149,7 @@ print(
                          irradiance_einsteins_m2_d1_mean, reef_area, latitude, longitude) %>%
          na.omit()))
 dev.off()
+
+ggplot(island, aes(mld_amp, mld_mean, label=island_code,col=region)) +  
+  geom_text(size=2) + guides(col='none') +
+  coord_equal()

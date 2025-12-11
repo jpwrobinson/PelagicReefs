@@ -1,24 +1,23 @@
-library(mgcv)
-library(marginaleffects)
-library(gratia)
-
 # LOAD 
 source('00_oceanographic_load.R')
 
 pdf(file = 'fig/mld_obs_trend.pdf', height=9, width=20)
 ggplot(mld, aes(Date, MLD, col=REGION)) + geom_line() +
-  facet_wrap(~ island, scales='free') +
+  facet_wrap(~ island, scales='fixed') +
   labs(x = '', y = 'Mixed layer depth, m') +
   guides(colour='none')
 dev.off()
 
+
 # What is change in MLD over time? seasonality and long-term trend
-# 
-# mld$island<-factor(mld$island)
-# 
-# m1<-gam(MLD ~ s(time_num, by = island) + s(month, bs = 'cc', k = 12, by = island),
-#           correlation = corAR1(form = ~ time_num | island),
-#           data=mld, family = Gamma)
+
+mld$island<-factor(mld$island)
+ 
+m1<-gam(MLD ~ s(time_num, by = island) + 
+          s(month, bs = 'cc', k = 12, by = island) +
+          te(month, year, bs = c("cc", "tp"), by = island),   # Changing seasonal pattern
+          correlation = corAR1(form = ~ time_num | island),
+          data=mld, family = Gamma)
 # 
 # save(m1, file = 'results/mld_time_mod.rds')
 # 
@@ -97,6 +96,11 @@ df2$MLD_upper<-with(df2, MLD_pred + 2*se)
 
 ggplot(df2, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=island)) + 
   geom_line(aes(col=island)) + geom_ribbon(alpha=0.5) + facet_wrap(~region)
+
+
+ggplot(df2, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=region)) + 
+  geom_line(aes(col=region, group=island))  + facet_grid(~region) +
+  guides(col='none')
 
 
 ## this is regional smooth - but need to have island + region to understand the full model prediction

@@ -69,9 +69,8 @@ pairs2(
     select(island_area_km2, reef_area_km2, site_bathy_400m,depth,hard_coral,
            avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
            chl_a_mg_m3_mean, mean_ime_percent, chl_ime, months_ime,
-           mld_mean, mld_amp, mld_survey, mld_recent, mld_months_deep, ssh, ted_mean, ted_sum, month_num))
+           mld_mean, mld_amp, mld_months_deep, ssh, ted_mean, ted_sum, month_num))
 dev.off()
-
 
 # 2. Create herbivore
 # drop NA herbivore sites (n = 0)
