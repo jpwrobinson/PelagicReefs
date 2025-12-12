@@ -62,7 +62,7 @@ car::vif(lm(planktivore_metab ~
 ### OUTPUTS
 
 # For linear model, extract posterior draws
-effects <- m2_plank %>%
+effects <- checker %>%
   gather_draws(`b_.*`, regex=TRUE) %>%  
   # filter(.variable != 'b_Intercept') %>% 
   mutate(.variable = str_replace_all(.variable, 'b_', ''),
@@ -85,7 +85,7 @@ dev.off()
 
 ## Change in planktivore flux along MLD
 
-conditional_effects(m2_plank, c('mld_amp', 'depth')) %>% 
+conditional_effects(checker, c('mld_amp')) %>% 
   plot(rug=TRUE)
 
 # Extract posterior samples
@@ -97,23 +97,29 @@ nd<-plank_scaled %>%
             avg_monthly_mm = 0,
             reef_area_km2 = 0,
             island_area_km2 = 0,
-            chl_a_mg_m3_mean = seq_range(chl_a_mg_m3_mean, n =100),
             mld_amp = seq_range(mld_amp, n = 100))  %>% 
-  # mutate(mld_amp_raw = seq_range(plank$mld_amp, n = 100)) %>% 
-  add_epred_draws(m2_plank, ndraws = 1000, re_formula = NA) %>% 
-  group_by(mld_amp, chl_a_mg_m3_mean) %>% 
-  summarise(
-    median = median(.epred),
-    lower = quantile(.epred, 0.025),
-    upper = quantile(.epred, 0.975)
-  )
+  mutate(mld_amp_raw = seq_range(plank$mld_amp, n = 100)) %>%
+  add_epred_draws(m2_plank, ndraws = 1000, re_formula = NA) 
 
-ggplot(nd, aes(x = mld_amp, y = chl_a_mg_m3_mean, fill=median)) +
-  # geom_point(data = depth, aes(x = mld_amp, y = planktivore_metab)) +
-  # stat_lineribbon(aes(y = .epred), .width = 0.95, alpha = 0.5) +
-  # stat_lineribbon(aes(y = .epred), .width = 0.5, alpha = 0.5) +
-  geom_tile()+
-  labs(x = 'Mixed layer variability, m', y = 'Planktivore metabolic rate')
+med<-nd %>% mutate(mld_amp = round(mld_amp_raw, 0)) %>% 
+  group_by(mld_amp) %>% summarise(med = median(.epred),
+                                  upper = quantile(.epred, 0.975))
+
+ann<-island %>% select(region.col, island, mld_amp) %>% mutate(mld_amp = round(mld_amp,0)) %>% 
+  left_join(med)
+
+pdf(file = 'fig/ime_crep/mld_planktivore.pdf', height=4, width=7)
+ggplot(nd, aes(x = mld_amp_raw, y = median)) +
+  geom_point(data = ann, aes(x = mld_amp, y = upper, col=region.col)) +
+  geom_line(data = ann, aes(x = mld_amp, y = 16 + 0.05 * (as.numeric(region.col) - 1), col=region.col, group=region.col), 
+            position = position_dodge(width=0.5)) +
+  geom_text(data = ann, size=2, angle=90, hjust=0,
+            aes(x = mld_amp, y = upper+.5, col=region.col, label=island)) +
+  stat_lineribbon(aes(y = .epred), .width = 0.95, alpha = 0.5, show.legend=F) +
+  scale_colour_identity() +
+  guides(color='none') +
+  labs(x = 'Mixed layer amplitude, m', y = 'Planktivore metabolic rate')
+dev.off()
 
 m2_plank %>% emmeans(~ mld_amp, var = 'mld_amp', 
                at = list(mld_amp = c(min(plank_scaled$mld_amp), 
