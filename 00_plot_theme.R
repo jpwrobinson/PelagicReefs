@@ -19,6 +19,7 @@ island_cols<-data.frame(region = c("Northwestern Hawaiian", "Hawaii", "Mariana",
                         REGION = c("NWHI", "MHI", "MARIAN", "PRIAs", "SAMOA"),
                         region.col = c('#349BEB', '#F05826', '#01A74F', '#FEB913', '#FCF20E'))
 
+fg_cols<-c('Herbivore' = '#F79C00', 'Planktivore' = '#01579F')
 
 # model packages
 library(brms)
