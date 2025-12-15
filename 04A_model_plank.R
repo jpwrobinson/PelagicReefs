@@ -54,7 +54,7 @@ bayes_R2(checker)
 # check vif
 car::vif(lm(planktivore_metab ~ 
                reef_area_km2 + sst_mean +
-              island_area_km2 + avg_monthly_mm +
+              island_area_km2 +
               site_bathy_400m + hard_coral + depth + 
               mld_amp, data=plank_scaled))
 
@@ -97,28 +97,29 @@ nd<-plank_scaled %>%
             avg_monthly_mm = 0,
             reef_area_km2 = 0,
             island_area_km2 = 0,
-            mld_amp = seq_range(mld_amp, n = 100))  %>% 
-  mutate(mld_amp_raw = seq_range(plank$mld_amp, n = 100)) %>%
+            mld_amp = seq_range(mld_amp, n = 1000))  %>% 
+  mutate(mld_amp_raw = seq_range(plank$mld_amp, n = 1000)) %>%
   add_epred_draws(m2_plank, ndraws = 1000, re_formula = NA) 
 
-med<-nd %>% mutate(mld_amp = round(mld_amp_raw, 0)) %>% 
+med<-nd %>% mutate(mld_amp = round(mld_amp_raw, 1)) %>% 
   group_by(mld_amp) %>% summarise(med = median(.epred),
                                   upper = quantile(.epred, 0.975))
 
-ann<-island %>% select(region.col, island, mld_amp) %>% mutate(mld_amp = round(mld_amp,0)) %>% 
+ann<-island %>% select(region.col, island, mld_amp) %>% mutate(mld_amp = round(mld_amp,1)) %>% 
   left_join(med)
 
 pdf(file = 'fig/ime_crep/mld_planktivore.pdf', height=4, width=7)
 ggplot(nd, aes(x = mld_amp_raw, y = median)) +
   geom_point(data = ann, aes(x = mld_amp, y = upper, col=region.col)) +
-  geom_line(data = ann, aes(x = mld_amp, y = 16 + 0.05 * (as.numeric(region.col) - 1), col=region.col, group=region.col), 
-            position = position_dodge(width=0.5)) +
+  geom_line(data = ann, aes(x = mld_amp, y = 18 + 0.4 * (as.numeric(as.factor(region.col)) - 1), col=region.col, group=region.col), 
+            position = position_dodge(width=0.5), size=1.5) +
   geom_text(data = ann, size=2, angle=90, hjust=0,
-            aes(x = mld_amp, y = upper+.5, col=region.col, label=island)) +
-  stat_lineribbon(aes(y = .epred), .width = 0.95, alpha = 0.5, show.legend=F) +
+            aes(x = mld_amp, y = upper+0.5, col=region.col, label=island)) +
+  stat_lineribbon(aes(y = .epred), .width = 0.95, alpha = 0.5, show.legend=F, fill = fg_cols[2]) +
   scale_colour_identity() +
   guides(color='none') +
-  labs(x = 'Mixed layer amplitude, m', y = 'Planktivore metabolic rate')
+  theme(axis.text = element_text(size = 14), axis.title = element_text(size = 14)) +
+  labs(x = 'Mixed layer amplitude, m', y = 'Planktivore metabolic flux')
 dev.off()
 
 m2_plank %>% emmeans(~ mld_amp, var = 'mld_amp', 

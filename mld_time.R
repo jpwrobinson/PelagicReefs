@@ -49,6 +49,7 @@ ggplot(df2, aes(time_num, MLD_pred, col=island)) + geom_line() + facet_wrap(~reg
 df<-df %>% 
   left_join(island %>% rename(island = island) %>% select(island, region)) %>% 
   left_join(region_df %>% select(island, region2)) %>% 
+  left_join(island_cols) %>% 
   mutate(month_name = month.abb[month])
 
 write.csv(df, file = 'results/mld_seasonal_pred.csv', row.names=FALSE)
@@ -56,27 +57,32 @@ write.csv(df, file = 'results/mld_seasonal_pred.csv', row.names=FALSE)
 depth_survey<-read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>% 
   mutate(DATE_ = as.Date(DATE_, "%d/%m/%Y"), month = month(DATE_)) %>% 
   left_join(island %>% rename(ISLAND = island) %>% select(ISLAND, region)) %>%
-  left_join(region_df %>% rename(ISLAND = island) %>% select(ISLAND, region2)) %>% 
-  distinct(region2, month) %>% 
-  left_join(df %>% group_by(region2, month) %>% summarise(MLD_pred = mean(MLD_pred))) 
+  # left_join(region_df %>% rename(ISLAND = island) %>% select(ISLAND, region2)) %>% 
+  distinct(region, month) %>% 
+  left_join(df %>% group_by(region, month) %>% summarise(MLD_pred = mean(MLD_pred)))
 
-regs<-unique(df$region2)
+regs<-unique(df$region)
+
 for(i in 1:length(regs)){
 
-  gg<-ggplot(df %>% filter(region2 %in% regs[i]), aes(month, MLD_pred, col=island)) + 
+  gg<-ggplot(df %>% filter(region %in% regs[i]), aes(month, MLD_pred, col=region.col, group=island)) + 
     geom_line() + 
-    geom_text_repel(data = df %>% filter(region2 %in% regs[i] & month == 12), aes(label = island), nudge_x = 0.5, size=3) +
-    geom_point(data = depth_survey %>% filter(region2 %in% regs[i]), pch=21, col='white', fill = 'black', size=3) +
+    geom_text_repel(data = df %>% filter(region %in% regs[i] & month == 12), aes(label = island), nudge_x = 0.5, size=3) +
+    # geom_point(data = depth_survey %>% filter(region %in% regs[i]), pch=21, col='white', fill = 'black', size=3) +
     scale_x_continuous(breaks=c(1,3,6,9, 12), labels=c('Jan', 'Mar', 'Jun', 'Sept', 'Dec')) +
     scale_y_continuous(limits=c(15, 60)) +
+    scale_colour_identity() +
     labs(x = '', y = 'Mixed layer depth', subtitle = regs[i]) +
-    theme(legend.position = 'none') 
+    theme(legend.position = 'none', 
+          axis.text = element_text(size=11),
+          axis.title = element_text(size=11)) 
   
   assign(paste0('gg', str_replace_all(regs[i], ' island', '')), gg)
+  assign(paste0('gg', str_replace_all(regs[i], ' Hawaiian', '')), gg)
 }
 
 pdf(file = 'fig/mld_season.pdf', height=3.5, width=16)
-plot_grid(ggMarianas, ggHawaiians,ggLines, ggPhoenix, ggSamoa, nrow=1)
+plot_grid(ggMariana, ggNorthwestern, ggHawaii,ggEquatorial, ggSamoa, nrow=1)
 dev.off()
 
 
