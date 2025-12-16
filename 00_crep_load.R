@@ -23,44 +23,47 @@ depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR) %>%
 
 # Below hashed out because slow to read the full CREP. Loading csv at end of script.
 # from Tye NOAA, full dataset with 0s
-# lw<-read.csv('data/noaa-crep/NCRMP Fish L-W.csv') %>% 
+# lw<-read.csv('data/noaa-crep/NCRMP Fish L-W.csv') %>%
 #   mutate(across(c(LW_A, LW_B, LENGTH_CONVERSION_FACTOR), as.numeric))
 # 
-# crep_full<-readRDS("data/noaa-crep/NCRMP.nSPC.site_meancount_species-size.rds") %>% 
-#   filter(MEAN_COUNT > 0) %>% 
+# add site latlon
+# sites<-read.csv('data/noaa-crep/site.info.csv') %>% 
+#   mutate(lat = LATITUDE, lon = LONGITUDE) %>% 
+#   select(-LATITUDE, -LONGITUDE)
+# 
+# crep_full<-readRDS("data/noaa-crep/NCRMP.nSPC.site_meancount_species-size.rds") %>%
+#   filter(MEAN_COUNT > 0) %>%
 #   # join length weight parameters from Heenan 2017 to estimate biomass
-#   left_join(lw) %>% 
-#   mutate(SIZE_cmTL = as.numeric(SIZE_cmTL), 
+#   left_join(lw) %>%
+#   mutate(SIZE_cmTL = as.numeric(SIZE_cmTL),
 #          body_mass_g = LW_A * (SIZE_cmTL * LENGTH_CONVERSION_FACTOR) ^ LW_B,
 #          biomass_g = body_mass_g * MEAN_COUNT,
-#          biomass_g_m2 = biomass_g / (pi*(7.5^2))) %>% 
+#          biomass_g_m2 = biomass_g / (pi*(7.5^2))) %>%
 #   # join bathymetry for islands ~ years available (2010-2015)
-#   left_join(depth %>% distinct(SITEVISITID, DEPTH, ComplexityValue, SITE_SLOPE_400m))
+#   left_join(depth %>% distinct(SITEVISITID, DEPTH, ComplexityValue, SITE_SLOPE_400m)) %>%
+#   left_join(sites)
 # 
-# dim(crep_full) # 566,439 obs
+# dim(crep_full) # 570,052 obs
 # 
 # # drop large mobile predators
 # drops<-c('Caranx melampygus', 'Un-id fish sp', 'Triaenodon obesus', 'Carcharhinus melanopterus', 'Carcharhinus amblyrhynchos', 'Nebrius ferrugineus',
 #          'Sarda orientalis', 'Caranx ignobilis', 'Carcharhinus galapagensis','Caranx sp', 'Thunnus albacares','Carangidae', 'Scombridae', 'Katsuwonus pelamis', 'Alectis ciliaris')
 # crep_full<-crep_full %>% filter(!TAXONNAME %in% drops)
-# dim(crep_full) # 561,265 obs
-# 
-# summer<-crep_full %>% filter(!is.na(SITE_SLOPE_400m) & !is.na(biomass_g)) %>% 
-#   group_by(SITEVISITID) %>% 
-#   summarise(biom_g = sum(biomass_g_m2)) %>% 
-#   mutate(biom_kg  = biom_g / 1000, biom_kg_ha = biom_kg * 10000)
-# 
-# ggplot(summer) + geom_histogram(aes(biom_kg_ha))
-# max(summer$biom_kg_ha) # 19,780.77 kg/ha [Palmyra - Chanos chanos]
-# 
-# big biomass in Jarvis due to sharks - exclude these from our analyses
-# ss<-summer %>% filter(biom_kg_ha > 10000) %>% pull(SITEVISITID)
-# crep_full %>% filter(SITEVISITID %in% ss)
-# 
-# 
+# dim(crep_full) # 564,878 obs
+
 # write.csv(crep_full, 'data/noaa-crep/crep_full_merged.csv', row.names=FALSE)
 # write.csv(crep_full %>% filter(!is.na(SITE_SLOPE_400m)), 'data/noaa-crep/crep_bathymetry_merged.csv', row.names=FALSE)
 
 crep_full<-read.csv('data/noaa-crep/crep_full_merged.csv')
 crep_depth<-read.csv('data/noaa-crep/crep_bathymetry_merged.csv')
 
+sites_bathy<-crep_depth %>% distinct(SITEVISITID, lon, lat) %>% data.frame()
+new_sites<-crep_full %>% distinct(SITEVISITID, lon, lat) %>% data.frame()
+# perform site bathymetry matching
+sites_bathy <- st_as_sf(sites_bathy, coords = c("lon", "lat"), crs = 4326)
+new_sites <- st_as_sf(new_sites, coords = c("lon", "lat"), crs = 4326)
+
+nearest_idx <- st_nearest_feature(new_sites, sites_bathy)
+new_sites$nearest_site <- sites_bathy[nearest_idx,]$SITEVISITID
+new_sites$nearest_site_geo <- sites_bathy[nearest_idx, ]$geometry
+new_sites$site_distance_m<-as.numeric(st_distance(new_sites$geometry, new_sites$nearest_site_geo))
