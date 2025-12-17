@@ -63,7 +63,12 @@ new_sites<-crep_full %>% distinct(SITEVISITID, lon, lat) %>% data.frame()
 sites_bathy <- st_as_sf(sites_bathy, coords = c("lon", "lat"), crs = 4326)
 new_sites <- st_as_sf(new_sites, coords = c("lon", "lat"), crs = 4326)
 
+# identify nearest site ID
 nearest_idx <- st_nearest_feature(new_sites, sites_bathy)
 new_sites$nearest_site <- sites_bathy[nearest_idx,]$SITEVISITID
 new_sites$nearest_site_geo <- sites_bathy[nearest_idx, ]$geometry
-new_sites$site_distance_m<-as.numeric(st_distance(new_sites$geometry, new_sites$nearest_site_geo))
+
+# estimate distance to nearest site
+dist_mat<-st_distance(new_sites$geometry, new_sites$nearest_site_geo)
+nearest_dist <- apply(dist_mat, 1, function(x) min(x[x > 0]))
+new_sites$site_distance_m<-as.numeric(nearest_dist)
