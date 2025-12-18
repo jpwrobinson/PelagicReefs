@@ -21,6 +21,11 @@ depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR) %>%
   summarise(LONGITUDE = mean(LONGITUDE), LATITUDE = mean(LATITUDE)) %>% 
   write.csv('data/richardson_2023/crep_lat_lon_island.csv', row.names=FALSE)
 
+# all CREP from Tye, merged as below and in 00_crep_bathy_fill.R
+crep_full<-read.csv('data/noaa-crep/crep_full_merged.csv')
+crep_depth<-read.csv('data/noaa-crep/crep_bathymetry_merged.csv')
+crep_bathy_fill<-read.csv('data/noaa-crep/crep_full_merged_bathymetry_fill.csv')
+
 # Below hashed out because slow to read the full CREP. Loading csv at end of script.
 # from Tye NOAA, full dataset with 0s
 # lw<-read.csv('data/noaa-crep/NCRMP Fish L-W.csv') %>%
@@ -53,22 +58,3 @@ depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR) %>%
 
 # write.csv(crep_full, 'data/noaa-crep/crep_full_merged.csv', row.names=FALSE)
 # write.csv(crep_full %>% filter(!is.na(SITE_SLOPE_400m)), 'data/noaa-crep/crep_bathymetry_merged.csv', row.names=FALSE)
-
-crep_full<-read.csv('data/noaa-crep/crep_full_merged.csv')
-crep_depth<-read.csv('data/noaa-crep/crep_bathymetry_merged.csv')
-
-sites_bathy<-crep_depth %>% distinct(SITEVISITID, lon, lat) %>% data.frame()
-new_sites<-crep_full %>% distinct(SITEVISITID, lon, lat) %>% data.frame()
-# perform site bathymetry matching
-sites_bathy <- st_as_sf(sites_bathy, coords = c("lon", "lat"), crs = 4326)
-new_sites <- st_as_sf(new_sites, coords = c("lon", "lat"), crs = 4326)
-
-# identify nearest site ID
-nearest_idx <- st_nearest_feature(new_sites, sites_bathy)
-new_sites$nearest_site <- sites_bathy[nearest_idx,]$SITEVISITID
-new_sites$nearest_site_geo <- sites_bathy[nearest_idx, ]$geometry
-
-# estimate distance to nearest site
-dist_mat<-st_distance(new_sites$geometry, new_sites$nearest_site_geo)
-nearest_dist <- apply(dist_mat, 1, function(x) min(x[x > 0]))
-new_sites$site_distance_m<-as.numeric(nearest_dist)
