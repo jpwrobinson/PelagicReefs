@@ -90,5 +90,6 @@ crep_bathy_fill %>% filter(!is.na(SITE_SLOPE_400m) & bathy_site_distance_m > 0) 
 # 2252 sites with measured bathy data
 # 2091 sites with nearby bathy data
 # 2426 sites without nearby bathy data
+4343 / (4343 + 2426) # 64% of total CREP dataset is included
 
 write.csv(crep_bathy_fill, 'data/noaa-crep/crep_full_merged_bathymetry_fill.csv', row.names=FALSE)

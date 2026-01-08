@@ -7,7 +7,7 @@ source('00_islands.R')
 
 # BASIC COVARIATES [Williams et al. 2015]
 # depth = energy availability increases with depth [0-30m]
-# climatalogical chl-a = average energy availability to reefs [surface]
+# climatological chl-a = average energy availability to reefs [surface]
 # human pop. density = fishing decreases planktivore abundance
 # island type = atoll/island important predictor
 # SST = planktivores increase with temperature
@@ -96,9 +96,13 @@ amp<-read.csv(file = 'results/mld_seasonal_pred.csv') %>%
 source('read_ssh_godas.R')
 source('read_tidal_energy.R')
 
+## Chl-a from VIIRS
+source('read_chla_clim.R')
+
 # add precip, SSH, MLD and TC to island and island complex
 island<-island %>% 
   left_join(precip_ann) %>% 
+  left_join(vir2 %>% filter(sensor == 'ESA') %>% select(island, mean_chlorophyll)) %>% 
   left_join(mld_avg) %>% 
   left_join(amp) %>%
   left_join(ssh_vals) %>% 
@@ -106,7 +110,8 @@ island<-island %>%
   left_join(island_cols)
 
 island_complex<-island_complex %>% 
-  left_join(precip_ann_C) %>% 
+  left_join(precip_ann_C) %>%
+  left_join(vir2_C %>% filter(sensor == 'ESA') %>% ungroup() %>% select(island_group, mean_chlorophyll)) %>% 
   left_join(mld_avg_C) %>% 
   left_join(ssh_vals_C) %>% 
   left_join(tc_C %>% ungroup() %>% select(-ted_sd, -region), by = 'island_group') %>% 
@@ -145,11 +150,7 @@ dev.off()
 pdf(file = 'fig/crep_island_correlations.pdf', height=7, width=15)
 print(
   pairs2(island %>% select(ted_mean, ted_sum, mld_mean, mld_sd,mld_months_deep,ssh,
-                         sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean,
+                         sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean, mean_chlorophyll,
                          irradiance_einsteins_m2_d1_mean, reef_area, latitude, longitude) %>%
          na.omit()))
 dev.off()
-
-ggplot(island, aes(mld_amp, mld_mean, label=island_code,col=region)) +  
-  geom_text(size=2) + guides(col='none') +
-  coord_equal()
