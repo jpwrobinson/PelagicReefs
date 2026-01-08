@@ -27,7 +27,7 @@ m2_linear<-brm(bf(Chl_increase_nearby ~
                  geomorphic_type * reef_area_km2 + island_area_km2 + avg_monthly_mm +
                  # bathymetric_slope + population_status + 
                  # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean + #rm for collinear reasons
-                 chl_a_mg_m3_mean + mld + 
+                 mean_chlorophyll + mld + 
                  mi(ted_mean) + 
                  #ssh + 
                  (1 + mld | island / REGION),
@@ -47,7 +47,7 @@ m2_smooth<-brm(bf(Chl_increase_nearby ~
           # s(bathymetric_slope, k=3) + population_status +
          # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
            # for mld by island, use factor-smooth that pools towards global smooth
-         s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(mld, by = island, bs = 'cs', k=3) + #s(ted_mean, k=3) +
+         s(mean_chlorophyll, k=3) + s(mld, k=3) + s(mld, by = island, bs = 'cs', k=3) + #s(ted_mean, k=3) +
           mi(ted_mean) + 
          (1 | island / REGION),
          family = lognormal()
@@ -65,7 +65,7 @@ m2_linear_month<-brm(bf(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc
           geomorphic_type * reef_area_km2 + island_area_km2 + avg_monthly_mm +
           # bathymetric_slope + population_status +
           # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
-          chl_a_mg_m3_mean + mld +
+          mean_chlorophyll + mld +
             mi(ted_mean) + 
           (1 + mld | island / REGION),
           family = lognormal()
@@ -82,7 +82,7 @@ m2_smooth_month<-brm(Chl_increase_nearby ~ s(month_num, by = island, bs = 'cc', 
                  s(reef_area_km2, by = geomorphic_type, k=3) + s(island_area_km2, k=3) + s(avg_monthly_mm, k=3) +
                  # s(bathymetric_slope, k=3) + population_status +
                  # sst_mean + wave_energy_mean_kw_m1 + irradiance_einsteins_m2_d1_mean +
-                 s(chl_a_mg_m3_mean, k=3) + s(mld, k=3) + s(ted_mean, k=3) + 
+                 s(mean_chlorophyll, k=3) + s(mld, k=3) + s(ted_mean, k=3) + 
                  (1 | island / REGION),
                family = lognormal(),
                data = dat_scaled_month,

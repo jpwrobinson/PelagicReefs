@@ -1,70 +1,88 @@
-source('00_plot_theme.R')
+source('loads/00_plot_theme.R')
 
-ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% 
-  left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) 
+options(mc.cores = 4)
+rstan::rstan_options(auto_write = TRUE)
+Sys.setenv(STAN_NUM_THREADS = "4")
+stan_model_args <- list(
+  cpp_options = list(STAN_THREADS = TRUE)
+)
+options(brms.backend = "cmdstanr")
+cmdstanr::set_cmdstan_path()
 
-ime_month_scaled<-ime_month %>% 
-  filter(!is.na(Chl_increase_nearby)) %>% 
-  mutate(type = factor(type), reef_area_km2 = log10(reef_area_km2+1), island_area_km2 = log10(island_area_km2+1)) %>% 
-  mutate(across(c(island_area_km2, reef_area_km2, Chl_max, month_num), 
-                ~scale(., center=TRUE, scale=TRUE)[,1]))
+# Is the strength of upwelling (IME) linked to MLD and tidal conversion?
 
-ime_island<-read.csv(file = 'island_ime_dat.csv') %>% 
-  mutate(type = factor(type), reef_area_km2 = log10(reef_area_km2+1), island_area_km2 = log10(island_area_km2+1)) %>% 
-  mutate(across(c(island_area_km2, reef_area_km2, chl_island, months_ime, mean_ime_percent), 
-                ~scale(., center=TRUE, scale=TRUE)[,1]))
+# exp. vars = MLD + tidal conversion
+source('loads/00_oceanographic_load.R')
+source('loads/00_ime_dataframe.R')
 
-# basic model fitting Chl increase (%) by month / island and biophysical covariates
-m<-brm(Chl_increase_nearby ~ type + island_area_km2 + reef_area_km2 + Chl_max +
-         s(month_num, bs = 'cc') +
-         (1 | island) + s(lat,lon), 
-       family = lognormal, data = ime_month_scaled,
-        chains = 3, iter = 2000, warmup = 500, cores = 4)
+# y distributions
+hist(dat$mean_chl_percent)
+hist(dat_month$Chl_increase_nearby)
 
-save(m, file = 'results/mod_ime_attributes.rds')
+dat_scaled_month %>% filter(!is.na(Chl_increase_nearby)) %>% dim # N = 388, 35 islands
+dat_scaled_month %>% filter(!is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% distinct(island) # N = 352, 32 islands
 
-summary(m)
-conditional_effects(m)
+# basic model fitting Chl increase (%) by island and biophysical covariates
+## Linear model is marginally preferred to smooths (after including mld ~ island as random). 
+## Month models work better but are captuing an unknown process.
 
-m2<-brm(ime_diff ~ type + island_area_km2 + reef_area_km2 + chl_island + mean_ime_percent + months_ime +
-         (1 | island) + s(lat,lon), data = ime_island,
-        family = student(),
-       chains = 3, iter = 2000, warmup = 500, cores = 4)
+# check vif
+car::vif(lm(Chl_increase_nearby ~ 
+              reef_area_km2 + sst_mean + island_area_km2 + avg_monthly_mm +
+              bathymetric_slope + 
+              # population_status + VIF = 5.68
+              ted_mean +
+              mean_chlorophyll + mld, data=dat_scaled_month))
 
-save(m2, file = 'results/mod_ime_reef_attributes.rds')
-
-summary(m2)
-conditional_effects(m2)
-
-hist(island_ime$ime_diff)
-
-# Create pairs plot for IME covariates
-GGally::ggpairs(
-  ime_month %>% 
-    select(type, island_area_km2, reef_area_km2),
-  lower = list(continuous = wrap("points", alpha = 0.5, size=.5)),  # Scatterplots in lower panels
-  diag = list(continuous = wrap("barDiag", bins = 20)),    # Histograms on the diagonal
-  upper = list(continuous = wrap("cor", size = 3))         # Correlations in upper panels
+m2_linear<-brm(bf(Chl_increase_nearby ~ 
+                    geomorphic_type + reef_area_km2 + island_area_km2 + avg_monthly_mm +
+                    bathymetric_slope + # population_status +
+                    mean_chlorophyll + mld + 
+                    mi(ted_mean) + 
+                    (1 + mld | island / REGION),
+                  family = lognormal()
 ) +
-  theme_minimal() 
+  bf(ted_mean | mi() ~ reef_area_km2),
+prior = c(
+  prior(normal(0, 1), class = "b", resp = 'Chlincreasenearby'),
+  prior(exponential(1), class = "sd", resp = 'Chlincreasenearby')
+),
+data = dat_scaled_month,
+# backend = "cmdstanr",
+chains = 3, iter = 2000, warmup = 500, cores = 4)
 
-GGally::ggpairs(
-  ime_island %>% 
-    select(type, island_area_km2, reef_area_km2, chl_island, months_ime, mean_ime_percent),
-  lower = list(continuous = wrap("points", alpha = 0.5, size=.5)),  # Scatterplots in lower panels
-  diag = list(continuous = wrap("barDiag", bins = 20)),    # Histograms on the diagonal
-  upper = list(continuous = wrap("cor", size = 3))         # Correlations in upper panels
-) +
-  theme_minimal() 
+# load(file = 'results/mod_ime.rds)
+checker<-m2_linear
+summary(checker)
+pp_check(checker, resp = 'Chlincreasenearby')
+conditional_effects(checker)
+bayes_R2(checker) # 65%
 
-# Multipanel of conditional effects
-pdf(file = 'fig/ime_db/ime_model_chl_increase_pct.pdf', height=7, width=12)
-ce<-plot(conditional_effects(m), plot=FALSE)
-do.call(gridExtra::grid.arrange, c(ce, ncol = 2))
+res <- residuals(checker, summary = FALSE)
+fitted <- fitted(checker, summary = FALSE)
+res_mean <- rowMeans(res)
+acf(res_mean, main = "ACF of model residuals")
+
+# For linear model, extract posterior draws
+effects <- m2_linear %>%
+  gather_draws(b_Chlincreasenearby_geomorphic_typeIsland, b_Chlincreasenearby_reef_area_km2, b_Chlincreasenearby_island_area_km2,
+               b_Chlincreasenearby_bathymetric_slope,
+               b_Chlincreasenearby_mean_chlorophyll, bsp_Chlincreasenearby_mited_mean, b_Chlincreasenearby_mld) %>%  
+  mutate(.variable = str_replace_all(.variable, 'b_Chlincreasenearby_', ''),
+         .variable = str_replace_all(.variable, 'bsp_Chlincreasenearby_mi', ''),
+         var_fac = factor(.variable, 
+                          levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2',
+                                         'bathymetric_slope', 'mean_chlorophyll',
+                                         'ted_mean', 'mld'))))
+
+# Plot effect sizes
+pdf(file = 'fig/ime_db/ime_month_crep_model.pdf', height=5, width=6)
+ggplot(effects, aes(x = .value, y = var_fac)) +
+  stat_halfeye(.width = c(0.5, 0.95)) +  
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
+  labs(x = "Effect size", y = "") 
+
 dev.off()
 
-pdf(file = 'fig/ime_db/ime_model_ime_vs_non_ime.pdf', height=7, width=12)
-ce<-plot(conditional_effects(m2), plot=FALSE)
-do.call(gridExtra::grid.arrange, c(ce, ncol = 2))
-dev.off()
 
+save(dat_month, dat_scaled_month, m2_linear, effects, file = 'results/mod_ime.rds')

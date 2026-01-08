@@ -17,7 +17,7 @@ vir<-read.csv('data/noaa-virrs/eds_chla.csv') %>%
 vir2<-read.csv('data/noaa-virrs/chla_stats_2023.csv') %>% 
   clean_names() %>% 
   mutate(island = str_replace_all(island, '_', '\\ '),
-         island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
+         island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Kahoolawe'), 'Maui_C', island),
          island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
          island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
 

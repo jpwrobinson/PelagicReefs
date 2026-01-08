@@ -1,4 +1,5 @@
 
+# Load IME from loads/00_ime_messie_load.R
 # ime = mean upwelling %
 ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
 ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)
@@ -103,5 +104,5 @@ pairs2(
     filter(!is.na(bathymetric_slope) & !is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% 
     select(island_area_km2, reef_area_km2, bathymetric_slope,avg_monthly_mm,population_status_num,
            sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
-           chl_a_mg_m3_mean, mld, ssh, ted_mean, ted_sum, month_num))
+           mean_chlorophyll, mld, ssh, ted_mean, ted_sum, month_num))
 dev.off()

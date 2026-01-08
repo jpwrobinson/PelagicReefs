@@ -25,31 +25,13 @@ gA<-ggplot(dat, aes(mean_chl_percent, fct_reorder(island, max))) +
         axis.ticks.x.top = element_blank(),
         axis.text.x.top = element_text(size=8))
 
-# ggplot(dat_month, aes(month_num, Chl_increase_nearby, group=island, col=REGION)) + 
-#   geom_line() + 
-#   facet_grid(~REGION)
-
 # Panel B = drivers of IME [monthly and time-averaged]
 bayes<-data.frame(b = bayes_R2(m2_linear)[1,'Estimate'],
                   # mod = c('Linear', 'Linear with month'),
                   x = 7, y = c(2))
 
-# Extract posterior draws
-effects <- rbind(m2_linear %>%
-  gather_draws(b_Chlincreasenearby_geomorphic_typeIsland, b_Chlincreasenearby_reef_area_km2, b_Chlincreasenearby_island_area_km2,
-               # b_Chlincreasenearby_bathymetric_slope, b_Chlincreasenearby_population_statusU,
-               b_Chlincreasenearby_avg_monthly_mm,
-               b_Chlincreasenearby_chl_a_mg_m3_mean, bsp_Chlincreasenearby_mited_mean, b_Chlincreasenearby_mld) %>% 
-  mutate(mod = 'Linear')) %>% 
-  mutate(.variable = str_replace_all(.variable, 'b_Chlincreasenearby_', ''),
-         .variable = str_replace_all(.variable, 'bsp_Chlincreasenearby_mi', ''),
-         var_fac = factor(.variable, 
-                          levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2','avg_monthly_mm',
-                                         'bathymetric_slope', 'population_statusU',
-                                         'ted_mean', 'mld','chl_a_mg_m3_mean'))))
-
-gB<-ggplot(effects %>% filter(var_fac != 'chl_a_mg_m3_mean'), 
-           aes(x = .value, y = var_fac, col=mod)) +
+gB<-ggplot(effects,
+           aes(x = .value, y = var_fac)) +
   # geom_text(data = bayes, 
             # aes(x = x, y = y, label = paste0(round(b*100,1),'% ', mod)), size=3) + 
   geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
@@ -58,7 +40,7 @@ gB<-ggplot(effects %>% filter(var_fac != 'chl_a_mg_m3_mean'),
   scale_colour_manual(values = c('#737373', '#d94801'), guide=NULL) +
   scale_x_continuous(limits=c(-.75, 1.25)) +
   scale_y_discrete(labels =c( 'Mixed layer depth', 'Tidal energy',
-                            # 'Uninhabited', 'Bathymetric slope', 
+                            'Bathymetric slope', 
                             'Precipitation',
                             'Island area', 'Reef area', 'Island')) +
   theme(legend.position = c(.9,.9), legend.title = element_blank())
@@ -67,10 +49,11 @@ gB<-ggplot(effects %>% filter(var_fac != 'chl_a_mg_m3_mean'),
 source('func_mod_conditional.R')
 mld_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'mld')
 ted_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'ted_mean')
-# chl_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'chl_a_mg_m3_mean')
+chl_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'mean_chlorophyll')
+
 dd<-rbind(mld_pred %>% select(-mld) %>% mutate(var = 'Mixed layer depth, m') , 
-          ted_pred %>% select(-ted_mean) %>% mutate(var = 'Tidal energy flux, W_m2')
-          # chl_pred %>% select(-chl_a_mg_m3_mean) %>% mutate(var = 'chl-a, mg_m3')
+          ted_pred %>% select(-ted_mean) %>% mutate(var = 'Tidal energy flux, W_m2'),
+          chl_pred %>% select(-mean_chlorophyll) %>% mutate(var = 'chl-a, mg_m3')
           )
 
 gC<-ggplot(dd, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100)) + 
