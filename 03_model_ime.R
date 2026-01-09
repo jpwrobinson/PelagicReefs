@@ -12,8 +12,8 @@ cmdstanr::set_cmdstan_path()
 # Is the strength of upwelling (IME) linked to MLD and tidal conversion?
 
 # exp. vars = MLD + tidal conversion
-source('loads/00_oceanographic_load.R')
-source('loads/00_ime_dataframe.R')
+source('0_loads/00_oceanographic_load.R')
+source('0_loads/00_ime_dataframe.R')
 
 # y distributions
 hist(dat$mean_chl_percent)
@@ -39,7 +39,7 @@ m2_linear<-brm(bf(Chl_increase_nearby ~
                     bathymetric_slope + # population_status +
                     mean_chlorophyll + mld + 
                     mi(ted_mean) + 
-                    (1 + mld | island / REGION),
+                    (1 + mld | island),
                   family = lognormal()
 ) +
   bf(ted_mean | mi() ~ reef_area_km2),
@@ -66,13 +66,13 @@ acf(res_mean, main = "ACF of model residuals")
 # For linear model, extract posterior draws
 effects <- m2_linear %>%
   gather_draws(b_Chlincreasenearby_geomorphic_typeIsland, b_Chlincreasenearby_reef_area_km2, b_Chlincreasenearby_island_area_km2,
-               b_Chlincreasenearby_bathymetric_slope,
+               b_Chlincreasenearby_bathymetric_slope, b_Chlincreasenearby_avg_monthly_mm,
                b_Chlincreasenearby_mean_chlorophyll, bsp_Chlincreasenearby_mited_mean, b_Chlincreasenearby_mld) %>%  
   mutate(.variable = str_replace_all(.variable, 'b_Chlincreasenearby_', ''),
          .variable = str_replace_all(.variable, 'bsp_Chlincreasenearby_mi', ''),
          var_fac = factor(.variable, 
                           levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2',
-                                         'bathymetric_slope', 'mean_chlorophyll',
+                                         'bathymetric_slope','avg_monthly_mm', 'mean_chlorophyll',
                                          'ted_mean', 'mld'))))
 
 # Plot effect sizes

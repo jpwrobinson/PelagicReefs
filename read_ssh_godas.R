@@ -1,7 +1,7 @@
 library(sf)
 
 # get reef lat lon
-source('00_islands.R')
+source('0_loads/00_islands.R')
 latlon<-data.frame(lon = island$longitude, lat = island$latitude, island_group=island$island_group)
 # align projection systems - longitude wrap
 latlon$lon<-ifelse(latlon$lon < 0, 360+latlon$lon, latlon$lon)

@@ -10,7 +10,7 @@ hist(ime_island$mean_ime_percent) # Gamma
 dat<-ime_island %>% left_join(
   island_complex %>% ungroup() %>% 
     mutate(island = str_replace_all(island_group, '_C', '')) %>%
-    select(island, island_group, REGION, region.col, sst_mean:ted_sum),
+    select(island, island_group, region, region.col, sst_mean:ted_sum),
   by = 'island') %>% 
   filter(!is.na(mld))
 

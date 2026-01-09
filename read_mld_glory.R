@@ -1,7 +1,7 @@
 library(sf)
 
 # get reef lat lon and island shapes
-source('00_islands.R')
+source('0_loads/00_islands.R')
 isl<-readRDS('data/noaa_island_shp.rds') # shapefiles
 latlon<-data.frame(lon = island$longitude, lat = island$latitude, 
                    REGION = island$region,

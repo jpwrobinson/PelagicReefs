@@ -28,9 +28,9 @@ chl_ime<-chl_ime %>%
   mutate(island = islands$island_name,
          lon = islands$longitude,
          lat = islands$latitude,
-         type = ifelse(islands$island_1_or_reef_0 == 1, 'Island', 'Reef'),
-         island_area_km2 = islands$island_area_obtained_either_from_the_nunn_database_or_from_the_island_contour_km2,
-         reef_area_km2 = islands$island_reef_area_calculated_from_gebco_500_m_resolution_as_the_area_of_pixels_above_30_m_depth_including_emerged_lands_km2) %>% 
+         type = ifelse(islands$island_1_or_reef_0 == 1, 'Island', 'Reef')) %>% 
+         # island_area_km2 = islands$island_area_obtained_either_from_the_nunn_database_or_from_the_island_contour_km2,
+         # reef_area_km2 = islands$island_reef_area_calculated_from_gebco_500_m_resolution_as_the_area_of_pixels_above_30_m_depth_including_emerged_lands_km2) %>% 
   pivot_longer(Jan:Dec, names_to = 'month', values_to = 'chl_ime') %>% 
   # fix island names to match CREP
   mutate(
@@ -61,8 +61,8 @@ for(i in 2:18){
   var<-t(as.matrix(ime[[i]], wide=TRUE))
   var<-as.data.frame(var) %>% 
     pivot_longer(V1:V12, names_to = 'month', values_to = 'var')
-  chl_ime[,8+i]<-var$var
-  colnames(chl_ime)[8+i]<-names(ime[[i]])
+  chl_ime[,6+i]<-var$var
+  colnames(chl_ime)[6+i]<-names(ime[[i]])
 }
 
 # add IME seasonality and tons carbon estimates
@@ -94,14 +94,14 @@ chl_ime %>% group_by(island) %>%
 ## Note that average IME values are for months with and without IME detected (keep_IME & has_IME variables). without = CHL values.
 ## Average chl-a values estimated using all months
 seas<-chl_ime %>% 
-  group_by(island, island_messie, lon, lat, type, island_area_km2, reef_area_km2) %>% 
+  group_by(island, island_messie, lon, lat, type) %>% 
   mutate(chl_island = mean(Chl_max, na.rm=TRUE),
          cv_chl = sd(Chl_max, na.rm=TRUE)/mean(Chl_max, na.rm=TRUE) * 100,
          chl_ime = mean(Chl_max[which(keep_IME == 1)]),
          chl_no_ime = mean(Chl_max[which(is.na(keep_IME))]),
          months_ime = n_distinct(month[which(!is.na(keep_IME))])) %>%  # number of months with IME 
   # filter(keep_IME == 1) %>% 
-  group_by(island, island_messie, lon, lat, type, island_area_km2, reef_area_km2, chl_island, cv_chl, chl_ime, chl_no_ime, months_ime) %>% 
+  group_by(island, island_messie, lon, lat, type, chl_island, cv_chl, chl_ime, chl_no_ime, months_ime) %>% 
   summarise(cv_ime = sd(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE)/mean(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE) * 100, 
             mean_ime_percent = mean(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE), # mean IME relative to REF, %
             mean_chl_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean Chl relative to REF, %
