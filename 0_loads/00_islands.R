@@ -50,6 +50,14 @@ island_complex$lon[island_complex$island_group=='Nihoa']<-island$longitude[islan
 island_complex$population_status[island_complex$island_group=='Nihoa']<-'U'
 
 
+## add area covariates
+island<-island %>% rename(land_area_km2 = land_area, reef_area_km2 = reef_area)
+
+ic_land<-island %>% group_by(island_group) %>% summarise(land_area_km2 = sum(land_area_km2))
+island_complex<-island_complex %>% 
+  left_join(ic_land %>% select(island_group, land_area_km2)) %>% 
+  rename(reef_area_km2 = reef_area)
+
 ## Island shapefiles
 # islands_dat <- read.csv("ime_island_crep_lat_lon.csv")
 # 

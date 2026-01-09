@@ -85,7 +85,7 @@ dev.off()
 
 dat_scaled<-dat %>%  
   select(island:island_area_km2, mean_chl_percent, REGION:ted_sum) %>% 
-  mutate(reef_area_km2 = log10(reef_area), island_area_km2 = log10(island_area_km2+1)) %>% 
+  mutate(reef_area_km2 = log10(reef_area_km2), island_area_km2 = log10(island_area_km2+1)) %>% 
   mutate(across(c(island_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:ted_sum, -geomorphic_type,-population_status, -mean_chl_percent), 
                 ~scale(., center=TRUE, scale=TRUE))) %>% na.omit()
 
