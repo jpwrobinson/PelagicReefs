@@ -1,5 +1,7 @@
+source('0_loads/00_oceanographic_load.R')
 
-# Load IME from loads/00_ime_messie_load.R
+
+# Load IME from 0_loads/00_ime_messie_load.R
 # ime = mean upwelling %
 ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
 ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)
@@ -32,7 +34,7 @@ unique(island$island[!island$island %in% dat$island])
 # but these are because IME dataset contains IME for 'lead' island (Maui, Saipan, Tau)
 # Maro Reef is NA
 
-# These islands are missing tidal energy values
+# These 3 islands are missing tidal energy values
 island_complex %>% filter(island_group %in% c('Johnston', 'Necker', 'Nihoa')) %>% data.frame
 
 # ime_island %>%  filter(str_detect(island, 'Laysan')) %>% 
@@ -84,15 +86,15 @@ dev.off()
 
 
 dat_scaled<-dat %>%  
-  select(island:island_area_km2, mean_chl_percent, REGION:ted_sum) %>% 
-  mutate(reef_area_km2 = log10(reef_area_km2), island_area_km2 = log10(island_area_km2+1)) %>% 
-  mutate(across(c(island_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:ted_sum, -geomorphic_type,-population_status, -mean_chl_percent), 
+  select(island:land_area_km2, mean_chl_percent, REGION:ted_sum) %>% 
+  mutate(reef_area_km2 = log10(reef_area_km2), land_area_km2 = log10(land_area_km2+1)) %>% 
+  mutate(across(c(land_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:ted_sum, -geomorphic_type,-population_status, -mean_chl_percent, -REGION), 
                 ~scale(., center=TRUE, scale=TRUE))) %>% na.omit()
 
 dat_scaled_month<-dat_month %>% 
-  select(island:island_area_km2, month, month_num, Chl_increase_nearby, chl_anom, REGION:mld_lag2) %>% 
-  mutate(reef_area_km2 = log10(reef_area), island_area_km2 = log10(island_area_km2+1)) %>% 
-  mutate(across(c(month_num, island_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:irradiance_einsteins_m2_d1_mean, 
+  select(island:land_area_km2, month, month_num, Chl_increase_nearby, chl_anom, REGION:mld_lag2) %>% 
+  mutate(reef_area_km2 = log10(reef_area_km2), land_area_km2 = log10(land_area_km2+1)) %>% 
+  mutate(across(c(month_num, land_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:irradiance_einsteins_m2_d1_mean, 
                   bathymetric_slope, ssh:mld_lag2), 
                 ~terra::scale(., center=TRUE, scale=TRUE)[,1]),
          population_status_num = ifelse(population_status == 'U', 0, 1))
@@ -102,7 +104,7 @@ pdf(file = 'fig/crep_island_month_correlations.pdf', height=7, width=15)
 pairs2(
   dat_scaled_month %>% 
     filter(!is.na(bathymetric_slope) & !is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% 
-    select(island_area_km2, reef_area_km2, bathymetric_slope,avg_monthly_mm,population_status_num,
+    select(land_area_km2, reef_area_km2, bathymetric_slope,avg_monthly_mm,population_status_num,
            sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
            mean_chlorophyll, mld, ssh, ted_mean, ted_sum, month_num))
 dev.off()

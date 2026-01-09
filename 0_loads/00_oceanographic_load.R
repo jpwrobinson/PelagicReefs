@@ -151,6 +151,6 @@ pdf(file = 'fig/crep_island_correlations.pdf', height=7, width=15)
 print(
   pairs2(island %>% select(ted_mean, ted_sum, mld_mean, mld_sd,mld_months_deep,ssh,
                          sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean, mean_chlorophyll,
-                         irradiance_einsteins_m2_d1_mean, reef_area, latitude, longitude) %>%
+                         irradiance_einsteins_m2_d1_mean, land_area_km2, reef_area_km2, latitude, longitude) %>%
          na.omit()))
 dev.off()

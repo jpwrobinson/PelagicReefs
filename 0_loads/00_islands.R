@@ -23,6 +23,7 @@ island2<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.
 # This is island level covariates 
 island<- 
   left_join(island, island2 %>% select(-island_name, -island_type, -latitude, -longitude)) %>%
+  left_join(island_cols) %>% 
   mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
          island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
          island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
@@ -40,7 +41,8 @@ island_C<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005
 island_complex<-left_join(
   island %>% group_by(island_group, region) %>% 
     summarise(across(c(sst_mean:irradiance_einsteins_m2_d1_mean), ~ mean(.x))),
-  island_C %>% select(-location_name, -location_code))
+  island_C %>% select(-location_name, -location_code)) %>% 
+  left_join(island_cols)
 
 ## Nihoa doesn't have bathymetry but does have reef and island area in a separate table
 island_complex$reef_area[island_complex$island_group=='Nihoa']<-island$reef_area[island$island=='Nihoa']
