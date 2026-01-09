@@ -33,8 +33,9 @@ car::vif(lm(Chl_increase_nearby ~
               ted_mean +
               mean_chlorophyll + mld, data=dat_scaled_month))
 
+
 m2_linear<-brm(bf(Chl_increase_nearby ~ 
-                    geomorphic_type + reef_area_km2 + land_area_km2 + avg_monthly_mm +
+                    geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
                     bathymetric_slope + # population_status +
                     mean_chlorophyll + mld + 
                     mi(ted_mean) + 
