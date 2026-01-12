@@ -33,12 +33,10 @@ car::vif(lm(Chl_increase_nearby ~
               ted_mean +
               mean_chlorophyll + mld, data=dat_scaled_month))
 
-summary(lm(Chl_increase_nearby ~ bathymetric_slope , data=dat_scaled_month))
-
-ggplot(dat_scaled_month, aes(reef_area_km2, bathymetric_slope)) + geom_point()
+mod_dat<-dat_scaled_month %>% filter(!is.na(Chl_increase_nearby) & !is.na(bathymetric_slope))
 
 m2_linear<-brm(bf(Chl_increase_nearby ~ 
-                    bathymetric_slope + # population_status +
+                    bathymetric_slope +
                     geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
                     mean_chlorophyll + mld + 
                     mi(ted_mean) + 
@@ -50,7 +48,7 @@ prior = c(
   prior(normal(0, 1), class = "b", resp = 'Chlincreasenearby'),
   prior(exponential(1), class = "sd", resp = 'Chlincreasenearby')
 ),
-data = dat_scaled_month,
+data = mod_dat,
 # backend = "cmdstanr",
 chains = 3, iter = 2000, warmup = 500, cores = 4)
 
@@ -88,4 +86,36 @@ ggplot(effects, aes(x = .value, y = var_fac)) +
 dev.off()
 
 
-save(dat_month, dat_scaled_month, m2_linear, effects, file = 'results/mod_ime.rds')
+save(dat_month, dat_scaled_month, mod_dat, m2_linear, effects, file = 'results/mod_ime.rds')
+
+
+## checking bathymetry ~ reef area effects. 
+# conclusion: bathymetry explains no extra variance after reef area, because reef area captures bathy and additional process
+ep <- posterior_epred(checker, re_formula = NA)
+
+# predictions removing one term at a time
+ep_no_bathy <- posterior_epred(
+  checker,
+  newdata = transform(mod_dat %>% filter(!is.na(ted_mean)), bathymetric_slope = 0),
+  re_formula = NA
+)
+
+ep_no_reef <- posterior_epred(
+  checker,
+  newdata = transform(mod_dat %>% filter(!is.na(ted_mean)), reef_area_km2 = 0),
+  re_formula = NA
+)
+
+var_full     <- apply(ep, 1, var)
+var_no_bathy <- apply(ep_no_bathy, 1, var)
+var_no_reef  <- apply(ep_no_reef, 1, var)
+
+
+unique_bathy = var_full - var_no_bathy
+unique_reef = var_full - var_no_reef
+
+prop_reef  <- unique_reef / var_full
+prop_bathy <- unique_bathy / var_full
+
+hist(posterior_summary(prop_reef)[,1])
+hist(posterior_summary(prop_bathy)[,1])

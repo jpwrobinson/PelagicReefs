@@ -8,9 +8,10 @@ hist(ime_island$mean_ime_percent) # Gamma
 
 # dim(dat) = 30 islands
 dat<-ime_island %>% left_join(
-  island %>% select(island, island_code, REGION, region.col, sst_mean:ted_sum),
-  by = 'island') %>% 
-  filter(!is.na(mld))
+  island_complex %>% ungroup() %>% 
+    mutate(island = str_replace_all(island_group, '_C', '')) %>%
+    select(island, island_group, region, region.col, sst_mean:ted_sum),
+  by = 'island') %>% filter(!is.na(lat))
 
 g1<-ggplot(dat, aes(months_ime, chl_a_mg_m3_mean, col=region.col)) + 
   geom_point(alpha=1) +

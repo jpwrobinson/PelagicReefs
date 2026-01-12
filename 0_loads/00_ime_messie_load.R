@@ -103,8 +103,8 @@ seas<-chl_ime %>%
   # filter(keep_IME == 1) %>% 
   group_by(island, island_messie, lon, lat, type, chl_island, cv_chl, chl_ime, chl_no_ime, months_ime) %>% 
   summarise(cv_ime = sd(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE)/mean(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE) * 100, 
-            mean_ime_percent = mean(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE), # mean IME relative to REF, %
-            mean_chl_percent = mean(Chl_increase_nearby, na.rm=TRUE), # mean Chl relative to REF, %
+            median_ime_percent = median(Chl_increase_nearby[which(keep_IME==1)], na.rm=TRUE), # median IME relative to REF, %
+            median_chl_percent = median(Chl_increase_nearby, na.rm=TRUE), # median Chl relative to REF, %
             max_ime_percent = max(Chl_increase_nearby, na.rm=TRUE), # max IME relative to REF, %
             total_ime_chl_tCm = sum(total_chl_ime_tC_per_m, na.rm=TRUE), # total annual chl-a produced in IME 
             total_increase_chl_tCm = sum(total_chl_increase_tC_per_m, na.rm=TRUE) # total annual chl-a increase in IME 
@@ -117,14 +117,14 @@ write.csv(seas, file = 'island_ime_dat.csv', row.names=FALSE)
 
 # summary stats
 seas %>% ungroup() %>% 
-  reframe(across(c(mean_ime_percent, total_ime_chl_tCm, months_ime), ~ range(., na.rm=TRUE)))
+  reframe(across(c(median_ime_percent, total_ime_chl_tCm, months_ime), ~ range(., na.rm=TRUE)))
 
 seas %>% group_by(months_ime) %>% 
-  summarise(across(c(mean_ime_percent, total_ime_chl_tCm), ~ mean(., na.rm=TRUE)),
+  summarise(across(c(median_ime_percent, total_ime_chl_tCm), ~ mean(., na.rm=TRUE)),
             n = n_distinct(island))
 
-seas %>% ungroup() %>% slice(which.min(mean_ime_percent))
-seas %>% ungroup() %>% slice(which.max(mean_ime_percent)) %>% data.frame
+seas %>% ungroup() %>% slice(which.min(median_ime_percent))
+seas %>% ungroup() %>% slice(which.max(median_ime_percent)) %>% data.frame
 seas %>% filter(months_ime < 6) %>% dim / 613 * 100 # 35% of islands with <6 months IME
 seas %>% filter(months_ime == 12) %>% dim / 613 * 100 # 17% of islands with 12 months IME
 seas %>% filter(ime_diff > 35 | ime_diff <= -35)
@@ -159,9 +159,9 @@ ggplot() +
 
 
 ggplot(seas, 
-       aes(months_ime, mean_ime_percent/100)) + 
+       aes(months_ime, median_ime_percent/100)) + 
   geom_point(alpha=0.5, aes(size = total_ime_chl_tCm)) +
-  geom_text_repel(data = seas %>% filter(mean_ime_percent>2), 
+  geom_text_repel(data = seas %>% filter(median_ime_percent>2), 
                   aes(label = island), size=2) +
   scale_x_continuous(breaks=seq(1, 12, 1)) +
   scale_y_continuous(labels=percent) +
@@ -179,7 +179,7 @@ ggplot(seas %>% filter(chl_island < 1),
        subtitle = 'IME duration does not influence average chl-a nearby islands and reefs')
 
 ggplot(seas %>% filter(chl_island < 1),
-       aes(chl_island, mean_ime_percent/100)) + 
+       aes(chl_island, median_ime_percent/100)) + 
   geom_point() +
   geom_text_repel(data = seas %>% filter(chl_island < 1),
                   aes(label = island), size=2) +

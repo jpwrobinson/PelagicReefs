@@ -6,7 +6,7 @@ source('0_loads/00_oceanographic_load.R')
 ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
 ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)
 
-hist(ime_island$mean_ime_percent) # Gamma
+hist(ime_island$median_ime_percent) # Gamma
 
 # dim(dat) = 30 island (complexes)
 dat<-ime_island %>% left_join(
@@ -36,12 +36,6 @@ unique(island$island[!island$island %in% dat$island])
 
 # These 3 islands are missing tidal energy values. Nihoa is also missing bathymetric slope values.
 island_complex %>% filter(island_group %in% c('Johnston', 'Necker', 'Nihoa')) %>% data.frame
-
-# ime_island %>%  filter(str_detect(island, 'Laysan')) %>% 
-#   distinct(island) %>% data.frame
-
-# crep_depth<-read.csv('data/noaa-crep/crep_bathymetry_merged.csv')
-# island %>% filter(!island %in% crep_depth$ISLAND) %>% distinct(island) %>% data.frame
 
 # csv of modelled data
 dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
@@ -86,16 +80,16 @@ dev.off()
 
 
 dat_scaled<-dat %>%  
-  select(island:land_area_km2, mean_chl_percent, REGION:ted_sum) %>% 
+  select(island:land_area_km2, median_chl_percent, REGION:ted_sum) %>% 
   mutate(reef_area_km2 = log10(reef_area_km2), land_area_km2 = log10(land_area_km2+1)) %>% 
-  mutate(across(c(land_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:ted_sum, -geomorphic_type,-population_status, -mean_chl_percent, -REGION), 
+  mutate(across(c(land_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:ted_sum, -geomorphic_type,-population_status, -median_chl_percent, -REGION), 
                 ~scale(., center=TRUE, scale=TRUE))) %>% na.omit()
 
 dat_scaled_month<-dat_month %>% 
   select(island:land_area_km2, month, month_num, Chl_increase_nearby, chl_anom, REGION:mld_lag2) %>% 
   mutate(reef_area_km2 = log10(reef_area_km2), land_area_km2 = log10(land_area_km2+1)) %>% 
   mutate(across(c(month_num, land_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:irradiance_einsteins_m2_d1_mean, 
-                  bathymetric_slope, ssh:mld_lag2), 
+                  bathymetric_slope, SITE_SLOPE_400m, var_slope, ssh:mld_lag2), 
                 ~terra::scale(., center=TRUE, scale=TRUE)[,1]),
          population_status_num = ifelse(population_status == 'U', 0, 1))
 

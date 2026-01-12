@@ -62,7 +62,7 @@ island_complex$population_status[island_complex$island_group=='Nihoa']<-'U'
 # add site level bathymetry from Richardson
 island_complex<-left_join(island_complex,
   island %>% group_by(island_group) %>% 
-    summarise(across(c(SITE_SLOPE_400m), ~ mean(.x))))
+    summarise(across(c(SITE_SLOPE_400m, var_slope), ~ mean(.x))))
 
 pdf(file = 'fig/site_vs_island_slope.pdf', height=6, width=10)
 print(

@@ -1,28 +1,32 @@
-
 # Load Messi IME and Gove drivers with statistical model objects
+source('0_loads/00_ime_dataframe.R')
 load(file = 'results/mod_ime.rds')
 
 min_max<-dat_month %>% group_by(island) %>% 
   summarise(min = min(Chl_increase_nearby, na.rm=TRUE), max = max(Chl_increase_nearby, na.rm=TRUE))
 
 dat<-dat %>% left_join(min_max, by = 'island')
-labs<-dat %>% filter(island=='Lisianski') %>% select(min, mean_chl_percent, max) 
+labs<-dat %>% filter(island=='Lisianski') %>% select(min, median_chl_percent, max) 
 
 # Panel A = spatial + temporal variability in IME at CREP islands
-gA<-ggplot(dat, aes(mean_chl_percent, fct_reorder(island, max))) +
+gA<-ggplot(dat, aes(median_chl_percent, fct_reorder(island, max))) +
   geom_pointrange(aes(xmin = min, xmax =max, col=region.col), fatten=0) +
   geom_point(aes(fill=region.col), pch=21, size=2) +
   # geom_point(aes(x = max), col='black', size=1) +
   scale_colour_identity() + 
   scale_fill_identity() + 
   scale_x_continuous(expand=c(0.01,0.01), 
-                     sec.axis = sec_axis(~ ., labels=c('Min', 'Mean', 'Max'), 
-                                         breaks=c(labs$min[1], labs$mean[1],labs$max[1]))) +
+                     sec.axis = sec_axis(~ ., labels=c('Min', 'Median', 'Max'), 
+                                         breaks=c(labs$min[1], labs$median_chl_percent[1],labs$max[1]))) +
   labs(x = 'nearshore chl-a enhancement, %', y = '') +
   guides(fill='none', colour='none') +
   theme(axis.line.x.top = element_blank(),
         axis.ticks.x.top = element_blank(),
         axis.text.x.top = element_text(size=8))
+
+ggplot(dat, aes(fct_reorder(island, max), y=1, fill = mean_chlorophyll)) + 
+  geom_tile() +
+  coord_flip() + theme_void()
 
 # Panel B = drivers of IME [monthly and time-averaged]
 bayes<-data.frame(b = bayes_R2(m2_linear)[1,'Estimate'], x = 1, y = c(8.1))
