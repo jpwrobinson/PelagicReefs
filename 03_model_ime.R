@@ -27,16 +27,19 @@ dat_scaled_month %>% filter(!is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% 
 
 # check vif
 car::vif(lm(Chl_increase_nearby ~ 
-              reef_area_km2 + sst_mean + land_area_km2 + avg_monthly_mm +
-              bathymetric_slope + 
+              land_area_km2 + avg_monthly_mm +
+              reef_area_km2 + bathymetric_slope + 
               # population_status + VIF = 5.68
               ted_mean +
               mean_chlorophyll + mld, data=dat_scaled_month))
 
+summary(lm(Chl_increase_nearby ~ bathymetric_slope , data=dat_scaled_month))
+
+ggplot(dat_scaled_month, aes(reef_area_km2, bathymetric_slope)) + geom_point()
 
 m2_linear<-brm(bf(Chl_increase_nearby ~ 
-                    geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
                     bathymetric_slope + # population_status +
+                    geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
                     mean_chlorophyll + mld + 
                     mi(ted_mean) + 
                     (1 + mld | island),

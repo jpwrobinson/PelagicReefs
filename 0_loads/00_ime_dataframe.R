@@ -34,7 +34,7 @@ unique(island$island[!island$island %in% dat$island])
 # but these are because IME dataset contains IME for 'lead' island (Maui, Saipan, Tau)
 # Maro Reef is NA
 
-# These 3 islands are missing tidal energy values
+# These 3 islands are missing tidal energy values. Nihoa is also missing bathymetric slope values.
 island_complex %>% filter(island_group %in% c('Johnston', 'Necker', 'Nihoa')) %>% data.frame
 
 # ime_island %>%  filter(str_detect(island, 'Laysan')) %>% 

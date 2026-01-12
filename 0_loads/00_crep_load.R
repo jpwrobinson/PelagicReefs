@@ -15,6 +15,10 @@ depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR) %>%
 depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR, SITE_SLOPE_400m) %>% 
   write.csv('data/richardson_2023/richardson_crep_site_slope_400m.csv', row.names=FALSE)
 
+depth %>% group_by(ISLAND, REGION) %>% 
+  summarise(SITE_SLOPE_400m = mean(SITE_SLOPE_400m)) %>% 
+  write.csv('data/richardson_2023/richardson_crep_site_slope_400m_mean.csv', row.names=FALSE)
+
 
 depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR) %>% 
   group_by(ISLAND) %>% 

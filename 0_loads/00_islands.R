@@ -20,9 +20,17 @@ island2<-readxl::read_excel('data/crep_oceanographic/Gove2013_pone.0061974.s005.
          island = recode(island, 'French Frigate Shoals' = 'French Frigate',
                          'Pearl & Hermes Reef' = 'Pearl & Hermes'))
 
+# richardson bathymetry
+site_bathy<-read.csv('data/richardson_2023/richardson_crep_site_slope_400m_mean.csv') %>% 
+  rename(island = ISLAND) %>% select(-REGION) %>% 
+  mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
+         island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
+         island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
+
 # This is island level covariates 
 island<- 
   left_join(island, island2 %>% select(-island_name, -island_type, -latitude, -longitude)) %>%
+  left_join(site_bathy) %>% 
   left_join(island_cols) %>% 
   mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
          island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
@@ -51,6 +59,18 @@ island_complex$lat[island_complex$island_group=='Nihoa']<-island$latitude[island
 island_complex$lon[island_complex$island_group=='Nihoa']<-island$longitude[island$island=='Nihoa']
 island_complex$population_status[island_complex$island_group=='Nihoa']<-'U'
 
+# add site level bathymetry from Richardson
+island_complex<-left_join(island_complex,
+  island %>% group_by(island_group) %>% 
+    summarise(across(c(SITE_SLOPE_400m), ~ mean(.x))))
+
+pdf(file = 'fig/site_vs_island_slope.pdf', height=6, width=10)
+print(
+  ggplot(island_complex, aes(bathymetric_slope, SITE_SLOPE_400m)) + geom_point() +
+    geom_text(aes(label = island_group), size=2.5, vjust=-.5) +
+    labs(x = 'Island slope (Gove)', y = 'Mean site slope (Richardson)')
+)
+dev.off()
 
 ## add area covariates
 island<-island %>% rename(land_area_km2 = land_area, reef_area_km2 = reef_area)
