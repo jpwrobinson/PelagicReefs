@@ -46,3 +46,5 @@ ggplot(condo, aes(month_num, estimate__, group=island)) +
   facet_wrap(~REGION)
 
 
+
+save(mod_dat, m2_month, file = 'results/mod_ime_month.rds')

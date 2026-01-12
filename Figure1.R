@@ -2,36 +2,42 @@
 source('0_loads/00_ime_dataframe.R')
 load(file = 'results/mod_ime.rds')
 
-min_max<-dat_month %>% group_by(island) %>% 
-  summarise(min = min(Chl_increase_nearby, na.rm=TRUE), max = max(Chl_increase_nearby, na.rm=TRUE))
+# Panel a = island seasonal IME, 3 panels
+gA<-ggplot(dat_month, aes(Chl_increase_nearby/100)) + 
+  geom_histogram(col='black', fill='grey50', binwidth=0.1) +
+  scale_y_continuous(expand=c(0,0)) +
+  scale_x_continuous(expand=c(0,0), labels=label_percent()) +
+  labs(y = 'Number of island-months', x = 'chl-a enhancement')
 
-dat<-dat %>% left_join(min_max, by = 'island')
-labs<-dat %>% filter(island=='Lisianski') %>% select(min, median_chl_percent, max) 
+gB<-ggplot(dat, aes(months_ime)) + 
+  geom_histogram(col='black', fill='grey50', binwidth=1) +
+  scale_y_continuous(expand=c(0,0)) +
+  scale_x_continuous(expand=c(0,0), breaks=c(0, 1, 4, 5, 6, 7, 8, 9, 10, 12)) +
+  labs(y = 'Number of islands', x = 'Number of months with chl-a enhancement')
 
-# Panel A = spatial + temporal variability in IME at CREP islands
-gA<-ggplot(dat, aes(median_chl_percent, fct_reorder(island, max))) +
-  geom_pointrange(aes(xmin = min, xmax =max, col=region.col), fatten=0) +
-  geom_point(aes(fill=region.col), pch=21, size=2) +
-  # geom_point(aes(x = max), col='black', size=1) +
-  scale_colour_identity() + 
-  scale_fill_identity() + 
-  scale_x_continuous(expand=c(0.01,0.01), 
-                     sec.axis = sec_axis(~ ., labels=c('Min', 'Median', 'Max'), 
-                                         breaks=c(labs$min[1], labs$median_chl_percent[1],labs$max[1]))) +
-  labs(x = 'nearshore chl-a enhancement, %', y = '') +
-  guides(fill='none', colour='none') +
-  theme(axis.line.x.top = element_blank(),
-        axis.ticks.x.top = element_blank(),
-        axis.text.x.top = element_text(size=8))
 
-ggplot(dat, aes(fct_reorder(island, max), y=1, fill = mean_chlorophyll)) + 
-  geom_tile() +
-  coord_flip() + theme_void()
+# Panel b = island seasonal IME, 3 panels
+fac_level<-levels(with(dat, fct_reorder(island, -median_chl_percent)))
+dat_month$island_fac<-factor(dat_month$island, levels=fac_level)
 
-# Panel B = drivers of IME [monthly and time-averaged]
+focs<-c('Lisianski', 'Jarvis', 'Guam')
+
+gC<-ggplot(dat_month %>% filter(island %in% focs), aes(month_num, Chl_increase_nearby/100, col=region.col,fill=region.col, group=island)) + 
+    geom_area(alpha=0.5) + 
+    # geom_text(data = dat_month %>% filter(island %in% focs) %>% slice_max(Chl_increase_nearby), size=2, vjust=3, aes(label=island)) +
+    theme(legend.position = 'none', plot.margin=unit( c(0,0,0,0), 'cm')) +
+    labs(x = '', y = '') +
+    facet_wrap(~island, scales='fixed') +
+    scale_colour_identity() +
+    scale_fill_identity() +
+    coord_cartesian(clip='off') +
+    scale_y_continuous(expand=c(0,0), labels = label_percent()) +
+    scale_x_continuous(breaks=c(1, 3, 5, 7, 9, 11), labels=month.abb[c(1, 3, 5, 7, 9, 11)])
+  
+# Panel C = drivers of IME [monthly and time-averaged]
 bayes<-data.frame(b = bayes_R2(m2_linear)[1,'Estimate'], x = 1, y = c(8.1))
 
-gB<-ggplot(effects,
+gD<-ggplot(effects,
            aes(x = .value, y = var_fac)) +
   geom_text(data = bayes, aes(x = x, y = y, label = paste0('Bayesian R2 = ', round(b*100,1),'% ')), size=2) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
@@ -66,7 +72,7 @@ dd<-rbind(bathy_pred %>% select(-bathymetric_slope) %>% mutate(var = 'Bathymetri
           chl_pred %>% select(-mean_chlorophyll) %>% mutate(var = 'chl-a, mg_m3')) %>% 
   mutate(g = ifelse(var %in% c('Bathymetric slope, deg', 'land area, km2', 'reef area, km2'), 0, 1))
 
-gC<-ggplot(dd, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100)) + 
+gE<-ggplot(dd, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100)) + 
   geom_ribbon(alpha=0.1) +
   geom_line() + 
   guides(fill = 'none') +
@@ -76,16 +82,14 @@ gC<-ggplot(dd, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100)) 
   theme(strip.placement = 'bottom', strip.background = element_blank())
 
 
-pdf(file = 'fig/Figure1.pdf', height=5, width=9)
-rhs<-plot_grid(gB, gC, nrow=2, labels=c('b', 'c'))
-plot_grid(gA, rhs, nrow=1, labels='a')
+pdf(file = 'fig/Figure1.pdf', height=5.5, width=12)
+top<-plot_grid(gA, gB, gC, nrow=1, labels=c('a', 'b', 'c'))
+bot<-plot_grid(gD, gE, nrow=1, labels=c('d', 'e'), rel_widths=c(0.5, 1))
+plot_grid(top, bot, nrow=2)
 dev.off()
 
 r2(m2_linear, by_component = TRUE) # 51% fixed effects. 65% full model.
 
-pdf(file = 'fig/Figure1_alt.pdf', height=2.5, width=11)
-plot_grid(gB, gC, nrow=1, labels=c('a', 'b'), rel_widths=c(0.4, 1))
-dev.off()
 
 #### Supplementary figs from IME model
 
