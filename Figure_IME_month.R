@@ -4,7 +4,7 @@ source('0_loads/00_plot_theme.R')
 ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
 ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)
 
-fac_level<-levels(with(dat, fct_reorder(island, -mean_chl_percent)))
+fac_level<-levels(with(dat, fct_reorder(island, -median_chl_percent)))
 dat_month$island_fac<-factor(dat_month$island, levels=fac_level)
 dat_month<-dat_month %>% group_by(REGION) %>% 
   mutate(limmer = max(Chl_increase_nearby, na.rm=TRUE),

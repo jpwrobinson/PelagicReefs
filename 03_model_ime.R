@@ -1,4 +1,4 @@
-source('loads/00_plot_theme.R')
+source('0_loads/00_plot_theme.R')
 
 options(mc.cores = 4)
 rstan::rstan_options(auto_write = TRUE)
@@ -15,7 +15,7 @@ cmdstanr::set_cmdstan_path()
 source('0_loads/00_ime_dataframe.R')
 
 # y distributions
-hist(dat$mean_chl_percent)
+hist(dat$median_chl_percent)
 hist(dat_month$Chl_increase_nearby)
 
 dat_scaled_month %>% filter(!is.na(Chl_increase_nearby)) %>% dim # N = 388, 35 islands
@@ -87,35 +87,3 @@ dev.off()
 
 
 save(dat_month, dat_scaled_month, mod_dat, m2_linear, effects, file = 'results/mod_ime.rds')
-
-
-## checking bathymetry ~ reef area effects. 
-# conclusion: bathymetry explains no extra variance after reef area, because reef area captures bathy and additional process
-ep <- posterior_epred(checker, re_formula = NA)
-
-# predictions removing one term at a time
-ep_no_bathy <- posterior_epred(
-  checker,
-  newdata = transform(mod_dat %>% filter(!is.na(ted_mean)), bathymetric_slope = 0),
-  re_formula = NA
-)
-
-ep_no_reef <- posterior_epred(
-  checker,
-  newdata = transform(mod_dat %>% filter(!is.na(ted_mean)), reef_area_km2 = 0),
-  re_formula = NA
-)
-
-var_full     <- apply(ep, 1, var)
-var_no_bathy <- apply(ep_no_bathy, 1, var)
-var_no_reef  <- apply(ep_no_reef, 1, var)
-
-
-unique_bathy = var_full - var_no_bathy
-unique_reef = var_full - var_no_reef
-
-prop_reef  <- unique_reef / var_full
-prop_bathy <- unique_bathy / var_full
-
-hist(posterior_summary(prop_reef)[,1])
-hist(posterior_summary(prop_bathy)[,1])

@@ -83,7 +83,9 @@ dev.off()
 
 r2(m2_linear, by_component = TRUE) # 51% fixed effects. 65% full model.
 
-
+pdf(file = 'fig/Figure1_alt.pdf', height=2.5, width=11)
+plot_grid(gB, gC, nrow=1, labels=c('a', 'b'), rel_widths=c(0.4, 1))
+dev.off()
 
 #### Supplementary figs from IME model
 
