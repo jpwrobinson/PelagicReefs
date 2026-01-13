@@ -68,7 +68,6 @@ for(i in 2:18){
 # add IME seasonality and tons carbon estimates
 chl_ime<-chl_ime %>% 
          mutate(
-         has_IME = ifelse(has_IME ==1 & !is.na(keep_IME), 1, NA),
          # add logical flag for IME that has >10% Chl increase nearby
          has_IME_above10pct = ifelse(has_IME ==1 & Chl_increase_nearby>=0.1, 1, NA),
          # change to Chl_increase_nearby to percent

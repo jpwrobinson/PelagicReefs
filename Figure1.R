@@ -9,37 +9,35 @@ gA<-ggplot(dat_month, aes(Chl_increase_nearby/100)) +
   scale_x_continuous(expand=c(0,0), labels=label_percent()) +
   labs(y = 'Number of island-months', x = 'chl-a enhancement')
 
-gB<-ggplot(dat, aes(months_ime)) + 
-  geom_histogram(col='black', fill='grey50', binwidth=1) +
-  scale_y_continuous(expand=c(0,0)) +
-  scale_x_continuous(expand=c(0,0), breaks=c(0, 1, 4, 5, 6, 7, 8, 9, 10, 12)) +
-  labs(y = 'Number of islands', x = 'Number of months with chl-a enhancement')
-
 
 # Panel b = island seasonal IME, 3 panels
-fac_level<-levels(with(dat, fct_reorder(island, -median_chl_percent)))
-dat_month$island_fac<-factor(dat_month$island, levels=fac_level)
+# fac_level<-levels(with(dat, fct_reorder(island, -median_chl_percent)))
+# dat_month$island_fac<-factor(dat_month$island, levels=fac_level)
 
-focs<-c('Lisianski', 'Jarvis', 'Guam')
+focs<-c('Laysan', 'Kauai', 'Jarvis', 'Palmyra', 'Agrihan', 'Guam')
+pp<-dat_month %>% filter(island %in% focs) %>% 
+  mutate(island_fac = factor(island, levels=focs))
 
-gC<-ggplot(dat_month %>% filter(island %in% focs), aes(month_num, Chl_increase_nearby/100, col=region.col,fill=region.col, group=island)) + 
+gC<-ggplot(pp, aes(month_num, Chl_increase_nearby/100, col=region.col,fill=region.col, group=island)) + 
     geom_area(alpha=0.5) + 
     # geom_text(data = dat_month %>% filter(island %in% focs) %>% slice_max(Chl_increase_nearby), size=2, vjust=3, aes(label=island)) +
     theme(legend.position = 'none', plot.margin=unit( c(0,0,0,0), 'cm')) +
-    labs(x = '', y = '') +
-    facet_wrap(~island, scales='fixed') +
+    labs(x = '', y = 'chl-a enhancement') +
+    facet_wrap(~island_fac, scales='fixed', nrow=1) +
     scale_colour_identity() +
     scale_fill_identity() +
     coord_cartesian(clip='off') +
     scale_y_continuous(expand=c(0,0), labels = label_percent()) +
-    scale_x_continuous(breaks=c(1, 3, 5, 7, 9, 11), labels=month.abb[c(1, 3, 5, 7, 9, 11)])
+    scale_x_continuous(breaks=c(1,  6, 11), labels=month.abb[c(1, 6, 11)]) +
+    theme(strip.background = element_blank(), strip.text = element_text(hjust=0))
   
 # Panel C = drivers of IME [monthly and time-averaged]
 bayes<-data.frame(b = bayes_R2(m2_linear)[1,'Estimate'], x = 1, y = c(8.1))
+# r2(m2_linear, by_component = TRUE) # 51% fixed effects. 65% full model.
 
 gD<-ggplot(effects,
            aes(x = .value, y = var_fac)) +
-  geom_text(data = bayes, aes(x = x, y = y, label = paste0('Bayesian R2 = ', round(b*100,1),'% ')), size=2) +
+  geom_text(data = bayes, aes(x = x, y = y, label = paste0('R2 = ', round(b*100,1),'% ')), size=2) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
   stat_pointinterval(.width = c(0.5, 0.95), position = position_dodge(width=0.5)) +  
   labs(x = "Effect on chl-a enhancement", y = "") +
@@ -63,32 +61,47 @@ ted_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'ted_mean')
 chl_pred<-mod_post(mod = m2_linear, dat_raw = dat_month, var = 'mean_chlorophyll')
 
 
-dd<-rbind(bathy_pred %>% select(-bathymetric_slope) %>% mutate(var = 'Bathymetric slope, deg'), 
-          precip_pred %>% select(-avg_monthly_mm) %>% mutate(var = 'Precipitation, mm'),
-          isl_pred %>% select(-land_area_km2) %>% mutate(var = 'land area, km2'),
-          reef_pred %>% select(-reef_area_km2) %>% mutate(var = 'reef area, km2'),
-          mld_pred %>% select(-mld) %>% mutate(var = 'Mixed layer depth, m') , 
-          ted_pred %>% select(-ted_mean) %>% mutate(var = 'Tidal energy flux, W_m2'),
-          chl_pred %>% select(-mean_chlorophyll) %>% mutate(var = 'chl-a, mg_m3')) %>% 
-  mutate(g = ifelse(var %in% c('Bathymetric slope, deg', 'land area, km2', 'reef area, km2'), 0, 1))
+dd<-rbind(bathy_pred %>% select(-bathymetric_slope) %>% mutate(var = 'Bathymetry', unit='slope~degree'), 
+          precip_pred %>% select(-avg_monthly_mm) %>% mutate(var = 'Precipitation',unit='mm'),
+          isl_pred %>% select(-land_area_km2) %>% mutate(var = 'Land area', unit='km^2'),
+          reef_pred %>% select(-reef_area_km2) %>% mutate(var = 'Reef area', unit="km^2"),
+          mld_pred %>% select(-mld) %>% mutate(var = 'Mixed layer depth', unit='m') , 
+          ted_pred %>% select(-ted_mean) %>% mutate(var = 'Tidal energy flux', unit='W~m^2'),
+          chl_pred %>% select(-mean_chlorophyll) %>% mutate(var = 'Mean chl-a', unit='mg~m^3')) %>% 
+  mutate(g = ifelse(var %in% c('Bathymetry', 'Land area', 'Reef area'), 0, 1))
 
-gE<-ggplot(dd, aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100)) + 
-  geom_ribbon(alpha=0.1) +
-  geom_line() + 
+labels<-dd %>% distinct(var, unit)
+
+gE<-ggplot(dd %>% filter(g == 0)) + 
+  geom_ribbon(aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100), alpha=0.1) +
+  geom_line(aes(raw, estimate__/100)) + 
+  geom_text(data = dd %>% filter(g == 0) %>% distinct(var), 
+            aes(y = Inf,x = -Inf, label = var), size = 3, vjust=2, hjust=-.05) +
   guides(fill = 'none') +
-  labs(y = 'chl-a enhancement, %', x = '') +
+  labs(y = 'chl-a enhancement', x = '') +
   scale_y_continuous(labels = label_percent()) +
-  facet_grid(~var, scales='free', switch = 'x') +
+  facet_grid(~var, scales='free', switch = 'x', 
+             labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
   theme(strip.placement = 'bottom', strip.background = element_blank())
+
+gF<-ggplot(dd %>% filter(g == 1)) + 
+  geom_ribbon(aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100), alpha=0.1) +
+  geom_line(aes(raw, estimate__/100)) + 
+  geom_text(data = dd %>% filter(g == 1) %>% distinct(var), 
+            aes(y = Inf,x = -Inf, label = var), size = 3, vjust=2, hjust=-.05) +
+  guides(fill = 'none') +
+  labs(y = '', x = '') +
+  scale_y_continuous(labels = label_percent()) +
+  facet_grid(~var, scales='free', switch = 'x',
+             labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
+  theme(strip.placement = 'bottom', strip.background = element_blank()) 
 
 
 pdf(file = 'fig/Figure1.pdf', height=5.5, width=12)
-top<-plot_grid(gA, gB, gC, nrow=1, labels=c('a', 'b', 'c'))
-bot<-plot_grid(gD, gE, nrow=1, labels=c('d', 'e'), rel_widths=c(0.5, 1))
+top<-plot_grid(gA, gC,gD, nrow=1, labels=c('a', 'b', 'c'))
+bot<-plot_grid(gE, gF, nrow=1, labels=c('d', 'e'), rel_widths=c(1, 1.2))
 plot_grid(top, bot, nrow=2)
 dev.off()
-
-r2(m2_linear, by_component = TRUE) # 51% fixed effects. 65% full model.
 
 
 #### Supplementary figs from IME model
