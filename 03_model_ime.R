@@ -26,12 +26,12 @@ dat_scaled_month %>% filter(!is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% 
 ## Month models work better but are captuing an unknown process.
 
 # check vif
-car::vif(lm(Chl_increase_nearby ~ 
+car::vif(glm(Chl_increase_nearby ~ 
               land_area_km2 + avg_monthly_mm +
               reef_area_km2 + bathymetric_slope + 
               # population_status + VIF = 5.68
               ted_mean +
-              mean_chlorophyll + mld, data=dat_scaled_month))
+              mean_chlorophyll + mld, family = lognormal, data=dat_scaled_month))
 
 mod_dat<-dat_scaled_month %>% filter(!is.na(Chl_increase_nearby) & !is.na(bathymetric_slope))
 
