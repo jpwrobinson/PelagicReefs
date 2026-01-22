@@ -9,7 +9,7 @@ ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -t
 hist(ime_island$median_ime_percent) # Gamma
 
 # dim(dat) = 30 island (complexes)
-dat<-ime_island %>% left_join(
+ime_dat<-ime_island %>% left_join(
   island_complex %>% ungroup() %>% 
     mutate(island = str_replace_all(island_group, '_C', '')) %>%
     select(island, island_group, region, region.col, sst_mean:ted_sum),
@@ -22,14 +22,14 @@ island$island[!island$island %in% ime_island$island]
 # ime_island %>%  filter(str_detect(island, 'L')) %>% distinct(island) %>% data.frame
 
 # missing CREP from modelled dataset
-island %>% filter(!island %in% dat$island) %>% data.frame
+island %>% filter(!island %in% ime_dat$island) %>% data.frame
 # but note that we are using island complex, so this captures 
 # 'Maui, Lanai, Molokai, Lanai, Kahoolawe' = 'Maui_C',
 # 'Saipan, Tinian, Aguijan' = 'Saipan_C',
 # 'Ofu, Olosega, Tau' = 'Tau_C'
 
 # 6 missing CREP islands in modelled dataset
-unique(island$island[!island$island %in% dat$island]) 
+unique(island$island[!island$island %in% ime_dat$island]) 
 # "Ofu & Olosega" "Lanai"         "Molokai"         "Tinian"        "Aguijan"   
 # but these are because IME dataset contains IME for 'lead' island (Maui, Saipan, Tau)
 # Maro Reef is NA
@@ -38,7 +38,7 @@ unique(island$island[!island$island %in% dat$island])
 island_complex %>% filter(island_group %in% c('Johnston', 'Necker', 'Nihoa')) %>% data.frame
 
 # csv of modelled data
-dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
+ime_dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
 island %>% distinct(island, latitude, longitude, REGION, geomorphic_type) %>% write.csv('ime_island_crep_lat_lon.csv', row.names=FALSE)
 
 # dim(dat_month) = 420 (12 * 35)
@@ -79,7 +79,7 @@ ggplot(dat_month, aes(month_num, chl_anom, col=island)) +
 dev.off()
 
 
-dat_scaled<-dat %>%  
+dat_scaled<-ime_dat %>%  
   select(island:land_area_km2, median_chl_percent, REGION:ted_sum) %>% 
   mutate(reef_area_km2 = log10(reef_area_km2), land_area_km2 = log10(land_area_km2+1)) %>% 
   mutate(across(c(land_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:ted_sum, -geomorphic_type,-population_status, -median_chl_percent, -REGION), 
