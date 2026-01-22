@@ -10,10 +10,12 @@ priors <- c(
 )
 
 # 1. Planktivore
-# model N = 2214
+# model N = 4294 [2009-2024]
 m2_plank<-brm(planktivore_metab ~ 
                     reef_area_km2 + island_area_km2 + avg_monthly_mm +
-                    site_bathy_400m + hard_coral + depth + 
+                    site_bathy_400m + 
+                    # hard_coral + 
+                    # depth + 
                     mld_amp + #chl_a_mg_m3_mean +
                     (1 | year) +
                     (1 | geomorphic_type) +
@@ -55,7 +57,8 @@ bayes_R2(checker)
 car::vif(lm(planktivore_metab ~ 
                reef_area_km2 + sst_mean +
               island_area_km2 +
-              site_bathy_400m + hard_coral + depth + 
+              site_bathy_400m + #hard_coral + 
+              depth + 
               mld_amp, data=plank_scaled))
 
 
