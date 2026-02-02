@@ -15,7 +15,7 @@ m2_plank<-brm(planktivore_metab ~
                     reef_area_km2 + island_area_km2 + avg_monthly_mm +
                     site_bathy_400m + 
                     # hard_coral + 
-                    # depth + 
+                    depth_m +
                     mld_amp + #chl_a_mg_m3_mean +
                     (1 | year) +
                     (1 | geomorphic_type) +
@@ -58,7 +58,7 @@ car::vif(lm(planktivore_metab ~
                reef_area_km2 + sst_mean +
               island_area_km2 +
               site_bathy_400m + #hard_coral + 
-              depth + 
+              depth_m + 
               mld_amp, data=plank_scaled))
 
 
@@ -72,7 +72,7 @@ effects <- checker %>%
          var_fac = factor(.variable, 
                           levels = rev(c('Intercept', 'geomorphic_typeIsland','reef_area_km2','island_area_km2',
                                          'avg_monthly_mm', 'population_statusU',
-                                         'site_bathy_400m', 'hard_coral', 'depth',
+                                         'site_bathy_400m', 'hard_coral', 'depth_m',
                                         'mld_amp', 'chl_a_mg_m3_mean')))) %>% 
   filter(!is.na(var_fac)) %>% 
   group_by(var_fac) %>% mutate(medi = abs(median(.value)))
@@ -94,7 +94,7 @@ conditional_effects(checker, c('mld_amp')) %>%
 # Extract posterior samples
 nd<-plank_scaled %>%  
   data_grid(
-            depth = 0,
+            depth_m = 0,
             site_bathy_400m = 0,
             hard_coral = 0,
             avg_monthly_mm = 0,
