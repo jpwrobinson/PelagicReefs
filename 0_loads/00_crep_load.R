@@ -1,4 +1,4 @@
-source('loads/00_plot_theme.R')
+source('0_loads/00_plot_theme.R')
 
 # Heenan et al. 2017
 # crep<-read.csv('data/noaa-crep/NOAA_PACIFIC_RAMP_FISH_SPC_2010_2017_SCI_DATA_.csv') 
@@ -26,9 +26,17 @@ depth %>% distinct(LONGITUDE, LATITUDE, ISLAND, SITE, SITEVISITID, OBS_YEAR) %>%
   write.csv('data/richardson_2023/crep_lat_lon_island.csv', row.names=FALSE)
 
 # all CREP from Tye, merged as below and in 00_crep_bathy_fill.R
-crep_full<-read.csv('data/noaa-crep/crep_full_merged.csv')
-crep_depth<-read.csv('data/noaa-crep/crep_bathymetry_merged.csv')
-crep_bathy_fill<-read.csv('data/noaa-crep/crep_full_merged_bathymetry_fill.csv')
+crep_full<-read.csv('data/noaa-crep/crep_full_merged.csv') # tidy but incomplete CREP dataset (2008-2024)
+crep_depth<-read.csv('data/noaa-crep/crep_bathymetry_merged.csv') # Laura's bathymetry CREP (2010-14)
+crep_bathy_fill<-read.csv('data/noaa-crep/crep_full_merged_bathymetry_fill.csv') # tidy and bathymetry filled (2008-2024)
+
+# match in correct depth values [by Tye - to account for meters vs feet used by divers, email 29th January 2026]
+# crep_full is missing depth for >37000 site visits
+dep<-read.csv('data/noaa-crep/site.depth.csv')
+crep_bathy_fill$depth_m<-dep$MEAN_DEPTH_M[match(crep_bathy_fill$SITEVISITID, dep$SITEVISITID)]
+crep_bathy_fill$DEPTH<-NULL
+
+write.csv(crep_bathy_fill, 'data/noaa-crep/crep_for_analysis.csv', row.names=FALSE)
 
 # Below hashed out because slow to read the full CREP. Loading csv at end of script.
 # from Tye NOAA, full dataset with 0s
