@@ -54,10 +54,10 @@ df<-df %>%
 
 write.csv(df, file = 'results/mld_seasonal_pred.csv', row.names=FALSE)
 
-depth_survey<-read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>% 
-  mutate(DATE_ = as.Date(DATE_, "%d/%m/%Y"), month = month(DATE_)) %>% 
+survey_dates<-read.csv('data/noaa-crep/crep_for_analysis.csv') %>% 
+  distinct(OBS_YEAR, DATE_, ISLAND) %>% 
+  mutate(DATE_ = as.Date(DATE_, "%m/%d/%Y"), month = month(DATE_)) %>% 
   left_join(island %>% rename(ISLAND = island) %>% select(ISLAND, region)) %>%
-  # left_join(region_df %>% rename(ISLAND = island) %>% select(ISLAND, region2)) %>% 
   distinct(region, month) %>% 
   left_join(df %>% group_by(region, month) %>% summarise(MLD_pred = mean(MLD_pred)))
 
@@ -65,10 +65,10 @@ regs<-unique(df$region)
 
 for(i in 1:length(regs)){
 
-  gg<-ggplot(df %>% filter(region %in% regs[i]), aes(month, MLD_pred, col=region.col, group=island)) + 
-    geom_line() + 
+  gg<-ggplot(df %>% filter(region %in% regs[i]), aes(month, MLD_pred, col=region.col)) + 
+    geom_line(aes(group=island)) + 
     geom_text_repel(data = df %>% filter(region %in% regs[i] & month == 12), aes(label = island), nudge_x = 0.5, size=3) +
-    # geom_point(data = depth_survey %>% filter(region %in% regs[i]), pch=21, col='white', fill = 'black', size=3) +
+    geom_point(data = survey_dates %>% filter(region %in% regs[i]), pch=21, col='white', fill = 'black', size=3) +
     scale_x_continuous(breaks=c(1,3,6,9, 12), labels=c('Jan', 'Mar', 'Jun', 'Sept', 'Dec')) +
     scale_y_continuous(limits=c(15, 60)) +
     scale_colour_identity() +

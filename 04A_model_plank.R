@@ -29,7 +29,9 @@ save(m2_plank, file = 'results/mod_planktivore_metabolic.rds')
 
 m3_plank<-brm(planktivore_biom ~ 
                 reef_area_km2 + island_area_km2 + avg_monthly_mm +
-                site_bathy_400m + hard_coral + depth + 
+                site_bathy_400m + 
+                hard_coral + 
+                depth_m + 
                 mld_amp + #chl_a_mg_m3_mean +
                 (1 | year) +
                 (1 | island),

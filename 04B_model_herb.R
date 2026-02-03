@@ -9,7 +9,7 @@ priors <- c(
 )
 
 # 1. Herbivore
-# model N = 2250
+# model N = 4340 [2009-2024]
 m2_herb<-brm(herbivore_metab ~ 
                 reef_area_km2 + island_area_km2 + avg_monthly_mm +
                 site_bathy_400m + hard_coral + depth + 
