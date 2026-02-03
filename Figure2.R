@@ -26,11 +26,11 @@ library(tidybayes)
 
 # partial residual estimates - the observed value minus prediction with model excluding focal covariate
 # note this refits model with update
+
+tt<-update(m2_plank, . ~ . - mld_amp, init=0, control = list(adapt_delta = 0.99)
 pr <- plank_scaled %>%
   add_epred_draws(m2_plank) %>%             # expected value on data scale
-  add_epred_draws(update(m2_plank, . ~ . - mld_amp, init=0, control = list(adapt_delta = 0.99)),
-                  .draw = "draw2",
-                  value = "epred_nox")
+  add_epred_draws(tt, .draw = "draw2", value = "epred_nox")
 
 pr <- pr %>%
   mutate(partial = planktivore_metab - epred_nox)

@@ -1,15 +1,14 @@
 # LOAD 
-source('00_oceanographic_load.R')
-
-pdf(file = 'fig/mld_obs_trend.pdf', height=9, width=20)
-ggplot(mld, aes(Date, MLD, col=REGION)) + geom_line() +
-  facet_wrap(~ island, scales='fixed') +
-  labs(x = '', y = 'Mixed layer depth, m') +
-  guides(colour='none')
-dev.off()
-
+source('0_loads/00_oceanographic_load.R')
 
 # What is change in MLD over time? seasonality and long-term trend
+
+# pdf(file = 'fig/mld_obs_trend.pdf', height=9, width=20)
+# ggplot(mld, aes(Date, MLD, col=REGION)) + geom_line() +
+#   facet_wrap(~ island, scales='fixed') +
+#   labs(x = '', y = 'Mixed layer depth, m') +
+#   guides(colour='none')
+# dev.off()
 
 # mld$island<-factor(mld$island)
  
@@ -52,7 +51,7 @@ df<-df %>%
   left_join(island_cols) %>% 
   mutate(month_name = month.abb[month])
 
-write.csv(df, file = 'results/mld_seasonal_pred.csv', row.names=FALSE)
+write.csv(df, file = 'results/mld_seasonal_pred.csv', row.names=FALSE) # this is mld amplitude
 
 survey_dates<-read.csv('data/noaa-crep/crep_for_analysis.csv') %>% 
   distinct(OBS_YEAR, DATE_, ISLAND) %>% 
@@ -60,6 +59,9 @@ survey_dates<-read.csv('data/noaa-crep/crep_for_analysis.csv') %>%
   left_join(island %>% rename(ISLAND = island) %>% select(ISLAND, region)) %>%
   distinct(region, month) %>% 
   left_join(df %>% group_by(region, month) %>% summarise(MLD_pred = mean(MLD_pred)))
+
+amp<-df %>% group_by(island, region, region.col) %>%
+  summarise(mld_amp = max(MLD_pred) - min(MLD_pred))
 
 regs<-unique(df$region)
 
@@ -81,8 +83,16 @@ for(i in 1:length(regs)){
   assign(paste0('gg', str_replace_all(regs[i], ' Hawaiian', '')), gg)
 }
 
-pdf(file = 'fig/mld_season.pdf', height=3.5, width=16)
-plot_grid(ggMariana, ggNorthwestern, ggHawaii,ggEquatorial, ggSamoa, nrow=1)
+gg2<-ggplot(amp, aes(fct_reorder2(island, region, mld_amp),mld_amp, fill = region.col)) + geom_col() +
+  geom_text(aes(label = str_wrap(island, 12)), vjust=-.5, size=2.2) +
+  scale_fill_identity() +
+  scale_y_continuous(expand=c(0,0), limits=c(0,47)) +
+  labs(x = '', y = 'Mixed layer amplitude, m') +
+  theme(axis.text.x = element_blank())
+
+pdf(file = 'fig/FigureSX_MLD_amp.pdf', height=6, width=16)
+top<-plot_grid(ggMariana, ggNorthwestern, ggHawaii,ggEquatorial, ggSamoa, nrow=1)
+plot_grid(top, gg2, nrow=2, labels=c('a', 'b'))
 dev.off()
 
 
