@@ -12,13 +12,12 @@ priors <- c(
 # 1. Planktivore
 # model N = 4294 [2009-2024]
 m2_plank<-brm(planktivore_metab ~ 
-                    reef_area_km2 + island_area_km2 + avg_monthly_mm +
+                    geomorphic_type + reef_area_km2 + island_area_km2 + avg_monthly_mm +
                     site_bathy_400m + 
                     # hard_coral + 
                     depth_m +
                     mld_amp + #chl_a_mg_m3_mean +
                     (1 | year) +
-                    (1 | geomorphic_type) +
                     (1 | island),
                   family = lognormal(),
         data = plank_scaled,
