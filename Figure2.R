@@ -25,19 +25,18 @@ effects <- rbind(
 library(tidybayes)
 
 # partial residual estimates - the observed value minus prediction with model excluding focal covariate
-# note this refits model with update
 
-tt<-update(m2_plank, . ~ . - mld_amp, init=0, control = list(adapt_delta = 0.99)
-pr <- plank_scaled %>%
-  add_epred_draws(m2_plank) %>%             # expected value on data scale
-  add_epred_draws(tt, .draw = "draw2", value = "epred_nox")
+epred_no_nox <- posterior_linpred(
+  m2_plank,
+  newdata = plank_scaled,
+  re_formula = NA,
+  terms = ~ . - mld_amp      # remove MLD term
+)
 
-pr <- pr %>%
-  mutate(partial = planktivore_metab - epred_nox)
+plank_scaled<-plank_scaled %>% mutate(drop_mld = colMeans(epred_no_nox), partial = log(planktivore_metab) - colMeans(epred_no_nox))
 
-ggplot(pr, aes(mld_amp, partial)) +
+ggplot(plank_scaled, aes(mld_amp, drop_mld)) +
   geom_point(alpha = 0.4) +
-  stat_smooth(method = "loess") +
   labs(y = "Partial residual (x)")
 
 
