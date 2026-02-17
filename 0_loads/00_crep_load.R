@@ -36,6 +36,12 @@ dep<-read.csv('data/noaa-crep/site.depth.csv')
 crep_bathy_fill$depth_m<-dep$MEAN_DEPTH_M[match(crep_bathy_fill$SITEVISITID, dep$SITEVISITID)]
 crep_bathy_fill$DEPTH<-NULL
 
+# match in full benthic data
+ben<-read.csv('data/noaa-crep/benthic/BenthicCover_2010-2024_Tier1_SITE.csv')
+
+# hard coral missing for 1230 sites
+crep_bathy_fill$hard_coral<-ben$CORAL[match(crep_bathy_fill$SITEVISITID, ben$SITEVISITID)]
+
 write.csv(crep_bathy_fill, 'data/noaa-crep/crep_for_analysis.csv', row.names=FALSE)
 
 # Below hashed out because slow to read the full CREP. Loading csv at end of script.
