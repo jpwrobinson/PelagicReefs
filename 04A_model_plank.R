@@ -1,5 +1,5 @@
 # LOAD 
-source('loads/00_crep_metabolic.R')
+source('0_loads/00_crep_metabolic.R')
 
 # basic model fitting planktivore metabolic by island and biophysical covariates
 
@@ -16,7 +16,7 @@ m2_plank<-brm(planktivore_metab ~
                     site_bathy_400m + 
                     # hard_coral + 
                     depth_m +
-                    mld_amp + #chl_a_mg_m3_mean +
+                    mld_amp + chl_a_mg_m3_mean +
                     (1 | year) +
                     (1 | island),
                   family = lognormal(),
@@ -25,7 +25,7 @@ m2_plank<-brm(planktivore_metab ~
         # backend = "cmdstanr",
         chains = 3, iter = 2000, warmup = 500, cores = 4)
 
-save(m2_plank, file = 'results/mod_planktivore_metabolic.rds')
+save(m2_plank, plank_scaled, file = 'results/mod_planktivore_metabolic.rds')
 
 m3_plank<-brm(planktivore_biom ~ 
                 reef_area_km2 + island_area_km2 + avg_monthly_mm +

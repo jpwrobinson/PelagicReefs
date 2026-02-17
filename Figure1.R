@@ -100,7 +100,9 @@ gF<-ggplot(dd %>% filter(g == 1)) +
 pdf(file = 'fig/Figure1.pdf', height=5.5, width=12)
 top<-plot_grid(gA, gC,gD, nrow=1, labels=c('a', 'b', 'c'))
 bot<-plot_grid(gE, gF, nrow=1, labels=c('d', 'e'), rel_widths=c(1, 1.2))
-plot_grid(top, bot, nrow=2)
+print(
+  plot_grid(top, bot, nrow=2)
+)
 dev.off()
 
 
