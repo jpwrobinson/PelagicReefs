@@ -10,13 +10,14 @@ priors <- c(
 )
 
 # 1. Planktivore
-# model N = 2214
+# model N = 4294 [2009-2024]
 m2_plank<-brm(planktivore_metab ~ 
-                    reef_area_km2 + island_area_km2 + avg_monthly_mm +
-                    site_bathy_400m + hard_coral + depth + 
+                    geomorphic_type + reef_area_km2 + island_area_km2 + avg_monthly_mm +
+                    site_bathy_400m + 
+                    # hard_coral + 
+                    depth_m +
                     mld_amp + #chl_a_mg_m3_mean +
                     (1 | year) +
-                    (1 | geomorphic_type) +
                     (1 | island),
                   family = lognormal(),
         data = plank_scaled,
@@ -28,7 +29,9 @@ save(m2_plank, file = 'results/mod_planktivore_metabolic.rds')
 
 m3_plank<-brm(planktivore_biom ~ 
                 reef_area_km2 + island_area_km2 + avg_monthly_mm +
-                site_bathy_400m + hard_coral + depth + 
+                site_bathy_400m + 
+                hard_coral + 
+                depth_m + 
                 mld_amp + #chl_a_mg_m3_mean +
                 (1 | year) +
                 (1 | island),
@@ -55,7 +58,8 @@ bayes_R2(checker)
 car::vif(lm(planktivore_metab ~ 
                reef_area_km2 + sst_mean +
               island_area_km2 +
-              site_bathy_400m + hard_coral + depth + 
+              site_bathy_400m + #hard_coral + 
+              depth_m + 
               mld_amp, data=plank_scaled))
 
 
@@ -69,7 +73,7 @@ effects <- checker %>%
          var_fac = factor(.variable, 
                           levels = rev(c('Intercept', 'geomorphic_typeIsland','reef_area_km2','island_area_km2',
                                          'avg_monthly_mm', 'population_statusU',
-                                         'site_bathy_400m', 'hard_coral', 'depth',
+                                         'site_bathy_400m', 'hard_coral', 'depth_m',
                                         'mld_amp', 'chl_a_mg_m3_mean')))) %>% 
   filter(!is.na(var_fac)) %>% 
   group_by(var_fac) %>% mutate(medi = abs(median(.value)))
@@ -91,7 +95,7 @@ conditional_effects(checker, c('mld_amp')) %>%
 # Extract posterior samples
 nd<-plank_scaled %>%  
   data_grid(
-            depth = 0,
+            depth_m = 0,
             site_bathy_400m = 0,
             hard_coral = 0,
             avg_monthly_mm = 0,
