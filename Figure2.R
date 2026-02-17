@@ -16,7 +16,7 @@ effects <- rbind(
          var_fac = factor(.variable, 
                           levels = rev(c('Intercept', 'geomorphic_typeIsland','reef_area_km2','island_area_km2',
                                          'avg_monthly_mm', 'population_statusU',
-                                         'site_bathy_400m', 'hard_coral', 'depth',
+                                         'site_bathy_400m', 'hard_coral', 'depth_m',
                                          'mld_amp', 'chl_a_mg_m3_mean')))) %>% 
   filter(!is.na(var_fac)) %>% 
   group_by(var_fac) %>% mutate(medi = abs(median(.value)))

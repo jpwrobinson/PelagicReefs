@@ -15,7 +15,6 @@ depth<-#read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>%
        read.csv('data/noaa-crep/crep_for_analysis.csv') %>% 
   filter(!is.na(SITE_SLOPE_400m)) %>%  # drop sites with no bathymetry measured or nearby (within 400m)
   mutate(
-         # hard_coral = HARD_CORAL, # need to get this from Tye
          site_bathy_400m = SITE_SLOPE_400m,
          island = ISLAND,
          region = REGION,
@@ -24,11 +23,11 @@ depth<-#read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>%
          date = as.Date(DATE_, "%m/%d/%Y"),
          month_num = month(date),
          date_ym = floor_date(date, unit = "month")) %>% 
-  distinct(depth_m, site_bathy_400m, island, region, #hard_coral, population_status,
+  distinct(depth_m, site_bathy_400m, island, region, hard_coral, #population_status,
            year, date, month_num, date_ym, SITEVISITID) %>% 
   left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>% 
-  select(region, island, SITEVISITID, year, date_ym, month, month_num, depth_m, site_bathy_400m
-         # hard_coral, population_status
+  select(region, island, SITEVISITID, year, date_ym, month, month_num, depth_m, site_bathy_400m,
+          hard_coral#, population_status
          ) %>% 
   left_join(region_df %>% select(-region), by = 'island')
 
@@ -56,12 +55,14 @@ depth<- depth %>%
 plank<-depth %>% filter(!is.na(planktivore_metab))
 # drop 0 planktivore sites (n = 49)
 plank<-plank %>% filter(planktivore_metab>0)
+# drop missing hard coral sites (675)
+plank<-plank %>% filter(!is.na(hard_coral)) ## need to check with TOm
 
 # scale and center cont. covariates
 plank_scaled <- plank %>% 
   mutate(reef_area_km2 = log10(reef_area_km2), 
          island_area_km2 = log10(land_area_km2),
-         across(c(depth_m:site_bathy_400m, 
+         across(c(depth_m:hard_coral, 
                   sst_mean:irradiance_einsteins_m2_d1_mean, 
                   avg_monthly_mm:chl_ime), 
                 ~scale(., center=TRUE, scale=TRUE)[,1]))
@@ -70,7 +71,7 @@ pdf(file = 'fig/crep_planktivore_cov_correlations.pdf', height=7, width=15)
 pairs2(
   plank_scaled %>% 
     filter(!is.na(ted_mean) & !is.na(median_ime_percent)) %>% 
-    select(island_area_km2, reef_area_km2, site_bathy_400m,depth_m,#hard_coral,
+    select(island_area_km2, reef_area_km2, site_bathy_400m,depth_m,hard_coral,
            avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
            chl_a_mg_m3_mean, median_ime_percent, chl_ime, months_ime,
            mld_mean, mld_amp, mld_months_deep, ssh, ted_mean, ted_sum, month_num))
@@ -86,7 +87,7 @@ herb<-herb %>% filter(herbivore_metab>0)
 herb_scaled <- herb %>% 
   mutate(reef_area_km2 = log10(reef_area_km2), 
          island_area_km2 = log10(land_area_km2),
-         across(c(depth_m:site_bathy_400m, 
+         across(c(depth_m:hard_coral, 
                   sst_mean:irradiance_einsteins_m2_d1_mean, 
                   avg_monthly_mm:chl_ime), 
                 ~scale(., center=TRUE, scale=TRUE)[,1]))
@@ -95,7 +96,7 @@ pdf(file = 'fig/crep_herbivore_cov_correlations.pdf', height=7, width=15)
 pairs2(
   herb_scaled %>% 
     filter(!is.na(ted_mean) & !is.na(median_ime_percent)) %>% 
-    select(island_area_km2, reef_area_km2, site_bathy_400m,depth_m,#hard_coral,
+    select(island_area_km2, reef_area_km2, site_bathy_400m,depth_m,hard_coral,
            avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
            chl_a_mg_m3_mean, mld_mean, mld_amp, ssh, ted_mean, ted_sum, month_num))
 dev.off()
