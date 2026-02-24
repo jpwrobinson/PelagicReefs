@@ -15,11 +15,13 @@ cmdstanr::set_cmdstan_path()
 source('0_loads/00_ime_dataframe.R')
 
 # y distributions
-hist(dat$median_chl_percent)
 hist(dat_month$Chl_increase_nearby)
+hist(dat_month$Chl_max)
 
 dat_scaled_month %>% filter(!is.na(Chl_increase_nearby)) %>% dim # N = 388, 35 islands
 dat_scaled_month %>% filter(!is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% distinct(island) # N = 352, 32 islands
+
+dat_scaled_month %>% filter(!is.na(Chl_max)) %>% dim # N = 420, 35 islands
 
 # basic model fitting Chl increase (%) by island and biophysical covariates
 ## Linear model is marginally preferred to smooths (after including mld ~ island as random). 
@@ -35,7 +37,7 @@ car::vif(glm(Chl_increase_nearby ~
 
 mod_dat<-dat_scaled_month %>% filter(!is.na(Chl_increase_nearby) & !is.na(bathymetric_slope))
 
-m2_linear<-brm(bf(Chl_increase_nearby ~ 
+m_chl_inc<-brm(bf(Chl_increase_nearby ~ 
                     bathymetric_slope +
                     geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
                     mean_chlorophyll + mld + 
@@ -52,20 +54,45 @@ data = mod_dat,
 # backend = "cmdstanr",
 chains = 3, iter = 2000, warmup = 500, cores = 4)
 
-# load(file = 'results/mod_ime.rds)
-checker<-m2_linear
+mod_dat2<-dat_scaled_month %>% filter(!is.na(Chl_max) & !is.na(bathymetric_slope))
+
+m_chl_max<-brm(bf(Chl_max ~ 
+                    bathymetric_slope +
+                    geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
+                    mean_chlorophyll + mld + 
+                    mi(ted_mean) + 
+                    (1 + mld | island),
+                  family = lognormal()
+) +
+  bf(ted_mean | mi() ~ reef_area_km2),
+prior = c(
+  prior(normal(0, 1), class = "b", resp = 'Chlmax'),
+  prior(exponential(1), class = "sd", resp = 'Chlmax')
+),
+data = mod_dat2,
+# backend = "cmdstanr",
+chains = 3, iter = 2000, warmup = 500, cores = 4)
+
+
+# load(file = 'results/mod_ime.rds')
+checker<-m_chl_max
 summary(checker)
 pp_check(checker, resp = 'Chlincreasenearby')
+pp_check(checker, resp = 'Chlmax')
 conditional_effects(checker)
-bayes_R2(checker) # 65%
+bayes_R2(checker) # 65% for Chl-increase, 92% for chl-max
 
 res <- residuals(checker, summary = FALSE)
 fitted <- fitted(checker, summary = FALSE)
 res_mean <- rowMeans(res)
 acf(res_mean, main = "ACF of model residuals")
 
+
+save(dat_month, dat_scaled_month, mod_dat, mod_dat2, m_chl_inc, m_chl_max, effects, file = 'results/mod_ime.rds')
+
+
 # For linear model, extract posterior draws
-effects <- m2_linear %>%
+effects <- m_chl_inc %>%
   gather_draws(b_Chlincreasenearby_geomorphic_typeIsland, b_Chlincreasenearby_reef_area_km2, b_Chlincreasenearby_land_area_km2,
                b_Chlincreasenearby_bathymetric_slope, b_Chlincreasenearby_avg_monthly_mm,
                b_Chlincreasenearby_mean_chlorophyll, bsp_Chlincreasenearby_mited_mean, b_Chlincreasenearby_mld) %>%  
@@ -76,14 +103,28 @@ effects <- m2_linear %>%
                                          'bathymetric_slope','avg_monthly_mm', 'mean_chlorophyll',
                                          'ted_mean', 'mld'))))
 
+effects2 <- m_chl_max %>%
+  gather_draws(b_Chlmax_geomorphic_typeIsland, b_Chlmax_reef_area_km2, b_Chlmax_land_area_km2,
+               b_Chlmax_bathymetric_slope, b_Chlmax_avg_monthly_mm,
+               b_Chlmax_mean_chlorophyll, bsp_Chlmax_mited_mean, b_Chlmax_mld) %>%  
+  mutate(.variable = str_replace_all(.variable, 'b_Chlmax_', ''),
+         .variable = str_replace_all(.variable, 'bsp_Chlmax_mi', ''),
+         var_fac = factor(.variable, 
+                          levels = rev(c('geomorphic_typeIsland','reef_area_km2','land_area_km2',
+                                         'bathymetric_slope','avg_monthly_mm', 'mean_chlorophyll',
+                                         'ted_mean', 'mld'))))
+
 # Plot effect sizes
 pdf(file = 'fig/ime_db/ime_month_crep_model.pdf', height=5, width=6)
 ggplot(effects, aes(x = .value, y = var_fac)) +
   stat_halfeye(.width = c(0.5, 0.95)) +  
   geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
-  labs(x = "Effect size", y = "") 
+  labs(x = "Effect size", y = "", subtitle = 'y = Chl increase nearby, %') 
+
+ggplot(effects2, aes(x = .value, y = var_fac)) +
+  stat_halfeye(.width = c(0.5, 0.95)) +  
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
+  labs(x = "Effect size", y = "", subtitle = 'y = Chl max') 
+
 
 dev.off()
-
-
-save(dat_month, dat_scaled_month, mod_dat, m2_linear, effects, file = 'results/mod_ime.rds')
