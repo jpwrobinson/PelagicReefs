@@ -11,14 +11,14 @@ source('0_loads/00_oceanographic_load.R')
 # dev.off()
 
 # mld$island<-factor(mld$island)
- 
-# m1<-gam(MLD ~ s(time_num, by = island) + 
-#           s(month, bs = 'cc', k = 12, by = island) +
-#           te(month, year, bs = c("cc", "tp"), by = island),   # Changing seasonal pattern
-#           correlation = corAR1(form = ~ time_num | island),
-#           data=mld, family = Gamma)
-# 
-# save(m1, file = 'results/mld_time_mod.rds')
+
+m1<-gam(MLD ~ s(time_num, by = island) +
+          s(month, bs = 'cc', k = 12, by = island) +
+          te(month, year, bs = c("cc", "tp"), by = island),   # Changing seasonal pattern
+          correlation = corAR1(form = ~ time_num | island),
+          data=mld, family = Gamma)
+
+save(m1, file = 'results/mld_time_mod.rds')
 # 
 # m2<-gam(anomaly ~ s(time_num, by = island) + s(time_num, by = factor(region)),
 #           correlation = corAR1(form = ~ time_num | island), data=mld)
