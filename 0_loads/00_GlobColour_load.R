@@ -3,6 +3,7 @@ library(sf)
 library(terra)
 library(tidyverse)
 library(ncdf4)
+source('0_loads/00_islands.R')
 
 # open the file
 nc <- nc_open('data/GlobColour/IME_database_GlobColour_monthly_NOAAislands.nc')
@@ -79,9 +80,31 @@ df_list <- lapply(var_names, function(var){
 # 4️⃣ combine all variables into one tidy data.frame
 tidy_df <- bind_rows(df_list) %>% 
   mutate(value = as.numeric(value)) %>% 
-  pivot_wider( id_cols = c(island, date), names_from = variable, values_from=value)
+  pivot_wider( id_cols = c(island, date), names_from = variable, values_from=value) %>% 
+  mutate(
+    island_messie = island,
+    island = trimws(str_replace_all(island, 'Atoll', '')),
+    island = trimws(str_replace_all(island, 'Island', '')),
+    island = trimws(str_replace_all(island, 'Reef', '')),
+    island = trimws(str_replace_all(island, '\\ and', '\\ &')),
+    island = case_match(island, 
+                        'Hawai’i' ~ 'Hawaii',
+                        'French Frigate Shoals' ~ 'French Frigate',
+                        'Kaua’i' ~ 'Kauai',
+                        'Ni’ihau' ~ 'Niihau',
+                        'O’ahu' ~ 'Oahu',
+                        'Swains  (Olohega)' ~ 'Swains',
+                        'Ta’u' ~ 'Tau', .default = island)) %>% 
+  left_join(region_df, by = 'island')
 
 write.csv(tidy_df, file = 'data/GlobColour/GlobColour_IME_output.csv', row.names=FALSE)
 
-
-ggplot(tidy_df, aes(date, Chl_max)) + geom_line() + facet_wrap(~island)
+pdf(file = 'fig/ime_db/ime_globcol_timeseries.pdf', height=7, width=12)
+island.vec<-tidy_df %>% distinct(island) %>% pull(island)
+for(i in 1:length(island.vec)){
+  print(
+    ggplot(tidy_df %>% filter(island == island.vec[i]), aes(date, Chl_max)) + 
+    geom_line() + labs(x = '', subtitle = island.vec[i])
+  )
+}
+dev.off()
