@@ -78,7 +78,7 @@ df_list <- lapply(var_names, function(var){
 })
 
 # 4️⃣ combine all variables into one tidy data.frame
-tidy_df <- bind_rows(df_list) %>% 
+ime_df <- bind_rows(df_list) %>% 
   mutate(value = as.numeric(value)) %>% 
   pivot_wider( id_cols = c(island, date), names_from = variable, values_from=value) %>% 
   mutate(
@@ -97,14 +97,30 @@ tidy_df <- bind_rows(df_list) %>%
                         'Ta’u' ~ 'Tau', .default = island)) %>% 
   left_join(region_df, by = 'island')
 
-write.csv(tidy_df, file = 'data/GlobColour/GlobColour_IME_output.csv', row.names=FALSE)
+write.csv(ime_df, file = 'data/GlobColour/GlobColour_IME_output.csv', row.names=FALSE)
+
+island.vec<-ime_df %>% distinct(island) %>% pull(island)
 
 pdf(file = 'fig/ime_db/ime_globcol_timeseries.pdf', height=7, width=12)
-island.vec<-tidy_df %>% distinct(island) %>% pull(island)
+
 for(i in 1:length(island.vec)){
-  print(
-    ggplot(tidy_df %>% filter(island == island.vec[i]), aes(date, Chl_max)) + 
-    geom_line() + labs(x = '', subtitle = island.vec[i])
-  )
+  
+    g1<-ggplot(ime_df %>% filter(island == island.vec[i]), aes(date, Chl_max)) + 
+      geom_line() + geom_point() +
+    labs(x = '', subtitle = island.vec[i])
+    
+    g2<-ggplot(ime_df %>% filter(island == island.vec[i]), aes(date, Chl_increase_nearby)) + 
+      geom_line() + geom_point() +
+      scale_y_continuous(labels=label_percent()) +
+      labs(x = '', subtitle = island.vec[i])
+    
+    print(plot_grid(g1, g2, nrow=2))
+    rm(g1, g2)
 }
 dev.off()
+
+# NA cases tend to refer to rows where cChl was NA. This indicates there is no IME for XYZ???
+
+ggplot(ime_df %>% filter(island == 'Swains'), aes(date, Chl_max)) + 
+  geom_line() + geom_point() +
+  labs(x = '', subtitle = island.vec[i])
