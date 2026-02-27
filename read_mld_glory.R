@@ -102,7 +102,6 @@ mld_extract<-function(raster, buffer, latlon, test=TRUE){
         n_cells = n_distinct(x[!is.na(x)]),
         na_cells = n_distinct(x[is.na(x)]))
     }) %>% as.data.frame() %>% 
-      filter(!(island == 'Ofu & Olosega' & mld.3 == 4)) %>%  # drop one of Ofu/Olosega as these are captured as one island (take max cells)
       distinct(island, REGION, mld,mld.1, mld.2, mld.3, mld.4) %>% 
       mutate(time = times[i])
     
@@ -130,9 +129,16 @@ atolls<-latlon %>% filter(!island %in% isl$island)
 # unwrap longitude
 atolls$lon180<-with(atolls, ifelse(lon > 180, lon - 360, lon))
 
-
+# loop through time points and extract each island MLD
 vals<-mld_extract(raster=mld_crep, buffer=buf, latlon=atolls, test=FALSE)
+
+# average Ofu & Olosega which come as 2 islands
+vals<-vals %>% group_by(island, REGION, time) %>% 
+  summarise(mean = mean(mean), sd = mean(sd), median = mean(median), n_cells = max(n_cells), na_cells = max(na_cells))
+
 write.csv(vals, file = 'data/glorys/mld_1993-2021_glory_island.csv')
+
+
 
 ## Generate a PDF with each page = 1 island with MLD cells
 isls<-unique(vals$island)
