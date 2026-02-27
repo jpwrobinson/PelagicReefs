@@ -86,6 +86,8 @@ ime_df <- bind_rows(df_list) %>%
   mutate(
     chl_max_anom = Chl_max - chl_max_mean,
     island_messie = island,
+    month = month(date),
+    year = year(date),
     island = trimws(str_replace_all(island, 'Atoll', '')),
     island = trimws(str_replace_all(island, 'Island', '')),
     island = trimws(str_replace_all(island, 'Reef', '')),
@@ -163,3 +165,15 @@ ggplot(ime_df %>% mutate(dir=ifelse(chl_max_anom>0, 'pos', 'neg')),
     panel.grid.minor = element_blank()
   )
 dev.off()
+
+
+# look at changes in seasonality
+imey<-ime_df %>% group_by(island, region, region.col, year) %>% 
+  summarise(cv = sd(Chl_max) / mean(Chl_max),
+            amp = max(Chl_max) - min(Chl_max))
+
+ggplot(imey, aes(year, cv, col=region.col, group=island)) + geom_line() + facet_wrap(~region) +
+  scale_colour_identity()
+
+ggplot(imey, aes(year, amp, col=region.col, group=island)) + geom_line() + facet_wrap(~region) +
+  scale_colour_identity()

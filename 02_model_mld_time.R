@@ -27,8 +27,10 @@ m1<-bam(log(MLD) ~
 m_bayes <- brm(
   MLD ~ s(time_num, by = island) + s(month, bs="cc", k=12) + ar(time_num, gr=island),
   data = mld,
-  family = Gamma(link="log"),
-  chains = 4, cores = 4
+  # family = Gamma(link="log"),
+  family = lognormal(),
+  chains = 1, cores = 4
+  # init = 0 # params start at zero to prevent initialization error
 )
 
 save(m1, file = 'results/mld_time_mod.rds')
@@ -48,7 +50,8 @@ load(file = 'results/mld_time_mod.rds')
 hist(resid(m1))
 # draw(m1)
 # plot(m1)
-summary(m1) # 73.3% dev. explained. much of this is month. (how much?)
+acf(resid(m1))
+summary(m1) # 77.1% dev. explained. much of this is month. (how much?)
   
 # get predicted monthly MLD holding time constant
 df<-expand.grid(month = c(1:12), island = unique(mld$island), time_num = 0)
