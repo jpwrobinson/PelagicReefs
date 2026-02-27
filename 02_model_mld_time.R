@@ -10,19 +10,30 @@ source('0_loads/00_oceanographic_load.R')
 #   guides(colour='none')
 # dev.off()
 
-# mld$island<-factor(mld$island)
+# convert to factor so smoother by term works
+mld<-mld %>% 
+  mutate(island = factor(island), region = factor(region)) %>% 
+  arrange(island, time_num) %>%
+  mutate(new_series = c(TRUE, diff(as.numeric(island)) != 0))
+                    
 
-m1<-gam(MLD ~ s(time_num, by = island) +
+
+m1<-bam(MLD ~ 
+          s(time_num, by = island) +
           s(month, bs = 'cc', k = 12, by = island) +
-          te(month, year, bs = c("cc", "tp"), by = island),   # Changing seasonal pattern
-          correlation = corAR1(form = ~ time_num | island),
+          rho = 0.35
+          AR.start = mld$new_series,
           data=mld, family = Gamma)
 
 save(m1, file = 'results/mld_time_mod.rds')
-# 
-# m2<-gam(anomaly ~ s(time_num, by = island) + s(time_num, by = factor(region)),
-#           correlation = corAR1(form = ~ time_num | island), data=mld)
-# 
+
+# estimate rho using acf residuals - the lag 1 acf value
+m2 <- bam(
+  anomaly ~ s(time_num, island, k=12, bs = "fs"),
+  data = mld,
+  rho = 0.35,
+  AR.start = mld$new_series
+)
 # save(m2, file = 'results/mld_anomaly_time_mod.rds')
 
 
@@ -100,7 +111,9 @@ dev.off()
 load(file = 'results/mld_anomaly_time_mod.rds')
 hist(resid(m2))
 # plot(m2)
-summary(m2) # dev exp. 7.4%
+summary(m2) # dev exp. 3.61%
+plot(m2)  # default gam diagnostic plots
+acf(resid(m2, type = "pearson"))
 
 # is there a larger climatic process driving unexplained variation?
 
@@ -116,23 +129,28 @@ df2$MLD_upper<-with(df2, MLD_pred + 2*se)
 ggplot(df2, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=island)) + 
   geom_line(aes(col=island)) + geom_ribbon(alpha=0.5) + facet_wrap(~region)
 
-
 ggplot(df2, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=region)) + 
   geom_line(aes(col=region, group=island))  + facet_grid(~region) +
   guides(col='none')
 
 
 ## this is regional smooth - but need to have island + region to understand the full model prediction
-df3<-expand.grid(island = unique(mld$island)[1], region = unique(mld$region), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
-df3$date<-rep(seq(min(mld$Date), max(mld$Date), length.out=100), each = length(unique(mld$region)))
-df3$MLD_pred<-predict(m2, newdata = df3, type='response',  exclude = grep("^s\\(time_num\\):island", rownames(summary(m2)$s.table), value = TRUE))
-df3$se<-predict(m2, newdata = df3, type='response', se.fit = TRUE,  exclude = grep("^s\\(time_num\\):island", rownames(summary(m2)$s.table), value = TRUE))$se.fit
-df3$MLD_lower<-with(df3, MLD_pred - 2*se)
-df3$MLD_upper<-with(df3, MLD_pred + 2*se)
-df3$region<-factor(df3$region, levels = unique(df3$region)[c(2,5,1,4,3)])
+region_smooth <- df2 %>%
+  group_by(region, date, time_num) %>%
+  summarize(
+    # mean of island predictions
+    region_fit = mean(MLD_pred),
+    # SE of the mean across islands
+    region_se = sqrt(sum(se^2)/n()),  # assumes island predictions are independent
+    .groups = "drop"
+  ) %>% mutate(
+    ymin = region_fit - 2*region_se,
+    ymax = region_fit + 2*region_se,
+  )
 
-ggplot(df3, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=region)) + 
-  geom_line(aes(col=region)) + geom_ribbon(alpha=0.5) + facet_wrap(~region)
+ggplot(region_smooth, aes(date, region_fit, ymin = ymin, ymax = ymax, fill=region)) + 
+  geom_line(aes(col=region)) + 
+  geom_ribbon(alpha=0.5) + facet_wrap(~region) 
 
 # MLD is getting deeper over time?
 
@@ -155,11 +173,12 @@ for(i in 1:length(regs)){
 pdf(file = 'fig/mld_anomaly_trend.pdf', height=5, width=20)
 plot_grid(ggMariana, `ggNorthwestern Hawaiian`, ggHawaii, ggEquatorial, ggSamoa, nrow=1)
 
-ggplot(df3, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=region)) + 
-  geom_line(aes(col=region)) + geom_ribbon(alpha=0.5) + facet_wrap(~region, nrow=1) +
-  labs(x = '', y = 'Mixed layer depth anomaly (predicted)', subtitle = 'MLD anomaly by region') +
+ggplot(region_smooth, aes(date, region_fit, ymin = ymin, ymax = ymax, fill=region)) + 
+  geom_line(aes(col=region)) + 
+  geom_ribbon(alpha=0.5) + facet_wrap(~region) +
   scale_x_date(date_breaks = '5 years', date_labels = '%Y') +
-  theme(legend.position = 'none')
+  theme(legend.position = 'none') + 
+  labs(y = 'MLD anomaly (predicted)', x ='')
   
 
 dev.off()
