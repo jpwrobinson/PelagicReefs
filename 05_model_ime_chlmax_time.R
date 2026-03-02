@@ -53,15 +53,26 @@ hist(resid(m2))
 summary(m2)
 acf(resid(m2))
 plot(m2)
+
+df2<-expand.grid(month = seq(1, 12, by = 1), island = unique(ime_df$island), time_s = 0)
+df2$pred<-predict(m2, newdata = df2, type='response',exclude='time_s')
+df2<-df2 %>% left_join(ime_df %>% distinct(island, region,region.col))
+
+ggplot(df2, aes(month, pred, group=island, col=region.col)) + geom_line() + facet_wrap(~region) +
+  geom_hline(yintercept = 0, col='grey') +
+  scale_colour_identity() +
+  labs(x = '', y = 'Predicted Chl_max anomaly')
+
+
+## temporal smooth excluding month
 month_smooths <- grep("month", smooths(m2), value = TRUE)
 
-df2<-expand.grid(month = 6, island = unique(ime_df$island), time_s = seq(min(ime_df$time_s), max(ime_df$time_s), length.out=100))
-df2$pred<-predict(m2, newdata = df2, type='response',exclude=month_smooths)
-df2<-df2 %>% left_join(ime_df %>% distinct(island, region,region.col))
-df2$date<-rep(seq(min(ime_df$date), max(ime_df$date), length.out=100), each = length(unique(ime_df$island)))
+df3<-expand.grid(month = 6, island = unique(ime_df$island), time_s = seq(min(ime_df$time_s), max(ime_df$time_s), length.out=100))
+df3$pred<-predict(m2, newdata = df3, type='response',exclude=month_smooths)
+df3<-df3 %>% left_join(ime_df %>% distinct(island, region,region.col))
+df3$date<-rep(seq(min(ime_df$date), max(ime_df$date), length.out=100), each = length(unique(ime_df$island)))
 
-
-ggplot(df2, aes(date, pred, group=island, col=region.col)) + geom_line() + facet_wrap(~region) +
+ggplot(df3, aes(date, pred, group=island, col=region.col)) + geom_line() + facet_wrap(~region) +
   geom_hline(yintercept = 0, col='grey') +
   scale_colour_identity() +
   scale_x_date(date_breaks = '5 years', date_labels = '%Y') +
@@ -84,8 +95,3 @@ m3 <- bam(
 hist(resid(m3))
 summary(m3)
 acf(resid(m3))
-
-
-vis.gam(m3, view = c("month", "time_s"),
-        cond = list(island = "Guam"),
-        too.far = 0.05)

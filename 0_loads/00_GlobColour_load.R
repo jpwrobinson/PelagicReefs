@@ -79,15 +79,17 @@ df_list <- lapply(var_names, function(var){
 
 # 4️⃣ combine all variables into one tidy data.frame
 ime_df <- bind_rows(df_list) %>% 
-  mutate(value = as.numeric(value)) %>% 
-  pivot_wider( id_cols = c(island, date), names_from = variable, values_from=value) %>% 
+  mutate(value = as.numeric(value),
+         month = month(date), year = year(date)) %>% 
+  pivot_wider( id_cols = c(island, date, month, year), names_from = variable, values_from=value) %>% 
   group_by(island) %>% 
   mutate(chl_max_mean = mean(Chl_max, na.rm=TRUE)) %>% ungroup() %>% 
+  group_by(island, month) %>% 
+  mutate(chl_max_monthly_mean = mean(Chl_max, na.rm=TRUE)) %>% ungroup() %>% 
   mutate(
     chl_max_anom = Chl_max - chl_max_mean,
+    chl_max_month_anom = Chl_max - chl_max_monthly_mean,
     island_messie = island,
-    month = month(date),
-    year = year(date),
     island = trimws(str_replace_all(island, 'Atoll', '')),
     island = trimws(str_replace_all(island, 'Island', '')),
     island = trimws(str_replace_all(island, 'Reef', '')),

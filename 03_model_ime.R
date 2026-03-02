@@ -54,12 +54,15 @@ data = mod_dat,
 # backend = "cmdstanr",
 chains = 3, iter = 2000, warmup = 500, cores = 4)
 
+
+## model 2 = chl_max (is it relevant for reef fish?)
 mod_dat2<-dat_scaled_month %>% filter(!is.na(Chl_max) & !is.na(bathymetric_slope))
 
 m_chl_max<-brm(bf(Chl_max ~ 
                     bathymetric_slope +
                     geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
-                    mean_chlorophyll + mld + 
+                    # mean_chlorophyll + 
+                    mld + 
                     mi(ted_mean) + 
                     (1 + mld | island),
                   family = lognormal()
@@ -75,7 +78,8 @@ chains = 3, iter = 2000, warmup = 500, cores = 4)
 
 
 # load(file = 'results/mod_ime.rds')
-checker<-m_chl_max
+checker<-m_chl_inc
+# checker<-m_chl_max
 summary(checker)
 pp_check(checker, resp = 'Chlincreasenearby')
 pp_check(checker, resp = 'Chlmax')
