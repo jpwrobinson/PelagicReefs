@@ -6,7 +6,7 @@ load('results/mod_herbivore_metabolic.rds')
 
 bayes<-data.frame(b = c(bayes_R2(m2_plank)[1,'Estimate'],
                         bayes_R2(m2_herb)[1,'Estimate']),
-                  x = 0.5, y = c(6.5, 6.1), fg = c('Planktivore', 'Herbivore'))
+                  x = 0.5, y = c(6.5, 6.5), fg = c('Planktivore', 'Herbivore'))
 
 ## Effect sizes
 effects <- rbind(
@@ -20,28 +20,35 @@ effects <- rbind(
          var_fac = factor(.variable, 
                           levels = rev(c('Intercept', 'geomorphic_typeIsland','reef_area_km2','island_area_km2',
                                          'avg_monthly_mm', #'population_statusU',
-                                         'site_bathy_400m','mld_amp', 'hard_coral', 'depth_m'
+                                         'mld_amp',
+                                         'site_bathy_400m', 'hard_coral', 'depth_m'
                                          )))) %>% 
   filter(!is.na(var_fac)) %>% 
   group_by(var_fac) %>% mutate(medi = abs(median(.value)))
 
 
 # Plot effect sizes
+labs<-data.frame(x = Inf, y = c(3.4, 5.4, 8.4), label = c('Site', 'Oceanographic', 'Geomorphic'), fg='Herbivore')
+
 pdf(file = 'fig/Figure2.pdf', height=5, width=7)
 print(
   ggplot(effects %>% filter(!var_fac=='Intercept'), aes(x = .value, y = var_fac, col = fg)) +
+    geom_text(data = labs, aes(x, y, label = label), size=4, fontface=1, hjust=1, col='black') +
+    annotate('rect', xmin = -Inf, xmax=Inf, ymin = -Inf, ymax = 3.5, fill='grey', alpha=0.1) +
+    annotate('rect', xmin = -Inf, xmax=Inf, ymin = 5.5, ymax = Inf, fill='grey', alpha=0.1) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
     stat_pointinterval(.width = c(0.5, 0.95), pch=19, 
                        position = position_dodge(width=0.65)) +  
     geom_text(data = bayes, aes(x = x, y = y, label = paste0('R2 = ', round(b*100,1),'% ')), size=4) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "grey") + 
+    facet_grid(~fg) +
     scale_color_manual(values = fg_cols) +
     labs(x = "Effect on metabolic flux", y = "") +
     scale_x_continuous(limits=c(-.9, 0.7), expand=c(0,0)) +
     guides(color='none') +
-    scale_y_discrete(labels = c('Depth', 'Hard coral','Mixed layer depth',
-                                'Bathymetric slope', 'Precipitation', 'Island area', 'Reef area', 'Geomorphic [island]')) 
-    # theme(panel.grid.major.x = element_line(color='grey')
-          # panel.grid.major.y = element_line(color='grey'))
+    scale_y_discrete(labels = c('Depth', 'Hard coral','Bathymetric slope',
+                                'Mixed layer depth', 'Precipitation', 'Island area', 'Reef area', 'Geomorphic [island]')) +
+    theme(strip.text = element_text(face=2, hjust=0, size=12),
+          strip.background = element_blank())
 )
 dev.off()
 
@@ -61,3 +68,7 @@ dev.off()
 #   geom_point(alpha = 0.4) +
 #   labs(y = "Partial residual (x)")
 # 
+
+
+
+
