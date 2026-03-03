@@ -58,6 +58,14 @@ chains = 3, iter = 2000, warmup = 500, cores = 4)
 ## model 2 = chl_max (is it relevant for reef fish?)
 mod_dat2<-dat_scaled_month %>% filter(!is.na(Chl_max) & !is.na(bathymetric_slope))
 
+car::vif(glm(Chl_max ~ 
+               land_area_km2 + avg_monthly_mm +
+               reef_area_km2 + bathymetric_slope + 
+               # population_status + VIF = 5.68
+               ted_mean +
+               # mean_chlorophyll + 
+               mld, family = Gamma, data=mod_dat2))
+
 m_chl_max<-brm(bf(Chl_max ~ 
                     bathymetric_slope +
                     geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
@@ -78,8 +86,8 @@ chains = 3, iter = 2000, warmup = 500, cores = 4)
 
 
 # load(file = 'results/mod_ime.rds')
-checker<-m_chl_inc
-# checker<-m_chl_max
+# checker<-m_chl_inc
+checker<-m_chl_max
 summary(checker)
 pp_check(checker, resp = 'Chlincreasenearby')
 pp_check(checker, resp = 'Chlmax')
@@ -110,7 +118,8 @@ effects <- m_chl_inc %>%
 effects2 <- m_chl_max %>%
   gather_draws(b_Chlmax_geomorphic_typeIsland, b_Chlmax_reef_area_km2, b_Chlmax_land_area_km2,
                b_Chlmax_bathymetric_slope, b_Chlmax_avg_monthly_mm,
-               b_Chlmax_mean_chlorophyll, bsp_Chlmax_mited_mean, b_Chlmax_mld) %>%  
+               # b_Chlmax_mean_chlorophyll, 
+               bsp_Chlmax_mited_mean, b_Chlmax_mld) %>%  
   mutate(.variable = str_replace_all(.variable, 'b_Chlmax_', ''),
          .variable = str_replace_all(.variable, 'bsp_Chlmax_mi', ''),
          var_fac = factor(.variable, 

@@ -18,7 +18,7 @@ m1<-bam(log(Chl_increase_nearby) ~
           s(month, bs = 'cc', k = 12, by = island),
         rho = 0.35,
         AR.start = focal$new_series,
-        family = Gamma(link = 'log'),
+        # family = Gamma(link = 'log'),
         data=focal)
 
 # Dev. expl = 88.6%

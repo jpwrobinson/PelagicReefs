@@ -81,7 +81,7 @@ for (i in islands) {
 amp_df <- bind_rows(amp_list)
 peak_df <- bind_rows(peak_list)
 
-# save(m3, ime_df, amp_df, peak_df, file = 'data/GlobColour/ime_seasonal_preds.Rdata')
+save(m3, ime_df, amp_df, peak_df, file = 'data/GlobColour/ime_seasonal_preds.Rdata')
 
 ggplot(amp_df, aes(x = date, y = est, color = island, fill = island)) +
   geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.2, color = NA) +
