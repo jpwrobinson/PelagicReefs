@@ -7,3 +7,4 @@ data/noaa-crep/crep_full_merged.csv filter=lfs diff=lfs merge=lfs -text
 *crep_full_merged_bathymetry_fill.csv filter=lfs diff=lfs merge=lfs -text
 data/noaa-crep/crep_for_analysis.csv filter=lfs diff=lfs merge=lfs -text
 data/GlobColour/ime_seasonal_preds.Rdata filter=lfs diff=lfs merge=lfs -text
+*.rds
