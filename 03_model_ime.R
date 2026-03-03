@@ -29,26 +29,30 @@ dat_scaled_month %>% filter(!is.na(Chl_max)) %>% dim # N = 420, 35 islands
 
 # check vif
 car::vif(glm(Chl_increase_nearby ~ 
-              land_area_km2 + avg_monthly_mm +
+              land_area_km2 + #avg_monthly_mm +
+               # avg_monthly_mm_mean + 
+               avg_monthly_mm_anom +
               reef_area_km2 + bathymetric_slope + 
-              # population_status + VIF = 5.68
               ted_mean +
-              mean_chlorophyll + mld, family = lognormal, data=dat_scaled_month))
+              mld_mean + mld_anom +
+              mean_chlorophyll,  data=dat_scaled_month))
 
 mod_dat<-dat_scaled_month %>% filter(!is.na(Chl_increase_nearby) & !is.na(bathymetric_slope))
 
 m_chl_inc<-brm(bf(Chl_increase_nearby ~ 
                     bathymetric_slope +
-                    geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
-                    mean_chlorophyll + mld + 
-                    mi(ted_mean) + 
-                    (1 + mld | island),
+                    geomorphic_type * reef_area_km2 + land_area_km2 + 
+                    avg_monthly_mm_anom +
+                    mld_mean + mld_anom +
+                    mean_chlorophyll + 
+                    mi(ted_mean), 
+                    # (1 + mld | island),
                   family = lognormal()
 ) +
   bf(ted_mean | mi() ~ reef_area_km2),
 prior = c(
-  prior(normal(0, 1), class = "b", resp = 'Chlincreasenearby'),
-  prior(exponential(1), class = "sd", resp = 'Chlincreasenearby')
+  prior(normal(0, 1), class = "b", resp = 'Chlincreasenearby')
+  # prior(exponential(1), class = "sd", resp = 'Chlincreasenearby')
 ),
 data = mod_dat,
 # backend = "cmdstanr",
@@ -59,26 +63,29 @@ chains = 3, iter = 2000, warmup = 500, cores = 4)
 mod_dat2<-dat_scaled_month %>% filter(!is.na(Chl_max) & !is.na(bathymetric_slope))
 
 car::vif(glm(Chl_max ~ 
-               land_area_km2 + avg_monthly_mm +
+               land_area_km2 + #avg_monthly_mm +
                reef_area_km2 + bathymetric_slope + 
                # population_status + VIF = 5.68
-               ted_mean +
+               avg_monthly_mm_anom +
+               mld_mean + mld_anom +
+               ted_mean,
                # mean_chlorophyll + 
-               mld, family = Gamma, data=mod_dat2))
+               , family = Gamma, data=mod_dat2))
 
 m_chl_max<-brm(bf(Chl_max ~ 
                     bathymetric_slope +
                     geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
                     # mean_chlorophyll + 
-                    mld + 
-                    mi(ted_mean) + 
-                    (1 + mld | island),
+                    avg_monthly_mm_anom +
+                    mld_mean + mld_anom +
+                    mi(ted_mean),
+                    # (1 + mld | island),
                   family = lognormal()
 ) +
   bf(ted_mean | mi() ~ reef_area_km2),
 prior = c(
-  prior(normal(0, 1), class = "b", resp = 'Chlmax'),
-  prior(exponential(1), class = "sd", resp = 'Chlmax')
+  prior(normal(0, 1), class = "b", resp = 'Chlmax')
+  # prior(exponential(1), class = "sd", resp = 'Chlmax')
 ),
 data = mod_dat2,
 # backend = "cmdstanr",
@@ -86,13 +93,13 @@ chains = 3, iter = 2000, warmup = 500, cores = 4)
 
 
 # load(file = 'results/mod_ime.rds')
-# checker<-m_chl_inc
-checker<-m_chl_max
+checker<-m_chl_inc
+# checker<-m_chl_max
 summary(checker)
 pp_check(checker, resp = 'Chlincreasenearby')
 pp_check(checker, resp = 'Chlmax')
 conditional_effects(checker)
-bayes_R2(checker) # 65% for Chl-increase, 92% for chl-max
+bayes_R2(checker) # 54% for Chl-increase, 92% for chl-max
 
 res <- residuals(checker, summary = FALSE)
 fitted <- fitted(checker, summary = FALSE)

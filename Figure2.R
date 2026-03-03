@@ -30,7 +30,7 @@ effects <- rbind(
 # Plot effect sizes
 labs<-data.frame(x = Inf, y = c(2.4, 4.4, 8.4), label = c('Habitat', 'Oceanographic', 'Geomorphic'), fg='Herbivore')
 
-pdf(file = 'fig/Figure2.pdf', height=5, width=9)
+pdf(file = 'fig/Figure2.pdf', height=5, width=11)
 print(
   ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
     geom_text(data = labs, aes(x, y, label = label), size=3.5, fontface=1, hjust=1, col='black') +

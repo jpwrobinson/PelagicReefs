@@ -57,24 +57,11 @@ dat_month<-ime_month %>%
   filter(!is.na(mld)) %>% 
   group_by(island) %>% 
   mutate(chl_anom = Chl_max - chl_a_mg_m3_mean,
-         mld_lag1 = mld[c(12, 1:11)], mld_lag2 = mld[c(11:12, 1:10)]) %>% 
+         mld_anom = mld - mean(mld),
+         mld_mean = mean(mld),
+         avg_monthly_mm_anom = avg_monthly_mm - mean(avg_monthly_mm),
+         avg_monthly_mm_mean = mean(avg_monthly_mm)) %>% 
   ungroup()
-
-pdf(file = 'fig/ime_db/ime_month_crep.pdf', height=5, width=12)
-ggplot(dat_month, aes(month_num, Chl_increase_nearby, col=island)) + 
-  geom_line() + facet_wrap(~REGION) +
-  geom_text(data = dat_month %>% group_by(island) %>% 
-              slice_max(Chl_increase_nearby), size=3, vjust=-1, aes(label=island)) +
-  theme(legend.position = 'none') +
-  scale_y_continuous(limits=c(0, 220))
-
-ggplot(dat_month, aes(month_num, chl_anom, col=island)) + 
-  geom_line() + facet_wrap(~REGION) +
-  geom_text(data = dat_month %>% group_by(island) %>% 
-              slice_max(Chl_increase_nearby), size=3, vjust=-1, aes(label=island)) +
-  theme(legend.position = 'none') 
-dev.off()
-
 
 dat_scaled<-ime_dat %>%  
   select(island:land_area_km2, median_chl_percent, REGION:ted_sum) %>% 
@@ -83,10 +70,10 @@ dat_scaled<-ime_dat %>%
                 ~scale(., center=TRUE, scale=TRUE))) %>% na.omit()
 
 dat_scaled_month<-dat_month %>% 
-  select(island:land_area_km2, month, month_num, Chl_increase_nearby, chl_anom, REGION:mld_lag2) %>% 
+  select(island:land_area_km2, month, month_num, Chl_increase_nearby, chl_anom, REGION:avg_monthly_mm_mean) %>% 
   mutate(reef_area_km2 = log10(reef_area_km2), land_area_km2 = log10(land_area_km2+1)) %>% 
   mutate(across(c(month_num, land_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:irradiance_einsteins_m2_d1_mean, 
-                  bathymetric_slope, SITE_SLOPE_400m, var_slope, ssh:mld_lag2), 
+                  bathymetric_slope, SITE_SLOPE_400m, var_slope, ssh:avg_monthly_mm_mean), 
                 ~terra::scale(., center=TRUE, scale=TRUE)[,1]),
          population_status_num = ifelse(population_status == 'U', 0, 1))
 
@@ -99,3 +86,20 @@ pairs2(
            sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
            mean_chlorophyll, mld, ssh, ted_mean, ted_sum, month_num))
 dev.off()
+
+# 
+# pdf(file = 'fig/ime_db/ime_month_crep.pdf', height=5, width=12)
+# ggplot(dat_month, aes(month_num, Chl_increase_nearby, col=island)) + 
+#   geom_line() + facet_wrap(~REGION) +
+#   geom_text(data = dat_month %>% group_by(island) %>% 
+#               slice_max(Chl_increase_nearby), size=3, vjust=-1, aes(label=island)) +
+#   theme(legend.position = 'none') +
+#   scale_y_continuous(limits=c(0, 220))
+# 
+# ggplot(dat_month, aes(month_num, chl_anom, col=island)) + 
+#   geom_line() + facet_wrap(~REGION) +
+#   geom_text(data = dat_month %>% group_by(island) %>% 
+#               slice_max(Chl_increase_nearby), size=3, vjust=-1, aes(label=island)) +
+#   theme(legend.position = 'none') 
+# dev.off()
+
