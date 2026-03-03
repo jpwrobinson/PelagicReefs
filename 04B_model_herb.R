@@ -8,14 +8,24 @@ priors <- c(
   prior(exponential(1), class = "sd")           # penalize large sd; mean ~1, P(s>~3) small
 )
 
+# check vif. mean chl-a is correlated with reef area and MLD amp
+car::vif(glm(log(herbivore_metab) ~ 
+               land_area_km2 + avg_monthly_mm +
+               reef_area_km2 + site_bathy_400m + 
+               # mean_chlorophyll +
+               ted_mean +
+               mld_amp, data=herb_scaled))
+
 # 1. Herbivore
 # model N = 4340 [2009-2024]
 m2_herb<-brm(herbivore_metab ~ 
-                reef_area_km2 + island_area_km2 + avg_monthly_mm +
-                site_bathy_400m + hard_coral + depth + 
-                mld_amp + #chl_a_mg_m3_mean +
+                geomorphic_type + reef_area_km2 + island_area_km2 + avg_monthly_mm +
+                site_bathy_400m + 
+                hard_coral + 
+                depth_m + 
+                mld_amp + 
+               # mean_chlorophyll +
                 (1 | year) +
-                (1 | geomorphic_type) +
                 (1 | island),
               family = lognormal(),
               data = herb_scaled,
@@ -31,20 +41,21 @@ checker<-m2_herb
 summary(checker)
 pp_check(checker, resp = 'herbivore_metab')
 conditional_effects(checker)
-bayes_R2(checker) # 30.1%
+bayes_R2(checker) # 32.6%
 
 ### OUTPUTS
 
 # For linear model, extract posterior draws
-effects <- m2_herb %>%
+effects <- checker %>%
   gather_draws(`b_.*`, regex=TRUE) %>%  
   # filter(.variable != 'b_Intercept') %>% 
   mutate(.variable = str_replace_all(.variable, 'b_', ''),
          var_fac = factor(.variable, 
                           levels = rev(c('Intercept', 'geomorphic_typeIsland','reef_area_km2','island_area_km2',
                                          'avg_monthly_mm', 'population_statusU',
-                                         'site_bathy_400m', 'hard_coral', 'depth',
-                                         'mld_amp', 'chl_a_mg_m3_mean')))) %>% 
+                                         'site_bathy_400m', 'hard_coral', 'depth_m',
+                                         # 'chl_a_mg_m3_mean'
+                                         'mld_amp')))) %>% 
   filter(!is.na(var_fac)) %>% 
   group_by(var_fac) %>% mutate(medi = abs(median(.value)))
 
@@ -62,32 +73,6 @@ dev.off()
 conditional_effects(m2_herb, c('mld_amp', 'depth')) %>% 
   plot(rug=TRUE)
 
-# Extract posterior samples
-nd<-herb_scaled %>%  
-  data_grid(
-    depth = 0,
-    site_bathy_400m = 0,
-    hard_coral = 0,
-    avg_monthly_mm = 0,
-    reef_area_km2 = 0,
-    island_area_km2 = 0,
-    chl_a_mg_m3_mean = seq_range(chl_a_mg_m3_mean, n =100),
-    mld_amp = seq_range(mld_amp, n = 100))  %>% 
-  # mutate(mld_amp_raw = seq_range(herb$mld_amp, n = 100)) %>% 
-  add_epred_draws(m2_herb, ndraws = 1000, re_formula = NA) %>% 
-  group_by(mld_amp, chl_a_mg_m3_mean) %>% 
-  summarise(
-    median = median(.epred),
-    lower = quantile(.epred, 0.025),
-    upper = quantile(.epred, 0.975)
-  )
-
-ggplot(nd, aes(x = mld_amp, y = chl_a_mg_m3_mean, fill=median)) +
-  # geom_point(data = depth, aes(x = mld_amp, y = herbivore_metab)) +
-  # stat_lineribbon(aes(y = .epred), .width = 0.95, alpha = 0.5) +
-  # stat_lineribbon(aes(y = .epred), .width = 0.5, alpha = 0.5) +
-  geom_tile()+
-  labs(x = 'Mixed layer variability, m', y = 'Herbivore metabolic rate')
 
 m2_herb %>% emmeans(~ mld_amp, var = 'mld_amp', 
                      at = list(mld_amp = c(min(herb_scaled$mld_amp), 
@@ -95,10 +80,10 @@ m2_herb %>% emmeans(~ mld_amp, var = 'mld_amp',
                      epred =TRUE)
 
 mld_range<-(max(herb$mld_amp) - min(herb$mld_amp))
-meta_range<-(1.117 - 0.499 )
+meta_range<-(1.68 - 1.23 )
 change_per_m<- meta_range / mld_range
-(change_per_m) / 1.117 
-(change_per_m*10) / 1.117 * 100
-# Metabolic rate decreases by 0.016 per metre of MLD amplitude
-# Metabolic rate decreases by 16% per 10 metre of MLD amplitude
+(change_per_m) / 1.68 
+(change_per_m*10) / 1.68 * 100
+# Metabolic rate decreases by 0.008 per metre of MLD amplitude
+# Metabolic rate decreases by 8% per 10 metre of MLD amplitude
 

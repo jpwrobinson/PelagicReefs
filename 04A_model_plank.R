@@ -9,14 +9,24 @@ priors <- c(
   prior(exponential(1), class = "sd")           # penalize large sd; mean ~1, P(s>~3) small
 )
 
+# check vif. mean chl-a is correlated with reef area and MLD amp
+car::vif(glm(log(planktivore_metab) ~ 
+               land_area_km2 + avg_monthly_mm +
+               reef_area_km2 + site_bathy_400m + 
+               mean_chlorophyll +
+               ted_mean +
+                mld_amp, data=plank_scaled))
+
+
 # 1. Planktivore
-# model N = 4294 [2009-2024].   n=3619 with hard coral
+# model N = 4294 [2009-2024].   n=3589 with hard coral
 m2_plank<-brm(planktivore_metab ~ 
                     geomorphic_type + reef_area_km2 + island_area_km2 + avg_monthly_mm +
                     site_bathy_400m + 
                     hard_coral + 
                     depth_m +
-                    mld_amp + chl_a_mg_m3_mean +
+                    mld_amp + 
+                    # mean_chlorophyll +
                     (1 | year) +
                     (1 | island),
                   family = lognormal(),
@@ -32,7 +42,8 @@ m3_plank<-brm(planktivore_biom ~
                 site_bathy_400m + 
                 hard_coral + 
                 depth_m + 
-                mld_amp + #chl_a_mg_m3_mean +
+                mld_amp + 
+                #mean_chlorophyll +
                 (1 | year) +
                 (1 | island),
               family = lognormal(),
@@ -48,20 +59,11 @@ checker<-m2_plank
 summary(checker)
 pp_check(checker, resp = 'planktivore_metab')
 conditional_effects(checker)
-# ranef(checker)
-random_effects(checker)
+ranef(checker)
+# random_effects(checker)
 bayes_R2(checker) 
-# metabolic = 54.4%
+# metabolic = 51.5%
 # biomass = 14.7%
-
-# check vif
-car::vif(lm(planktivore_metab ~ 
-               reef_area_km2 + sst_mean +
-              island_area_km2 +
-              site_bathy_400m + #hard_coral + 
-              depth_m + 
-              mld_amp, data=plank_scaled))
-
 
 ### OUTPUTS
 
@@ -74,7 +76,8 @@ effects <- checker %>%
                           levels = rev(c('Intercept', 'geomorphic_typeIsland','reef_area_km2','island_area_km2',
                                          'avg_monthly_mm', 'population_statusU',
                                          'site_bathy_400m', 'hard_coral', 'depth_m',
-                                        'mld_amp', 'chl_a_mg_m3_mean')))) %>% 
+                                         # 'chl_a_mg_m3_mean'
+                                        'mld_amp')))) %>% 
   filter(!is.na(var_fac)) %>% 
   group_by(var_fac) %>% mutate(medi = abs(median(.value)))
 
@@ -94,7 +97,7 @@ conditional_effects(checker, c('mld_amp')) %>%
 
 # Extract posterior samples
 nd<-plank_scaled %>%  
-  data_grid(
+  data_grid(geomorphic_type = 'Atoll',
             depth_m = 0,
             site_bathy_400m = 0,
             hard_coral = 0,
@@ -116,7 +119,7 @@ pdf(file = 'fig/ime_crep/mld_planktivore.pdf', height=4, width=7)
 ggplot(nd, aes(x = mld_amp_raw, y = median)) +
   geom_point(data = ann, aes(x = mld_amp, y = upper, col=region.col)) +
   geom_line(data = ann, aes(x = mld_amp, y = 18 + 0.4 * (as.numeric(as.factor(region.col)) - 1), col=region.col, group=region.col), 
-            position = position_dodge(width=0.5), size=1.5) +
+            position = position_dodge(width=0.5), linewidth=1.5) +
   geom_text(data = ann, size=2, angle=90, hjust=0,
             aes(x = mld_amp, y = upper+0.5, col=region.col, label=island)) +
   stat_lineribbon(aes(y = .epred), .width = 0.95, alpha = 0.5, show.legend=F, fill = fg_cols[2]) +
@@ -132,10 +135,9 @@ m2_plank %>% emmeans(~ mld_amp, var = 'mld_amp',
                epred =TRUE)
 
 mld_range<-(max(plank$mld_amp) - min(plank$mld_amp))
-meta_range<-(1.117 - 0.499 )
+meta_range<-(1.541 - 0.388 )
 change_per_m<- meta_range / mld_range
 (change_per_m) / 1.117 
 (change_per_m*10) / 1.117 * 100
-# Metabolic rate decreases by 0.016 per metre of MLD amplitude
-# Metabolic rate decreases by 16% per 10 metre of MLD amplitude
-
+# Metabolic rate decreases by 0.031 per metre of MLD amplitude
+# Metabolic rate decreases by 32% per 10 metre of MLD amplitude

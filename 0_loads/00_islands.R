@@ -64,7 +64,7 @@ island_complex<-left_join(island_complex,
   island %>% group_by(island_group) %>% 
     summarise(across(c(SITE_SLOPE_400m, var_slope), ~ mean(.x))))
 
-pdf(file = 'fig/site_vs_island_slope.pdf', height=6, width=10)
+pdf(file = 'fig/ime_crep/site_vs_island_slope.pdf', height=6, width=10)
 print(
   ggplot(island_complex, aes(bathymetric_slope, SITE_SLOPE_400m)) + geom_point() +
     geom_text(aes(label = island_group), size=2.5, vjust=-.5) +

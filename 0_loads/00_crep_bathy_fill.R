@@ -32,7 +32,7 @@ new_sites %>% filter(SITEVISITID != nearest_site & site_distance_m < 400) %>% di
 new_sites %>% filter(SITEVISITID != nearest_site & site_distance_m > 400) %>% dim # 2426 (35% of sites are beyond 400m of bathy data)
 
 island.vec<-unique(new_sites$ISLAND)
-pdf(file = 'fig/crep_bathymetry_matching.pdf', height=5, width=7)
+pdf(file = 'fig/ime_crep/crep_bathymetry_matching.pdf', height=5, width=7)
 for(i in 1:length(island.vec)){
   
   dat<-new_sites %>% filter(ISLAND==island.vec[i])

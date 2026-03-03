@@ -11,8 +11,8 @@ biom<-read.csv(file = 'data/metabolic/crep_site_biomass.csv')
 
 
 # using full CREP data set with filled bathymetry
-depth<-#read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>% 
-       read.csv('data/noaa-crep/crep_for_analysis.csv') %>% 
+depth<-
+  read.csv('data/noaa-crep/crep_for_analysis.csv') %>% 
   filter(!is.na(SITE_SLOPE_400m)) %>%  # drop sites with no bathymetry measured or nearby (within 400m)
   mutate(
          site_bathy_400m = SITE_SLOPE_400m,
@@ -23,11 +23,11 @@ depth<-#read.csv('data/richardson_2023/Depth_study_fish_data.csv') %>%
          date = as.Date(DATE_, "%m/%d/%Y"),
          month_num = month(date),
          date_ym = floor_date(date, unit = "month")) %>% 
-  distinct(depth_m, site_bathy_400m, island, region, hard_coral, #population_status,
+  distinct(depth_m, site_bathy_400m, island, region, hard_coral, reef_zone, #population_status,
            year, date, month_num, date_ym, SITEVISITID) %>% 
   left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>% 
   select(region, island, SITEVISITID, year, date_ym, month, month_num, depth_m, site_bathy_400m,
-          hard_coral#, population_status
+          hard_coral, reef_zone#, population_status
          ) %>% 
   left_join(region_df %>% select(-region), by = 'island')
 
@@ -56,7 +56,9 @@ plank<-depth %>% filter(!is.na(planktivore_metab))
 # drop 0 planktivore sites (n = 49)
 plank<-plank %>% filter(planktivore_metab>0)
 # drop missing hard coral sites (675)
-plank<-plank %>% filter(!is.na(hard_coral)) ## need to check with TOm
+plank<-plank %>% filter(!is.na(hard_coral)) ## need to check with Tom
+# keep forereef only (drops 31 sites)
+plank<-plank %>% filter(reef_zone=='Forereef') ## need to check with Tom
 
 # scale and center cont. covariates
 plank_scaled <- plank %>% 
@@ -67,7 +69,7 @@ plank_scaled <- plank %>%
                   avg_monthly_mm:chl_ime), 
                 ~scale(., center=TRUE, scale=TRUE)[,1]))
 
-pdf(file = 'fig/crep_planktivore_cov_correlations.pdf', height=7, width=15)
+pdf(file = 'fig/ime_crep/crep_planktivore_cov_correlations.pdf', height=7, width=15)
 pairs2(
   plank_scaled %>% 
     filter(!is.na(ted_mean) & !is.na(median_ime_percent)) %>% 
@@ -82,6 +84,10 @@ dev.off()
 herb<-depth %>% filter(!is.na(herbivore_metab))
 # drop 0 herbivore sites (n = 3)
 herb<-herb %>% filter(herbivore_metab>0)
+# drop missing hard coral sites (n = 681)
+herb<-herb %>% filter(!is.na(hard_coral)) ## need to check with Tom
+# keep forereef only (drops 30 sites)
+herb<-herb %>% filter(reef_zone=='Forereef') ## need to check with Tom
 
 # scale and center cont. covariates
 herb_scaled <- herb %>% 
@@ -92,7 +98,7 @@ herb_scaled <- herb %>%
                   avg_monthly_mm:chl_ime), 
                 ~scale(., center=TRUE, scale=TRUE)[,1]))
 
-pdf(file = 'fig/crep_herbivore_cov_correlations.pdf', height=7, width=15)
+pdf(file = 'fig/ime_crep/crep_herbivore_cov_correlations.pdf', height=7, width=15)
 pairs2(
   herb_scaled %>% 
     filter(!is.na(ted_mean) & !is.na(median_ime_percent)) %>% 

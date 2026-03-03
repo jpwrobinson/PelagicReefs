@@ -122,7 +122,7 @@ island_complex<-island_complex %>%
 levs<-island %>% distinct(region, island_code, latitude) %>% 
   group_by(region) %>% arrange(island_code, latitude, .by_group=TRUE) %>% pull(island_code)
 
-pdf(file = 'fig/crep_island_oceanography.pdf', height=6, width=17)
+pdf(file = 'fig/ime_crep/crep_island_oceanography.pdf', height=6, width=17)
 print(
   # Island mean values
 island %>% 
@@ -147,7 +147,7 @@ island %>%
 dev.off()
 
 
-pdf(file = 'fig/crep_island_correlations.pdf', height=7, width=15)
+pdf(file = 'fig/ime_crep/crep_island_correlations.pdf', height=7, width=15)
 print(
   pairs2(island %>% select(ted_mean, ted_sum, mld_mean, mld_sd,mld_months_deep,ssh,
                          sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean, mean_chlorophyll,

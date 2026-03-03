@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ESRI_ItemInformation Culture='en-US'>
+<name>USGSEsriWCMC_GlobalIslands_v3</name>
+<guid>AB5005E3-8BC9-4B5B-BE30-C84D7D644C89</guid>
+<catalogpath></catalogpath>
+<snippet>Global Islands Version 3</snippet>
+<description>Global Islands Version 3</description>
+<summary>Global Islands Version 3</summary>
+<title>USGSEsriWCMC_GlobalIslands_v3</title>
+<tags>Global Islands</tags>
+<type>Map Package</type>
+<typekeywords>
+<typekeyword>File Geodatabase Feature Class</typekeyword>
+<typekeyword>Map Package</typekeyword>
+<typekeyword>Map</typekeyword>
+<typekeyword>2D</typekeyword>
+<typekeyword>ArcMap</typekeyword>
+<typekeyword>mpk</typekeyword>
+</typekeywords>
+<thumbnail>thumbnail/thumbnail.png</thumbnail>
+<documentation></documentation>
+<url></url>
+<datalastmodifiedtime></datalastmodifiedtime>
+<extent>
+<xmin>-179.999988908251</xmin>
+<ymin>-79.9041790003581</ymin>
+<xmax>179.999988908251</xmax>
+<ymax>83.6662540903604</ymax>
+</extent>
+<spatialreference>World_Mollweide</spatialreference>
+<accessinformation></accessinformation>
+<licenseinfo></licenseinfo>
+</ESRI_ItemInformation>

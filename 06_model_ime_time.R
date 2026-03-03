@@ -54,5 +54,19 @@ m2 <- bam(
   AR.start = ime_df$new_series
 )
 
+hist(resid(m2))
+overview(m2)
+acf(resid(m2))
 
 save(ime_df, focal, m2, file = 'results/mod_ime_time_seasonality.rds')
+
+## pull out edf values summed across smoother to understand where seasonality is time-variant
+data.frame(
+  term = names(m2$edf),
+  edf  = m2$edf
+) |>
+  dplyr::filter(grepl("ti\\(", term)) |>
+  dplyr::mutate(island = stringr::str_extract(term, "(?<=island)\\w+")) |>
+  dplyr::group_by(island) |>
+  dplyr::summarise(total_edf = sum(edf)) |>
+  dplyr::arrange(desc(total_edf)) %>% data.frame

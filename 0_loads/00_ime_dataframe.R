@@ -6,8 +6,6 @@ source('0_loads/00_oceanographic_load.R')
 ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
 ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)
 
-hist(ime_island$median_ime_percent) # Gamma
-
 # dim(dat) = 30 island (complexes)
 ime_dat<-ime_island %>% left_join(
   island_complex %>% ungroup() %>% 
@@ -16,30 +14,29 @@ ime_dat<-ime_island %>% left_join(
   by = 'island') %>% 
   filter(!is.na(mld))
 
-
 # missing islands
-island$island[!island$island %in% ime_island$island]
+# island$island[!island$island %in% ime_island$island]
 # ime_island %>%  filter(str_detect(island, 'L')) %>% distinct(island) %>% data.frame
 
 # missing CREP from modelled dataset
-island %>% filter(!island %in% ime_dat$island) %>% data.frame
+# island %>% filter(!island %in% ime_dat$island) %>% data.frame
 # but note that we are using island complex, so this captures 
 # 'Maui, Lanai, Molokai, Lanai, Kahoolawe' = 'Maui_C',
 # 'Saipan, Tinian, Aguijan' = 'Saipan_C',
 # 'Ofu, Olosega, Tau' = 'Tau_C'
 
 # 6 missing CREP islands in modelled dataset
-unique(island$island[!island$island %in% ime_dat$island]) 
+# unique(island$island[!island$island %in% ime_dat$island]) 
 # "Ofu & Olosega" "Lanai"         "Molokai"         "Tinian"        "Aguijan"   
 # but these are because IME dataset contains IME for 'lead' island (Maui, Saipan, Tau)
 # Maro Reef is NA
 
 # These 3 islands are missing tidal energy values. Nihoa is also missing bathymetric slope values.
-island_complex %>% filter(island_group %in% c('Johnston', 'Necker', 'Nihoa')) %>% data.frame
+# island_complex %>% filter(island_group %in% c('Johnston', 'Necker', 'Nihoa')) %>% data.frame
 
 # csv of modelled data
-ime_dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
-island %>% distinct(island, latitude, longitude, REGION, geomorphic_type) %>% write.csv('ime_island_crep_lat_lon.csv', row.names=FALSE)
+# ime_dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
+# island %>% distinct(island, latitude, longitude, REGION, geomorphic_type) %>% write.csv('ime_island_crep_lat_lon.csv', row.names=FALSE)
 
 # dim(dat_month) = 420 (12 * 35)
 dat_month<-ime_month %>% 
