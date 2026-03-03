@@ -74,7 +74,8 @@ car::vif(glm(Chl_max ~
 
 m_chl_max<-brm(bf(Chl_max ~ 
                     bathymetric_slope +
-                    geomorphic_type * reef_area_km2 + land_area_km2 + avg_monthly_mm +
+                    geomorphic_type * reef_area_km2 + land_area_km2 + 
+                    # avg_monthly_mm +
                     # mean_chlorophyll + 
                     avg_monthly_mm_anom +
                     mld_mean + mld_anom +
@@ -93,13 +94,13 @@ chains = 3, iter = 2000, warmup = 500, cores = 4)
 
 
 # load(file = 'results/mod_ime.rds')
-checker<-m_chl_inc
-# checker<-m_chl_max
+# checker<-m_chl_inc
+checker<-m_chl_max
 summary(checker)
 pp_check(checker, resp = 'Chlincreasenearby')
 pp_check(checker, resp = 'Chlmax')
 conditional_effects(checker)
-bayes_R2(checker) # 54% for Chl-increase, 92% for chl-max
+bayes_R2(checker) # 54% for Chl-increase, 72% for chl-max
 
 res <- residuals(checker, summary = FALSE)
 fitted <- fitted(checker, summary = FALSE)
