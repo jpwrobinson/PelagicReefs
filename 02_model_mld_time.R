@@ -35,9 +35,10 @@ m_bayes <- brm(
 
 save(m1, file = 'results/mld_time_mod.rds')
 
-# estimate rho using acf residuals - the lag 1 acf value
-m2 <- bam(
-  anomaly ~ s(time_num, island, k=12, bs = "fs"),
+# estimate rho using acf residuals - the lag 1 acf value. by= smoother is preferred to factor-smooth approach
+m2a <- bam(
+  # anomaly ~ s(time_num, island, k=12, bs = "fs"),
+  anomaly ~ s(time_num, by=island, k=12),
   data = mld,
   rho = 0.35,
   AR.start = mld$new_series

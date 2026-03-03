@@ -14,7 +14,8 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
 focal<-ime_df %>% filter(!is.na(Chl_increase_nearby)) # n = 8066 , ~3000 obs dropped
 
 m1<-bam(log(Chl_increase_nearby) ~
-          s(time_s, island, k=12, bs = 'fs') +
+          # s(time_s, island, k=12, bs = 'fs') +
+          s(time_s, by = island, k=12) +
           s(month, bs = 'cc', k = 12, by = island),
         rho = 0.35,
         AR.start = focal$new_series,
@@ -37,3 +38,21 @@ ggplot(df1, aes(date, exp(pred), col=region.col, group=island)) + geom_line() + 
   scale_x_date(date_breaks = '5 years', date_labels = '%Y') +
   scale_colour_identity() +
   labs(x = '', y = 'Predicted Chl_max')
+
+save(ime_df, focal, m1, file = 'results/mod_ime_time.rds')
+
+
+## Is IME seasonality changing?
+m2 <- bam(
+  log(Chl_increase_nearby) ~ 
+    s(time_s, by = island, k = 12) +
+    s(month, by = island, bs = "cc", k = 12) +
+    ti(month, time_s, by = island,
+       bs = c("cc", "tp"), k = c(12, 6)),
+  data = ime_df,
+  rho = 0.35,
+  AR.start = ime_df$new_series
+)
+
+
+save(ime_df, focal, m2, file = 'results/mod_ime_time_seasonality.rds')

@@ -14,7 +14,8 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
 focal<-ime_df %>% filter(!is.na(Chl_max)) # n = 11489. 3 NA from Swains dropped.
 
 m1<-bam(log(Chl_max) ~
-          s(time_s, island, k=12, bs = 'fs') +
+          # s(time_s, island, k=12, bs = 'fs') + # dropped factor smooth version because pooling info not needed
+          s(time_s, by = island, k=12) +
           s(month, bs = 'cc', k = 12, by = island),
         rho = 0.35,
         AR.start = focal$new_series,
@@ -38,11 +39,14 @@ ggplot(df1, aes(date, exp(pred), col=region.col, group=island)) + geom_line() + 
   scale_colour_identity() +
   labs(x = '', y = 'Predicted Chl_max')
 
+save(ime_df, m1, file = 'results/mod_ime_time_chl_max.rds')
+
 ## 2. Examining temopral trends in chl_max_anom by island, accounting for seasonality. High variance explained by month.
 focal<-ime_df %>% filter(!is.na(chl_max_anom)) # n = 11489. 3 NA from Swains dropped.
 
 m2<-bam(chl_max_anom ~
-          s(time_s, island, k=12, bs = 'fs') +
+          # s(time_s, island, k=12, bs = 'fs') +
+          s(time_s, by = island, k=12) +
           s(month, bs = 'cc', k = 12, by = island),
         rho = 0.35,
         AR.start = focal$new_series,
@@ -63,6 +67,7 @@ ggplot(df2, aes(month, pred, group=island, col=region.col)) + geom_line() + face
   scale_colour_identity() +
   labs(x = '', y = 'Predicted Chl_max anomaly')
 
+save(ime_df, m2, file = 'results/mod_ime_time_chl_max_anom.rds')
 
 ## temporal smooth excluding month
 month_smooths <- grep("month", smooths(m2), value = TRUE)
@@ -95,3 +100,5 @@ m3 <- bam(
 hist(resid(m3))
 summary(m3)
 acf(resid(m3))
+
+save(ime_df, m1, file = 'results/mod_ime_time_chl_max.rds')
