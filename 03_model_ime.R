@@ -114,26 +114,32 @@ save(dat_month, dat_scaled_month, mod_dat, mod_dat2, m_chl_inc, m_chl_max, effec
 # For linear model, extract posterior draws
 effects <- m_chl_inc %>%
   gather_draws(b_Chlincreasenearby_geomorphic_typeIsland, b_Chlincreasenearby_reef_area_km2, b_Chlincreasenearby_land_area_km2,
-               b_Chlincreasenearby_bathymetric_slope, b_Chlincreasenearby_avg_monthly_mm,
-               b_Chlincreasenearby_mean_chlorophyll, bsp_Chlincreasenearby_mited_mean, b_Chlincreasenearby_mld) %>%  
+               b_Chlincreasenearby_bathymetric_slope, 
+               b_Chlincreasenearby_avg_monthly_mm_anom, b_Chlincreasenearby_mld_mean, b_Chlincreasenearby_mld_anom,
+               b_Chlincreasenearby_mean_chlorophyll, bsp_Chlincreasenearby_mited_mean) %>%  
   mutate(.variable = str_replace_all(.variable, 'b_Chlincreasenearby_', ''),
          .variable = str_replace_all(.variable, 'bsp_Chlincreasenearby_mi', ''),
          var_fac = factor(.variable, 
                           levels = rev(c('geomorphic_typeIsland','reef_area_km2','land_area_km2',
-                                         'bathymetric_slope','avg_monthly_mm', 'mean_chlorophyll',
-                                         'ted_mean', 'mld'))))
+                                         'bathymetric_slope',
+                                         'mean_chlorophyll','ted_mean', 'mld_mean',
+                                         'mld_anom', 'avg_monthly_mm_anom' 
+                                         ))))
 
 effects2 <- m_chl_max %>%
   gather_draws(b_Chlmax_geomorphic_typeIsland, b_Chlmax_reef_area_km2, b_Chlmax_land_area_km2,
-               b_Chlmax_bathymetric_slope, b_Chlmax_avg_monthly_mm,
-               # b_Chlmax_mean_chlorophyll, 
-               bsp_Chlmax_mited_mean, b_Chlmax_mld) %>%  
+               b_Chlmax_bathymetric_slope,
+               b_Chlmax_avg_monthly_mm_anom, b_Chlmax_mld_mean, b_Chlmax_mld_anom,
+               # b_Chlmax_mean_chlorophyll,
+               bsp_Chlmax_mited_mean) %>%  
   mutate(.variable = str_replace_all(.variable, 'b_Chlmax_', ''),
          .variable = str_replace_all(.variable, 'bsp_Chlmax_mi', ''),
          var_fac = factor(.variable, 
                           levels = rev(c('geomorphic_typeIsland','reef_area_km2','land_area_km2',
-                                         'bathymetric_slope','avg_monthly_mm', 'mean_chlorophyll',
-                                         'ted_mean', 'mld'))))
+                                         'bathymetric_slope',
+                                         'mean_chlorophyll','ted_mean', 'mld_mean',
+                                         'mld_anom', 'avg_monthly_mm_anom' 
+                          ))))
 
 # Plot effect sizes
 pdf(file = 'fig/ime_db/ime_month_crep_model.pdf', height=5, width=6)
