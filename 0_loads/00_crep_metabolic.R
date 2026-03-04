@@ -44,7 +44,8 @@ depth<- depth %>%
   select(-PLANKTIVORE, -PRIMARY) %>% 
   # Bring Gove, MLD and TD variables
   left_join(island %>% select(island, island_code, sst_mean:ted_sum)) %>% 
-  mutate(avg_monthly_mm = ifelse(is.na(avg_monthly_mm), 0, avg_monthly_mm)) %>% 
+  mutate(avg_monthly_mm = ifelse(is.na(avg_monthly_mm), 0, avg_monthly_mm),
+         precip_amp_mm = ifelse(is.na(precip_amp_mm), 0, precip_amp_mm)) %>% 
   left_join(ime_dat %>% 
               select(island_group, months_ime, median_ime_percent, chl_ime))
 
@@ -66,7 +67,7 @@ plank_scaled <- plank %>%
          island_area_km2 = log10(land_area_km2),
          across(c(depth_m:hard_coral, 
                   sst_mean:irradiance_einsteins_m2_d1_mean, 
-                  avg_monthly_mm:chl_ime), 
+                  precip_amp_mm:chl_ime), 
                 ~scale(., center=TRUE, scale=TRUE)[,1]))
 
 pdf(file = 'fig/ime_crep/crep_planktivore_cov_correlations.pdf', height=7, width=15)
@@ -74,9 +75,8 @@ pairs2(
   plank_scaled %>% 
     filter(!is.na(ted_mean) & !is.na(median_ime_percent)) %>% 
     select(island_area_km2, reef_area_km2, site_bathy_400m,depth_m,hard_coral,
-           avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
-           chl_a_mg_m3_mean, median_ime_percent, chl_ime, months_ime,
-           mld_mean, mld_amp, mld_months_deep, ssh, ted_mean, ted_sum, month_num))
+           precip_amp_mm, avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
+           chl_a_mg_m3_mean, mld_mean, mld_amp, ssh, ted_mean, ted_sum, month_num))
 dev.off()
 
 # 2. Create herbivore
@@ -95,7 +95,7 @@ herb_scaled <- herb %>%
          island_area_km2 = log10(land_area_km2),
          across(c(depth_m:hard_coral, 
                   sst_mean:irradiance_einsteins_m2_d1_mean, 
-                  avg_monthly_mm:chl_ime), 
+                  precip_amp_mm:chl_ime), 
                 ~scale(., center=TRUE, scale=TRUE)[,1]))
 
 pdf(file = 'fig/ime_crep/crep_herbivore_cov_correlations.pdf', height=7, width=15)
@@ -103,6 +103,6 @@ pairs2(
   herb_scaled %>% 
     filter(!is.na(ted_mean) & !is.na(median_ime_percent)) %>% 
     select(island_area_km2, reef_area_km2, site_bathy_400m,depth_m,hard_coral,
-           avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
+           precip_amp_mm, avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
            chl_a_mg_m3_mean, mld_mean, mld_amp, ssh, ted_mean, ted_sum, month_num))
 dev.off()

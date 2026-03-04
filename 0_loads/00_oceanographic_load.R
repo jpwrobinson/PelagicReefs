@@ -23,8 +23,13 @@ precip<-read.csv(file = 'data/gee-exports/crep_monthly_precipitation_mm.csv') %>
          island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
          island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
 
-precip_ann<-precip %>% group_by(island) %>% summarise(avg_monthly_mm = mean(avg_monthly_mm))
-precip_ann_C<-precip %>% group_by(island_group) %>% summarise(avg_monthly_mm = mean(avg_monthly_mm))
+precip_ann<-precip %>% group_by(island) %>% 
+          summarise(precip_amp_mm = max(avg_monthly_mm) - min(avg_monthly_mm),
+                    avg_monthly_mm = mean(avg_monthly_mm))
+
+precip_ann_C<-precip %>% group_by(island_group) %>% 
+  summarise(precip_amp_mm = max(avg_monthly_mm) - min(avg_monthly_mm),
+            avg_monthly_mm = mean(avg_monthly_mm))
 
 
 # 2. mixed layer depth = shallower MLD helps upwelling to reach reefs, increases planktivores
@@ -149,7 +154,7 @@ dev.off()
 
 pdf(file = 'fig/ime_crep/crep_island_correlations.pdf', height=7, width=15)
 print(
-  pairs2(island %>% select(ted_mean, ted_sum, mld_mean, mld_sd,mld_months_deep,ssh,
+  pairs2(island %>% select(ted_mean, ted_sum, mld_mean, avg_monthly_mm, ssh,
                          sst_mean, wave_energy_mean_kw_m1,chl_a_mg_m3_mean, mean_chlorophyll,
                          irradiance_einsteins_m2_d1_mean, land_area_km2, reef_area_km2, latitude, longitude) %>%
          na.omit()))
