@@ -29,7 +29,7 @@ dat_scaled_month %>% filter(!is.na(Chl_max)) %>% dim # N = 420, 35 islands
 
 # check vif
 car::vif(glm(Chl_increase_nearby ~ 
-              land_area_km2 + #avg_monthly_mm +
+              land_area_km2 + 
                # avg_monthly_mm_mean + 
                avg_monthly_mm_anom +
               reef_area_km2 + bathymetric_slope + 

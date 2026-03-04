@@ -12,7 +12,7 @@ priors <- c(
 # check vif. mean chl-a is correlated with reef area and MLD amp
 car::vif(glm(log(planktivore_metab) ~ 
                land_area_km2 + avg_monthly_mm +
-               reef_area_km2 + site_bathy_400m + 
+               reef_area_km2 + site_bathy_400m + island_bathy +  
                # mean_chlorophyll +
                ted_mean +
                 mld_amp, data=plank_scaled))

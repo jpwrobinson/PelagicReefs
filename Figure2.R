@@ -1,77 +1,92 @@
-library(tidybayes)
 
-# Trophic group effect plots
-load('results/mod_planktivore_metabolic.rds')
-load('results/mod_herbivore_metabolic.rds')
+load(file = 'results/mod_ime.rds')
 
-bayes<-data.frame(b = c(bayes_R2(m2_plank)[1,'Estimate'],
-                        bayes_R2(m2_herb)[1,'Estimate']),
-                  x = 0.5, y = c(6.5, 6.5), fg = c('Planktivore', 'Herbivore'))
+# Panel C = drivers of IME [monthly and time-averaged]
+bayes<-data.frame(b = bayes_R2(m_chl_inc)[1,'Estimate'], x = 1, y = c(9.3))
+# r2(m_chl_inc, by_component = TRUE) # 51% fixed effects. 65% full model.
 
-## Effect sizes
-effects <- rbind(
-  m2_plank %>%
-  gather_draws(`b_.*`, regex=TRUE) %>%  
-  mutate(fg = 'Planktivore'),
-  m2_herb %>%
-    gather_draws(`b_.*`, regex=TRUE) %>%  
-    mutate(fg = 'Herbivore')) %>% 
-  filter(.variable != 'Intercept') %>% 
-  mutate(.variable = str_replace_all(.variable, 'b_', ''),
-         var_fac = factor(.variable, 
-                          levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2','site_bathy_400m',
-                                         'avg_monthly_mm','mld_amp', 
-                                         'hard_coral', 'depth_m'
-                                         )))) %>% 
-  filter(!is.na(var_fac)) %>% 
-  group_by(var_fac) %>% mutate(medi = abs(median(.value))) 
+gD<-ggplot(effects,
+           aes(x = .value, y = var_fac)) +
+  geom_text(data = bayes, aes(x = x, y = y, label = paste0('R2 = ', round(b*100,1),'% ')), size=2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
+  stat_pointinterval(.width = c(0.5, 0.95), position = position_dodge(width=0.5)) +  
+  labs(x = "Effect on chl-a enhancement", y = "") +
+  scale_colour_manual(values = c('#737373', '#d94801'), guide=NULL) +
+  scale_x_continuous(limits=c(-.75, 1.25)) +
+  scale_y_discrete(labels =c('Monthly precipitation', 'Monthly mixed layer depth',
+                             'Mean mixed layer depth', 'Tidal energy','Chlorophyll a', 
+                             'Bathymetric slope', 'Island area', 'Reef area', 'Island')) +
+  theme(legend.position = c(.9,.9), legend.title = element_blank())
+
+# Get conditional effects
+source('func_mod_conditional.R')
+bathy_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'bathymetric_slope')
+isl_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'land_area_km2')
+reef_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'reef_area_km2')
+
+ted_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'ted_mean')
+chl_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'mean_chlorophyll')
+mld_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'mld_mean')
+
+mldA_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'mld_anom')
+precip_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'avg_monthly_mm_anom')
 
 
-# Plot effect sizes
-labs<-data.frame(x = Inf, y = c(2.4, 4.4, 8.4), label = c('Habitat', 'Oceanographic', 'Geomorphic'), fg='Herbivore')
+dd<-rbind(bathy_pred %>% select(-bathymetric_slope) %>% mutate(var = 'Bathymetry', unit='slope~degree'), 
+          isl_pred %>% select(-land_area_km2) %>% mutate(var = 'Land area', unit='km^2'),
+          reef_pred %>% select(-reef_area_km2) %>% mutate(var = 'Reef area', unit="km^2"),
+          ted_pred %>% select(-ted_mean) %>% mutate(var = 'Tidal energy flux', unit='W~m^2'),
+          chl_pred %>% select(-mean_chlorophyll) %>% mutate(var = 'Mean chl-a', unit='mg~m^3'),
+          mld_pred %>% select(-mld_mean) %>% mutate(var = 'Mixed layer depth', unit='m') , 
+          mldA_pred %>% select(-mld_anom) %>% mutate(var = 'Mixed layer depth ', unit='m') , 
+          precip_pred %>% select(-avg_monthly_mm_anom) %>% mutate(var = 'Precipitation ',unit='mm')) %>% 
+  mutate(g = ifelse(var %in% c('Bathymetry', 'Land area', 'Reef area'), 0, 1),
+         g = ifelse(var %in% c('Mixed layer depth ', 'Precipitation '), 2, g))
 
-pdf(file = 'fig/Figure2.pdf', height=5, width=11)
+labels<-dd %>% distinct(var, unit)
+
+gE<-ggplot(dd %>% filter(g == 0)) + 
+  geom_ribbon(aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100), alpha=0.1) +
+  geom_line(aes(raw, estimate__/100)) + 
+  geom_text(data = dd %>% filter(g == 0) %>% distinct(var), 
+            aes(y = Inf,x = -Inf, label = var), size = 3, vjust=2, hjust=-.05) +
+  guides(fill = 'none') +
+  labs(y = 'chl-a enhancement', x = '') +
+  scale_y_continuous(labels = label_percent()) +
+  facet_grid(~var, scales='free', switch = 'x', 
+             labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
+  theme(strip.placement = 'bottom', strip.background = element_blank())
+
+gF<-ggplot(dd %>% filter(g == 1)) + 
+  geom_ribbon(aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100), alpha=0.1) +
+  geom_line(aes(raw, estimate__/100)) + 
+  geom_text(data = dd %>% filter(g == 1) %>% distinct(var), 
+            aes(y = Inf,x = -Inf, label = var), size = 3, vjust=2, hjust=-.05) +
+  guides(fill = 'none') +
+  labs(y = '', x = '') +
+  scale_y_continuous(labels = label_percent()) +
+  facet_grid(~var, scales='free', switch = 'x',
+             labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
+  theme(strip.placement = 'bottom', strip.background = element_blank()) 
+
+gG<-ggplot(dd %>% filter(g == 2)) + 
+  geom_ribbon(aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100), alpha=0.1) +
+  geom_line(aes(raw, estimate__/100)) + 
+  geom_text(data = dd %>% filter(g == 2) %>% distinct(var), 
+            aes(y = Inf,x = -Inf, label = var), size = 3, vjust=2, hjust=-.05) +
+  guides(fill = 'none') +
+  labs(y = '', x = '') +
+  scale_y_continuous(labels = label_percent()) +
+  facet_grid(~var, scales='free', switch = 'x',
+             labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
+  theme(strip.placement = 'bottom', strip.background = element_blank()) 
+
+
+pdf(file = 'fig/Figure3.pdf', height=5.5, width=12)
+top<-plot_grid(gD, gE, nrow=1, labels=c('a', 'b'), rel_widths=c(1, 1))
+bot<-plot_grid(gF, gG, nrow=1, labels=c('a', 'b'), rel_widths=c(1, 1.2, 1))
 print(
-  ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
-    geom_text(data = labs, aes(x, y, label = label), size=3.5, fontface=1, hjust=1, col='black') +
-    annotate('rect', xmin = -Inf, xmax=Inf, ymin = -Inf, ymax = 2.5, fill='grey', alpha=0.1) +
-    annotate('rect', xmin = -Inf, xmax=Inf, ymin = 4.5, ymax = Inf, fill='grey', alpha=0.1) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
-    stat_pointinterval(.width = c(0.5, 0.95), pch=19, 
-                       position = position_dodge(width=0.65)) +  
-    geom_text(data = bayes, aes(x = x, y = y, label = paste0('R2 = ', round(b*100,1),'% ')), size=4) +
-    facet_grid(~fg) +
-    scale_color_manual(values = fg_cols) +
-    labs(x = "Effect on metabolic flux", y = "") +
-    scale_x_continuous(limits=c(-.9, 0.7), expand=c(0,0)) +
-    guides(color='none') +
-    scale_y_discrete(labels = c('Depth', 'Hard coral',
-                                'Mixed layer depth', 'Precipitation', 
-                                'Bathymetric slope','Island area', 'Reef area', 'Geomorphic [island]'), sec.axis = dup_axis()) +
-    theme(strip.text = element_text(face=2, hjust=0, size=11),
-          strip.background = element_blank(),
-          axis.text.y = element_text(size =10),
-          axis.text.x = element_text(size =10))
+  plot_grid(top, bot, nrow=2)
 )
 dev.off()
-
-
-# # partial residual estimates - the observed value minus prediction with model excluding focal covariate
-# epred_no_nox <- posterior_linpred(
-#   m2_plank,
-#   newdata = plank_scaled,
-#   re_formula = NA,
-#   terms = ~ . - mld_amp      # remove MLD term
-# )
-# 
-# plank_scaled<-plank_scaled %>% 
-#   mutate(drop_mld = colMeans(epred_no_nox), partial = log(planktivore_metab) - colMeans(epred_no_nox))
-# 
-# ggplot(plank_scaled, aes(mld_amp, drop_mld)) +
-#   geom_point(alpha = 0.4) +
-#   labs(y = "Partial residual (x)")
-# 
-
-
-
 
