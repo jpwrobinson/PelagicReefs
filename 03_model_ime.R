@@ -45,8 +45,8 @@ m_chl_inc<-brm(bf(Chl_increase_nearby ~
                     avg_monthly_mm_anom +
                     mld_mean + mld_anom +
                     mean_chlorophyll + 
-                    mi(ted_mean), 
-                    # (1 + mld | island),
+                    mi(ted_mean) + 
+                    (1 + mld_anom + avg_monthly_mm_anom | island),
                   family = lognormal()
 ) +
   bf(ted_mean | mi() ~ reef_area_km2),
@@ -94,19 +94,13 @@ chains = 3, iter = 2000, warmup = 500, cores = 4)
 
 
 # load(file = 'results/mod_ime.rds')
-# checker<-m_chl_inc
+checker<-m_chl_inc
 checker<-m_chl_max
 summary(checker)
 pp_check(checker, resp = 'Chlincreasenearby')
 pp_check(checker, resp = 'Chlmax')
 conditional_effects(checker)
 bayes_R2(checker) # 54% for Chl-increase, 72% for chl-max
-
-res <- residuals(checker, summary = FALSE)
-fitted <- fitted(checker, summary = FALSE)
-res_mean <- rowMeans(res)
-acf(res_mean, main = "ACF of model residuals")
-
 
 save(dat_month, dat_scaled_month, mod_dat, mod_dat2, m_chl_inc, m_chl_max, effects, file = 'results/mod_ime.rds')
 

@@ -55,7 +55,8 @@ gE<-ggplot(dd %>% filter(g == 0)) +
   scale_y_continuous(labels = label_percent()) +
   facet_grid(~var, scales='free', switch = 'x', 
              labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
-  theme(strip.placement = 'bottom', strip.background = element_blank())
+  theme(strip.placement = 'bottom', strip.background = element_blank(),
+        strip.text = element_text(vjust=1.5))
 
 gF<-ggplot(dd %>% filter(g == 1)) + 
   geom_ribbon(aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100), alpha=0.1) +
@@ -63,11 +64,12 @@ gF<-ggplot(dd %>% filter(g == 1)) +
   geom_text(data = dd %>% filter(g == 1) %>% distinct(var), 
             aes(y = Inf,x = -Inf, label = var), size = 3, vjust=2, hjust=-.05) +
   guides(fill = 'none') +
-  labs(y = '', x = '') +
+  labs(y = 'chl-a enhancement', x = '') +
   scale_y_continuous(labels = label_percent()) +
   facet_grid(~var, scales='free', switch = 'x',
              labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
-  theme(strip.placement = 'bottom', strip.background = element_blank()) 
+  theme(strip.placement = 'bottom', strip.background = element_blank(),
+        strip.text = element_text(vjust=1.5)) 
 
 gG<-ggplot(dd %>% filter(g == 2)) + 
   geom_ribbon(aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100), alpha=0.1) +
@@ -82,11 +84,20 @@ gG<-ggplot(dd %>% filter(g == 2)) +
   theme(strip.placement = 'bottom', strip.background = element_blank()) 
 
 
-pdf(file = 'fig/Figure3.pdf', height=5.5, width=12)
-top<-plot_grid(gD, gE, nrow=1, labels=c('a', 'b'), rel_widths=c(1, 1))
-bot<-plot_grid(gF, gG, nrow=1, labels=c('a', 'b'), rel_widths=c(1, 1.2, 1))
-print(
-  plot_grid(top, bot, nrow=2)
-)
+pdf(file = 'fig/Figure2.pdf', height=2, width=8)
+plot_grid(gD, gG, nrow=1, labels=c('a', 'b'), rel_heights=c(1, 1))
 dev.off()
 
+pdf(file = 'fig/FigureSX_IME_pred.pdf', height=4, width=6)
+plot_grid(gE, gF, nrow=2, rel_heights=c(1, 1))
+dev.off()
+
+# generate effects for seasonal & island
+vars<-names(m_chl_inc$data)
+nd<-as.data.frame(setNames(as.list(rep(0, length(vars))), vars))
+
+mld_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'mld_anom')
+
+ggplot(condo, aes(month_num, estimate__, group=island)) + 
+  geom_line() + 
+  facet_wrap(~REGION)
