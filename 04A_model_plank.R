@@ -13,7 +13,7 @@ priors <- c(
 car::vif(glm(log(planktivore_metab) ~ 
                land_area_km2 + avg_monthly_mm +
                reef_area_km2 + site_bathy_400m + 
-               mean_chlorophyll +
+               # mean_chlorophyll +
                ted_mean +
                 mld_amp, data=plank_scaled))
 
@@ -21,11 +21,13 @@ car::vif(glm(log(planktivore_metab) ~
 # 1. Planktivore
 # model N = 4294 [2009-2024].   n=3589 with hard coral
 m2_plank<-brm(planktivore_metab ~ 
-                    geomorphic_type + reef_area_km2 + island_area_km2 + avg_monthly_mm +
+                    geomorphic_type + reef_area_km2 + island_area_km2 + 
                     site_bathy_400m + 
                     hard_coral + 
                     depth_m +
+                    avg_monthly_mm + 
                     mld_amp + 
+                    # precip_amp_mm +
                     # mean_chlorophyll +
                     (1 | year) +
                     (1 | island),
@@ -38,11 +40,12 @@ m2_plank<-brm(planktivore_metab ~
 save(m2_plank, plank_scaled, file = 'results/mod_planktivore_metabolic.rds')
 
 m3_plank<-brm(planktivore_biom ~ 
-                reef_area_km2 + island_area_km2 + avg_monthly_mm +
+                reef_area_km2 + island_area_km2 + 
                 site_bathy_400m + 
                 hard_coral + 
                 depth_m + 
                 mld_amp + 
+                avg_monthly_mm +
                 #mean_chlorophyll +
                 (1 | year) +
                 (1 | island),
@@ -88,7 +91,7 @@ ggplot(effects, aes(x = .value, y = var_fac)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
   labs(x = "Effect size", y = "") +
   xlim(c(-1.2, 1.2))
-dev.off()
+sdev.off()
 
 ## Change in planktivore flux along MLD
 
