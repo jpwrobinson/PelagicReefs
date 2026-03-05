@@ -8,7 +8,7 @@ bayes<-data.frame(b = bayes_R2(m_chl_inc)[1,'Estimate'], x = 1, y = c(9.3))
 
 gEff<-ggplot(effects,
            aes(x = .value, y = var_fac)) +
-  geom_text(data = bayes, aes(x = x, y = y, label = paste0('R2 = ', round(b*100,1),'% ')), size=2) +
+  geom_text(data = bayes, aes(x = x, y = y, label = paste0('R² = ', round(b*100,1),'% ')), size=2) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
   stat_pointinterval(.width = c(0.5, 0.95), position = position_dodge(width=0.5)) +  
   labs(x = "Effect on chl-a enhancement", y = "") +

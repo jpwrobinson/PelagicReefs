@@ -2,6 +2,8 @@
 load('results/mod_planktivore_metabolic.rds')
 load('results/mod_herbivore_metabolic.rds')
 
+blanker<-data.frame(fg.col  = '#01579F', group = 'blanker', proportion = NA)
+
 # Get variance explain by each covariate, sum by group
 
 # Planktivore
@@ -41,16 +43,16 @@ g2 <- coef_draws %>%
   ) %>%
   select(starts_with("prop_")) %>% mutate(fg = 'Herbivore', fg.col='#FF8C00')
 
-labs<-data.frame(fg = c('Planktivore', 'Herbivore'), fg.col=c('#01579F', '#FF8C00'), group = 'Within-island\nseasonality', 
-                 proportion = c(0.6, 0.7))
+labs<-data.frame(fg = c('Planktivore', 'Herbivore'), fg.col=c('#01579F', '#FF8C00'), group = 'seasonal', proportion = c(0.6, 0.7))
 
-gC<-rbind(g1, g2) %>% 
+# bind and pivot
+vars<-rbind(g1, g2) %>% 
   select(starts_with("prop_"), fg.col) %>%
-  pivot_longer(-fg.col,names_to = "group",values_to = "proportion", names_prefix = "prop_") %>%
-  mutate(group = case_match(group, 'geomorphic' ~ 'Island-level\ngeomorphology',
-                            'seasonal' ~ 'Within-island\nseasonality',
-                            'habitat' ~ 'Site-level\nhabitat')) %>%
-  ggplot(aes(x = proportion, y = group, fill = fg.col, col=fg.col)) +
+  pivot_longer(-fg.col,names_to = "group",values_to = "proportion", names_prefix = "prop_")
+
+vars<-rbind(vars, blanker)
+
+gC<-ggplot(vars, aes(x = proportion, y = group, fill = fg.col, col=fg.col)) +
   annotate('rect', xmin = -Inf, xmax=Inf, ymin = 2.5, ymax = Inf, fill='grey', alpha=0.1) +
   annotate('rect', xmin = -Inf, xmax=Inf, ymin =-Inf, ymax = 1.5, fill='grey', alpha=0.1) +
   stat_slabinterval(.width = c(0.8, 0.95), point_interval = median_qi,                   
@@ -59,9 +61,11 @@ gC<-rbind(g1, g2) %>%
   geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
   geom_text(data = labs, aes(label = fg),  position = position_dodge(0.5), size=3) +
   scale_x_continuous(labels = scales::percent, limits = c(0, 1)) +
-  scale_y_discrete(limits = rev) +
+  scale_y_discrete(limits = c('seasonal', 'habitat', 'blanker', 'geomorphic'),
+                   labels = c('Within-island\nseasonality', 'Site-level\nhabitat', '', 'Island-level\ngeomorphology')) +
   labs(x = "Proportion of explained variance",
        y = NULL) +
   scale_fill_identity() + scale_colour_identity() +
   theme(legend.position = "none", 
-        axis.text.y = element_text(hjust=0.5))
+        axis.text.y = element_text(hjust=0.5),
+        axis.ticks.y = element_blank())
