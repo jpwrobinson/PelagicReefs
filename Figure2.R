@@ -92,12 +92,27 @@ pdf(file = 'fig/FigureSX_IME_pred.pdf', height=4, width=6)
 plot_grid(gE, gF, nrow=2, rel_heights=c(1, 1))
 dev.off()
 
-# generate effects for seasonal & island
-vars<-names(m_chl_inc$data)
-nd<-as.data.frame(setNames(as.list(rep(0, length(vars))), vars))
-
-mld_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'mld_anom')
-
-ggplot(condo, aes(month_num, estimate__, group=island)) + 
-  geom_line() + 
-  facet_wrap(~REGION)
+# # generate effects for seasonal & island
+# nd <- mod_dat |>
+#   distinct(island) |>
+#   crossing(mld_anom = seq(min(mod_dat$mld_anom, na.rm = TRUE),
+#                           max(mod_dat$mld_anom, na.rm = TRUE),
+#                           length.out = 100)) |>
+#   mutate(
+#     bathymetric_slope   = 0,
+#     geomorphic_type     = 'Atoll',
+#     reef_area_km2       = 0,
+#     land_area_km2       = 0,
+#     avg_monthly_mm_anom = 0,
+#     mld_mean            = 0,
+#     mean_chlorophyll    = 0,
+#     ted_mean            = 0,
+#   )
+# 
+# pred <- nd |>
+#   add_epred_draws(m_chl_inc,resp = "Chlincreasenearby",allow_new_levels = FALSE)
+# 
+# 
+# ggplot(pred, aes(mld_anom, .epred, group=island)) + 
+#   stat_lineribbon() + 
+#   facet_wrap(~island)

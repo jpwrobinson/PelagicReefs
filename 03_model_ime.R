@@ -45,8 +45,8 @@ m_chl_inc<-brm(bf(Chl_increase_nearby ~
                     avg_monthly_mm_anom +
                     mld_mean + mld_anom +
                     mean_chlorophyll + 
-                    mi(ted_mean) + 
-                    (1 + mld_anom + avg_monthly_mm_anom | island),
+                    mi(ted_mean), 
+                    # (1 + mld_anom + avg_monthly_mm_anom | island),
                   family = lognormal()
 ) +
   bf(ted_mean | mi() ~ reef_area_km2),
