@@ -14,15 +14,15 @@ coef_draws <- as_draws_df(m2_plank) %>%
 # weighted by predictor variance in the data
 g1 <- coef_draws %>%
   mutate(
-    geomorphic = abs(b_geomorphic_typeIsland) + abs(b_reef_area_km2) + abs(b_island_area_km2),
-    habitat = abs(b_site_bathy_400m) + abs(b_hard_coral) + abs(b_depth_m),
-    seasonal = abs(b_avg_monthly_mm) + abs(b_mld_amp),
-    total = geomorphic + habitat + seasonal,
-    prop_geomorphic    = geomorphic    / total,
-    prop_habitat          = habitat          / total,
-    prop_seasonal = seasonal / total
+    abs_geomorphic = abs(b_geomorphic_typeIsland) + abs(b_reef_area_km2) + abs(b_island_area_km2) + abs(b_site_bathy_400m),
+    abs_habitat = abs(b_hard_coral) + abs(b_depth_m),
+    abs_seasonal = abs(b_avg_monthly_mm) + abs(b_mld_amp),
+    total = abs_geomorphic + abs_habitat + abs_seasonal,
+    prop_geomorphic    = abs_geomorphic    / total,
+    prop_habitat          = abs_habitat          / total,
+    prop_seasonal = abs_seasonal / total
   ) %>%
-  select(starts_with("prop_")) %>% mutate(fg = 'Planktivore', fg.col='#01579F')
+  mutate(fg = 'Planktivore', fg.col='#01579F')
 
 
 # Herbivore
@@ -33,26 +33,30 @@ coef_draws <- as_draws_df(m2_herb) %>%
 # weighted by predictor variance in the data
 g2 <- coef_draws %>%
   mutate(
-    geomorphic = abs(b_geomorphic_typeIsland) + abs(b_reef_area_km2) + abs(b_island_area_km2),
-    habitat = abs(b_site_bathy_400m) + abs(b_hard_coral) + abs(b_depth_m),
-    seasonal = abs(b_avg_monthly_mm) + abs(b_mld_amp),
-    total = geomorphic + habitat + seasonal,
-    prop_geomorphic    = geomorphic    / total,
-    prop_habitat          = habitat          / total,
-    prop_seasonal = seasonal / total
+    abs_geomorphic = abs(b_geomorphic_typeIsland) + abs(b_reef_area_km2) + abs(b_island_area_km2) + abs(b_site_bathy_400m),
+    abs_habitat = abs(b_hard_coral) + abs(b_depth_m),
+    abs_seasonal = abs(b_avg_monthly_mm) + abs(b_mld_amp),
+    total = abs_geomorphic + abs_habitat + abs_seasonal,
+    prop_geomorphic    = abs_geomorphic    / total,
+    prop_habitat          = abs_habitat          / total,
+    prop_seasonal = abs_seasonal / total
   ) %>%
-  select(starts_with("prop_")) %>% mutate(fg = 'Herbivore', fg.col='#FF8C00')
+  mutate(fg = 'Herbivore', fg.col='#FF8C00')
 
 labs<-data.frame(fg = c('Planktivore', 'Herbivore'), fg.col=c('#01579F', '#FF8C00'), group = 'seasonal', proportion = c(0.6, 0.7))
 
 # bind and pivot
-vars<-rbind(g1, g2) %>% 
+vars_prop<-rbind(g1, g2) %>% 
   select(starts_with("prop_"), fg.col) %>%
   pivot_longer(-fg.col,names_to = "group",values_to = "proportion", names_prefix = "prop_")
 
+vars_abs<-rbind(g1, g2) %>% 
+  select(starts_with("abs_"), fg.col) %>%
+  pivot_longer(-fg.col,names_to = "group",values_to = "proportion", names_prefix = "abs_")
+
 vars<-rbind(vars, blanker)
 
-gC<-ggplot(vars, aes(x = proportion, y = group, fill = fg.col, col=fg.col)) +
+gC<-ggplot(vars_abs, aes(x = proportion, y = group, fill = fg.col, col=fg.col)) +
   annotate('rect', xmin = -Inf, xmax=Inf, ymin = 2.5, ymax = Inf, fill='grey', alpha=0.1) +
   annotate('rect', xmin = -Inf, xmax=Inf, ymin =-Inf, ymax = 1.5, fill='grey', alpha=0.1) +
   stat_slabinterval(.width = c(0.5, 0.95), point_interval = median_qi,                   

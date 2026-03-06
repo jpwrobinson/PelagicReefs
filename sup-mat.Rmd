@@ -1,6 +1,5 @@
 ---
 title: "Supplementary Figures"
-output: pdf_document
 header-includes:
 - \usepackage{pdflscape}
 - \newcommand{\blandscape}{\begin{landscape}}
@@ -24,7 +23,7 @@ options(tinytex.verbose = TRUE)
 
 ```{r, echo=F} 
 ## set up figcounter
-i = 0
+i = 1
 ```
 
 ```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
@@ -37,19 +36,19 @@ i = 0
 ```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME.pdf"); i = i + 1
 ```
-**Fig. S`r i`** | Seasonal variation in IME strength at each island. Lines are mean-monthly chl-a enhancement from January to December, ordered and coloured by island group.
+**Fig. S`r i`** | Seasonal variation in IME strength at each island complex. Lines are mean-monthly chl-a enhancement from January to December, ordered and coloured by island group.
 \newpage
 
 ```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME_pred.pdf"); i = i + 1
 ```
-**Fig. S`r i`** | Spatial effects on chl-a enhancement for a geomorphic covariates and b oceanographic covariates. Lines are median posterior predictions (± 95% certainty intervals). Note different y-axis values between static and dynamic covariates.
+**Fig. S`r i`** | Spatial effects on chl-a enhancement for geomorphic features (top) and average oceanographic conditions (bottom) Lines are median posterior predictions (± 95% certainty intervals). Note different y-axis values between static and dynamic covariates.
 \newpage
 
 ```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME_seasonal_pred.pdf"); i = i + 1
 ```
-**Fig. S`r i`** | Heatmap of seasonal effects on chl-a enhancement for a mixed layer depth, b precipitation and c both covariates combined. Islands with less than 1 mm monthly rainfall < are shown in grey. All values are median posterior predictions excluding effects of other covariates.
+**Fig. S`r i`** | Heatmap of seasonal effects on chl-a enhancement for a mixed layer depth, b precipitation and c both covariates combined. Islands with less than 1 mm monthly rainfall are shown in grey. All values are median posterior predictions excluding effects of other covariates.
 \newpage
 
 ```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
