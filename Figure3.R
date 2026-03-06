@@ -36,7 +36,7 @@ gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
     stat_pointinterval(.width = c(0.5, 0.95), pch=19, 
                        position = position_dodge(width=0.65)) +  
-    geom_text(data = bayes, aes(x = x, y = y, label = paste0('R² = ', round(b*100,1),'% ')), size=3) +
+    geom_text(data = bayes, aes(x = x, y = y, label = paste0('R² = ', round(b*100,1),'% ')), size=2.5) +
     facet_grid(~fg) +
     scale_color_manual(values = fg_cols) +
     labs(x = "Effect on metabolic flux", y = "") +

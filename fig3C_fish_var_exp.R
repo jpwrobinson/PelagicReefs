@@ -55,7 +55,7 @@ vars<-rbind(vars, blanker)
 gC<-ggplot(vars, aes(x = proportion, y = group, fill = fg.col, col=fg.col)) +
   annotate('rect', xmin = -Inf, xmax=Inf, ymin = 2.5, ymax = Inf, fill='grey', alpha=0.1) +
   annotate('rect', xmin = -Inf, xmax=Inf, ymin =-Inf, ymax = 1.5, fill='grey', alpha=0.1) +
-  stat_slabinterval(.width = c(0.8, 0.95), point_interval = median_qi,                   
+  stat_slabinterval(.width = c(0.5, 0.95), point_interval = median_qi,                   
                     slab_alpha = 0.5, interval_alpha = 1, point_alpha = 1,
                     position = position_dodge(0.5)) +
   geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +

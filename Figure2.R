@@ -2,13 +2,53 @@
 load(file = 'results/mod_ime.rds')
 source('fig_IME_seasonal.R')
 
-# Panel C = drivers of IME [monthly and time-averaged]
+# Panel a = drivers of IME (monthly + spatial)
 bayes<-data.frame(b = bayes_R2(m_chl_inc)[1,'Estimate'], x = 1, y = c(9.3))
 # r2(m_chl_inc, by_component = TRUE) # 51% fixed effects. 65% full model.
 
+# For each draw, compute group contribution as sum of |coefficient|
+# weighted by predictor variance in the data
+coef_draws <- as_draws_df(m_chl_inc) %>%
+  select(starts_with("b")) %>% 
+  mutate(
+    geomorphic = abs(b_Chlincreasenearby_geomorphic_typeIsland) + abs(b_Chlincreasenearby_reef_area_km2) + abs(b_Chlincreasenearby_land_area_km2) +
+      abs(b_Chlincreasenearby_bathymetric_slope),
+    oceanographic = abs(b_Chlincreasenearby_mean_chlorophyll) + abs(b_Chlincreasenearby_mld_mean) + abs(bsp_Chlincreasenearby_mited_mean),
+    seasonal = abs(b_Chlincreasenearby_avg_monthly_mm_anom) + abs(b_Chlincreasenearby_mld_anom),
+    total = geomorphic + oceanographic + seasonal,
+    prop_geomorphic    = geomorphic    / total,
+    prop_oceanographic          = oceanographic          / total,
+    prop_seasonal = seasonal / total
+  ) %>%
+  select(starts_with("prop_")) %>% 
+  pivot_longer(everything(), names_to = "group",values_to = "proportion", names_prefix = "prop_")
+
+
+coef_draws %>% group_by(group) %>% summarise(median_hdi(proportion, 0.95))
+
+gInset<-ggplot(coef_draws, aes(x = proportion, y = group, col=group)) +
+  geom_text(data = data.frame(group = c('seasonal', 'oceanographic', 'geomorphic'),
+                              proportion = c(0.28, 0.5, 0.7),
+                              lab = c('Seasonal', 'Oceanographic', 'Geomorphic')),
+            aes(label = lab, col=group), vjust=-1.5, fontface=2, size=2) +
+  stat_pointinterval(.width = c(0.5, 0.95)) +
+  # stat_slabinterval(.width = c(0.5, 0.95), point_interval = median_qi,                   
+  #                   slab_alpha = 0.5, interval_alpha = 1, point_alpha = 1) +
+  # geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
+  scale_x_continuous(labels = scales::percent, limits = c(0, 0.8), expand=c(0,0)) +
+  scale_y_discrete(expand = expansion(mult = 0.1)) +
+  labs(x = "explained variance", y = NULL) +
+  theme(legend.position = "none", 
+        axis.text.y = element_blank(), axis.line.y = element_blank(),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(size = 8),
+        axis.ticks.y = element_blank(),
+        panel.border = element_rect(color='black'),
+        panel.grid.major.x = element_line(color='grey'))
+
 gEff<-ggplot(effects,
            aes(x = .value, y = var_fac)) +
-  geom_text(data = bayes, aes(x = x, y = y, label = paste0('R² = ', round(b*100,1),'% ')), size=2) +
+  geom_text(data = bayes, aes(x = x, y = y, label = paste0('R² = ', round(b*100,1),'% ')), size=2.5) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
   stat_pointinterval(.width = c(0.5, 0.95), position = position_dodge(width=0.5)) +  
   labs(x = "Effect on chl-a enhancement", y = "") +
@@ -18,7 +58,11 @@ gEff<-ggplot(effects,
                              'Mean mixed layer depth', 'Tidal energy','Chlorophyll a', 
                              'Bathymetric slope', 'Island area', 'Reef area', 'Island')) +
   theme(legend.position = c(.9,.9), legend.title = element_blank(),
-        plot.margin=unit(c(.5,1,0.01, 1), 'cm'))
+        plot.margin=unit(c(0,1,0.01, .1), 'cm'))
+
+# gEff<-gEff + inset_element(gInset, 
+#                        left = 0.6, bottom = 0.001, 
+#                        right = 1.15, top = 0.5)
 
 # Get conditional effects
 source('func_mod_conditional.R')

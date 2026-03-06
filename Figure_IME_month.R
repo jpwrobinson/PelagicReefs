@@ -1,10 +1,7 @@
 source('0_loads/00_plot_theme.R')
+source('0_loads/00_ime_dataframe.R')
 
-# Load Messi IME and Gove drivers
-ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
-ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)
-
-fac_level<-levels(with(dat, fct_reorder(island, -median_chl_percent)))
+fac_level<-levels(with(ime_dat, fct_reorder(island, -median_chl_percent)))
 dat_month$island_fac<-factor(dat_month$island, levels=fac_level)
 dat_month<-dat_month %>% group_by(REGION) %>% 
   mutate(limmer = max(Chl_increase_nearby, na.rm=TRUE),
@@ -36,7 +33,7 @@ row3<-plot_grid(plots[[4]], plots[[10]], plots[[11]], plots[[14]],plots[[25]],pl
 gMonth<-plot_grid(row1, row2, row3, ncol=3, 
                   axis = 'tblr', align='hv')
 
-pdf(file = 'fig/FigureSX.pdf', height=9, width=5)
+pdf(file = 'fig/FigureSX_IME.pdf', height=9, width=5)
 print(gMonth)
 dev.off()
 

@@ -1,0 +1,59 @@
+---
+title: "Supplementary Figures"
+output: pdf_document
+header-includes:
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \usepackage{graphicx}
+- \setkeys{Gin}{width=0.9\linewidth,keepaspectratio}  # 🔥 This forces figures to max 90% of the text width
+- \usepackage{pdflscape}    
+output:
+  pdf_document: null
+  latex_engine: pdflatex
+  html_document:
+    df_print: paged
+---
+
+
+\newpage
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(tinytex.verbose = TRUE)
+```
+
+```{r, echo=F} 
+## set up figcounter
+i = 0
+```
+
+```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+# knitr::include_graphics("fig/FigureS1_ill2.pdf"); i = i + 1
+```
+
+**Fig. S`r i`** | *tbd* Map of 35 islands surveyed by CREP across the tropical Pacific.
+\newpage
+
+```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+knitr::include_graphics("fig/FigureSX_IME.pdf"); i = i + 1
+```
+**Fig. S`r i`** | Seasonal variation in IME strength at each island. Lines are mean-monthly chl-a enhancement from January to December, ordered and coloured by island group.
+\newpage
+
+```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+knitr::include_graphics("fig/FigureSX_IME_pred.pdf"); i = i + 1
+```
+**Fig. S`r i`** | Spatial effects on chl-a enhancement for a geomorphic covariates and b oceanographic covariates. Lines are median posterior predictions (± 95% certainty intervals). Note different y-axis values between static and dynamic covariates.
+\newpage
+
+```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+knitr::include_graphics("fig/FigureSX_IME_seasonal_pred.pdf"); i = i + 1
+```
+**Fig. S`r i`** | Heatmap of seasonal effects on chl-a enhancement for a mixed layer depth, b precipitation and c both covariates combined. Islands with less than 1 mm monthly rainfall < are shown in grey. All values are median posterior predictions excluding effects of other covariates.
+\newpage
+
+```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+knitr::include_graphics("fig/FigureSX_metab.pdf"); i = i + 1
+```
+**Fig. S`r i`** | Metabolic rate of reef-associated planktivores on coral reefs at 39 Pacific islands and atolls. Each point is a site-year combination (n = XX). 
+\newpage
