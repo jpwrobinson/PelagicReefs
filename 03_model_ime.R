@@ -20,8 +20,7 @@ hist(dat_month$Chl_max)
 
 dat_scaled_month %>% filter(!is.na(Chl_increase_nearby)) %>% dim # N = 388, 35 islands
 dat_scaled_month %>% filter(!is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% distinct(island) # N = 352, 32 islands
-
-dat_scaled_month %>% filter(!is.na(Chl_max)) %>% dim # N = 420, 35 islands
+dat_scaled_month %>% filter(is.na(ted_mean)) %>% distinct(island) # N=3, Johnston, Nihoa, Necker
 
 # basic model fitting Chl increase (%) by island and biophysical covariates
 ## Linear model is marginally preferred to smooths (after including mld ~ island as random). 

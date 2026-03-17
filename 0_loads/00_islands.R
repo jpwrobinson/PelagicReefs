@@ -32,7 +32,7 @@ island<-
   left_join(island, island2 %>% select(-island_name, -island_type, -latitude, -longitude)) %>%
   left_join(site_bathy) %>% 
   left_join(island_cols) %>% 
-  mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Lanai', 'Kahoolawe'), 'Maui_C', island),
+  mutate(island_group = ifelse(island %in% c('Maui', 'Lanai', 'Molokai', 'Kahoolawe'), 'Maui_C', island),
          island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
          island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
 

@@ -6,7 +6,7 @@ source('0_loads/00_oceanographic_load.R')
 ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
 ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)
 
-# dim(dat) = 30 island (complexes)
+# dim(ime_dat) = 35 island (complexes)
 ime_dat<-ime_island %>% left_join(
   island_complex %>% ungroup() %>% 
     mutate(island = str_replace_all(island_group, '_C', '')) %>%
@@ -21,7 +21,7 @@ ime_dat<-ime_island %>% left_join(
 # missing CREP from modelled dataset
 # island %>% filter(!island %in% ime_dat$island) %>% data.frame
 # but note that we are using island complex, so this captures 
-# 'Maui, Lanai, Molokai, Lanai, Kahoolawe' = 'Maui_C',
+# 'Maui, Lanai, Molokai, Kahoolawe' = 'Maui_C',
 # 'Saipan, Tinian, Aguijan' = 'Saipan_C',
 # 'Ofu, Olosega, Tau' = 'Tau_C'
 
@@ -34,10 +34,17 @@ ime_dat<-ime_island %>% left_join(
 # These 3 islands are missing tidal energy values. Nihoa is also missing bathymetric slope values.
 # island_complex %>% filter(island_group %in% c('Johnston', 'Necker', 'Nihoa')) %>% data.frame
 
-# csv of modelled data
-# ime_dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
-# island %>% distinct(island, latitude, longitude, REGION, geomorphic_type) %>% write.csv('ime_island_crep_lat_lon.csv', row.names=FALSE)
+##------ save csv of modelled data ------##
 
+# 1. Island complexes in IME model. N = 35
+ime_dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
+
+# 2. Islands with data and modelled at complex level. N=40
+island %>% filter(island != 'Maro Reef') %>% 
+  distinct(island, latitude, longitude, REGION, geomorphic_type) %>% 
+  write.csv('ime_island_crep_lat_lon.csv', row.names=FALSE)
+
+##------ merge with IME covariates ------##
 # dim(dat_month) = 420 (12 * 35)
 dat_month<-ime_month %>% 
   left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>% 
