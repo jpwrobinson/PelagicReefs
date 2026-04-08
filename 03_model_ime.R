@@ -148,3 +148,4 @@ ggplot(effects2, aes(x = .value, y = var_fac)) +
 
 
 dev.off()
+
