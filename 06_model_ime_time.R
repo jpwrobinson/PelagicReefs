@@ -1,4 +1,5 @@
-
+## This script models temporal trends in the IME% (chl enhancement).
+## It is not ideal because lots of year - month - island combinations are NA. They do have Chl_max, but not always an IME detection.
 
 ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>% 
   mutate(date = as.Date(date),
@@ -14,7 +15,7 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
 focal<-ime_df %>% filter(!is.na(Chl_increase_nearby)) # n = 8066 , ~3000 obs dropped
 
 m1<-bam(log(Chl_increase_nearby) ~
-          # s(time_s, island, k=12, bs = 'fs') +
+          # s(time_s, island, k=12, bs = 'fs') +. # not using factor-smooth because dataset is balanced
           s(time_s, by = island, k=12) +
           s(month, bs = 'cc', k = 12, by = island),
         rho = 0.35,
@@ -22,7 +23,8 @@ m1<-bam(log(Chl_increase_nearby) ~
         # family = Gamma(link = 'log'),
         data=focal)
 
-# Dev. expl = 88.6%
+# Dev. expl = 10.7%
+load('results/mod_ime_time.rds')
 hist(resid(m1))
 summary(m1)
 acf(resid(m1))
@@ -37,7 +39,7 @@ df1$date<-rep(seq(min(ime_df$date), max(ime_df$date), length.out=100), each = le
 ggplot(df1, aes(date, exp(pred), col=region.col, group=island)) + geom_line() + facet_wrap(~region) +
   scale_x_date(date_breaks = '5 years', date_labels = '%Y') +
   scale_colour_identity() +
-  labs(x = '', y = 'Predicted Chl_max')
+  labs(x = '', y = 'Predicted Chl enhancement, %')
 
 save(ime_df, focal, m1, file = 'results/mod_ime_time.rds')
 
@@ -59,6 +61,8 @@ overview(m2)
 acf(resid(m2))
 
 save(ime_df, focal, m2, file = 'results/mod_ime_time_seasonality.rds')
+
+load(file = 'results/mod_ime_time_seasonality.rds')
 
 ## pull out edf values summed across smoother to understand where seasonality is time-variant
 data.frame(
