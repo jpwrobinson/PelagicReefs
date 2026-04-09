@@ -11,7 +11,7 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
   mutate(new_series = c(TRUE, diff(as.numeric(island)) != 0))
 
 
-## 1. Examining temopral trends in Chl_max by island, accounting for seasonality. High variance explained by month.
+## 1. Examining temopral trends in Chl_% by island, accounting for seasonality. High
 focal<-ime_df %>% filter(!is.na(Chl_increase_nearby)) # n = 8066 , ~3000 obs dropped
 
 m1<-bam(log(Chl_increase_nearby) ~
@@ -47,8 +47,8 @@ save(ime_df, focal, m1, file = 'results/mod_ime_time.rds')
 ## Is IME seasonality changing?
 m2 <- bam(
   log(Chl_increase_nearby) ~ 
-    s(time_s, by = island, k = 12) +
-    s(month, by = island, bs = "cc", k = 12) +
+    # s(time_s, by = island, k = 12) +
+    # s(month, by = island, bs = "cc", k = 12) +
     ti(month, time_s, by = island,
        bs = c("cc", "tp"), k = c(12, 6)),
   data = ime_df,
@@ -56,7 +56,9 @@ m2 <- bam(
   AR.start = ime_df$new_series
 )
 
+# Dev. expl. = %
 hist(resid(m2))
+summary(m2)
 overview(m2)
 acf(resid(m2))
 

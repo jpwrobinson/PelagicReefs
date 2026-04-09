@@ -87,8 +87,8 @@ ime_df <- bind_rows(df_list) %>%
   group_by(island, month) %>% 
   mutate(chl_max_monthly_mean = mean(Chl_max, na.rm=TRUE)) %>% ungroup() %>% 
   mutate(
-    chl_max_anom = Chl_max - chl_max_mean, # anomaly for that island
-    chl_max_month_anom = Chl_max - chl_max_monthly_mean, ## anomaly for that island-month
+    chl_max_anom = (Chl_max - chl_max_mean) / chl_max_mean, # anomaly for that island
+    chl_max_month_anom = (Chl_max - chl_max_monthly_mean) / chl_max_monthly_mean, ## anomaly for that island-month
     island_messie = island,
     island = trimws(str_replace_all(island, 'Atoll', '')),
     island = trimws(str_replace_all(island, 'Island', '')),
