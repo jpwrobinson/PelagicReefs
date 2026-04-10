@@ -18,6 +18,7 @@ library(brms)
 library(scales)
 library(RColorBrewer)
 library(tidybayes)
+library(gratia)
 library(bayesplot)
 
 island_cols<-data.frame(region = c("Northwestern Hawaiian", "Hawaii", "Mariana", "Equatorial", "Samoa"),

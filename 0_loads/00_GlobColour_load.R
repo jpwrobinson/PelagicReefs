@@ -179,3 +179,9 @@ ggplot(imey, aes(year, cv, col=region.col, group=island)) + geom_line() + facet_
 
 ggplot(imey, aes(year, amp, col=region.col, group=island)) + geom_line() + facet_wrap(~region) +
   scale_colour_identity()
+
+
+# MEI from NOAA PSL: multivariate ENSO index, Combined SST, SLP, winds, OLR
+library(rsoi)
+mei <- download_mei()
+

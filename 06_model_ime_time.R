@@ -3,12 +3,22 @@
 
 ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>% 
   mutate(date = as.Date(date),
+         year = as.numeric(year(date)),
          time = as.numeric(date),
          time_s = scale(time)[,1],
+         year_s = scale(year)[,1],
          island = factor(island), region = factor(region)
   ) %>% 
   arrange(island, time_s) %>%
-  mutate(new_series = c(TRUE, diff(as.numeric(island)) != 0))
+  mutate(new_series = c(TRUE, diff(as.numeric(island)) != 0)) %>% 
+  # matching MLD, but note this is for the 1st of the month, whereas IME is 15th
+  left_join(mld %>% mutate(date = as.Date(format(Date, "%Y-%m-15"))) %>% select(date, island, MLD)) %>% 
+  # filter(!is.na(MLD)) %>% 
+  mutate(mld_s = scale(MLD)[,1]) %>% 
+  group_by(island) %>% 
+  mutate(mld_mean = mean(MLD, na.rm=TRUE),
+         mld_anom = MLD - mld_mean, island=factor(island)) %>% ungroup() %>% 
+  mutate(mld_anom_s = scale(mld_anom))
 
 
 ## 1. Examining temopral trends in Chl_% by island, accounting for seasonality. High
@@ -17,6 +27,7 @@ focal<-ime_df %>% filter(!is.na(Chl_increase_nearby)) # n = 8066 , ~3000 obs dro
 m1<-bam(log(Chl_increase_nearby) ~
           # s(time_s, island, k=12, bs = 'fs') +. # not using factor-smooth because dataset is balanced
           s(time_s, by = island, k=12) +
+          s(mld_s, k=3) + s(mld_anom_s, k=3) +
           s(month, bs = 'cc', k = 12, by = island),
         rho = 0.35,
         AR.start = focal$new_series,
@@ -28,7 +39,7 @@ load('results/mod_ime_time.rds')
 hist(resid(m1))
 summary(m1)
 acf(resid(m1))
-plot(m1)
+gratia::draw(m1)
 month_smooths <- grep("month", smooths(m1), value = TRUE)
 
 df1<-expand.grid(month = 1, island = unique(ime_df$island), time_s = seq(min(ime_df$time_s), max(ime_df$time_s), length.out=100))
