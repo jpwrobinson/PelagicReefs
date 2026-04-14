@@ -10,7 +10,8 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
          island = factor(island), region = factor(region)
   ) %>% 
   arrange(island, time_s) %>%
-  mutate(new_series = c(TRUE, diff(as.numeric(island)) != 0)) %>% 
+  mutate(new_series = c(TRUE, diff(as.numeric(island)) != 0),
+         detected = as.integer(!is.na(Chl_increase_nearby))) %>% 
   # matching MLD, but note this is for the 1st of the month, whereas IME is 15th
   left_join(mld %>% mutate(date = as.Date(format(Date, "%Y-%m-15"))) %>% select(date, island, MLD)) %>% 
   # filter(!is.na(MLD)) %>% 
@@ -18,7 +19,8 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
   group_by(island) %>% 
   mutate(mld_mean = mean(MLD, na.rm=TRUE),
          mld_anom = MLD - mld_mean, island=factor(island)) %>% ungroup() %>% 
-  mutate(mld_anom_s = scale(mld_anom))
+  mutate(mld_anom_s = scale(mld_anom),
+         mld_mean_s = scale(mld_mean))
 
 
 ## 1. Examining temopral trends in Chl_% by island, accounting for seasonality. High
@@ -87,3 +89,43 @@ data.frame(
   dplyr::group_by(island) |>
   dplyr::summarise(total_edf = sum(edf)) |>
   dplyr::arrange(desc(total_edf)) %>% data.frame
+
+
+## Try binomial version = on/off IME
+focal<-ime_df %>% filter(!is.na(mld_anom))
+
+m_detect <- bam(
+  detected ~ 
+    s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
+    s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
+    s(time_s, by = island, bs = "cr", k = 10),   # island-level probability
+  family = binomial,
+  data = focal,
+  method = "fREML",
+  discrete = TRUE
+)
+
+summary(m_detect)
+gratia::draw(m_detect, select = 'mld_mean', partial_match=TRUE)
+gratia::draw(m_detect, select = 'mld_anom', partial_match=TRUE)
+gratia::draw(m_detect, select = 'time_s', partial_match=TRUE)
+
+ime_df %>% filter(mld_anom_s > 3)
+
+ex_smooths <- grep("month|time|mean", smooths(m_detect), value = TRUE)
+
+df2<-expand.grid(month = 1, time_s = 0, mld_mean_s = 0, island = unique(focal$island)[1], 
+                 mld_anom_s = seq(min(focal$mld_anom_s), max(focal$mld_anom_s), length.out=100))
+df2$pred<-predict(m_detect, newdata = df2, type='response', exclude=ex_smooths)
+df2$se<-predict(m_detect, newdata = df2, type='response', exclude=ex_smooths, se.fit=TRUE)$se.fit
+
+df2<-df2 %>% left_join(focal %>% distinct(island, region, region.col)) %>% 
+  mutate(lower = pred - 2*se, upper = pred + 2*se)
+df2$mld_anom<-seq(min(focal$mld_anom), max(focal$mld_anom), length.out=100)
+
+ggplot(df2, aes(mld_anom, pred, col=region.col, group=island, ymin = lower, ymax = upper)) + 
+  geom_ribbon(col='transparent', alpha=0.1) +
+  geom_line(col = 'blue') + 
+  scale_colour_identity() +
+  labs(x = '', y = 'Probability IME detection')
+
