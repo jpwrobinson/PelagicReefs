@@ -36,14 +36,14 @@ m_bayes <- brm(
 save(m1, file = 'results/mld_time_mod.rds')
 
 # estimate rho using acf residuals - the lag 1 acf value. by= smoother is preferred to factor-smooth approach
-m2a <- bam(
+m2 <- bam(
   # anomaly ~ s(time_num, island, k=12, bs = "fs"),
   anomaly ~ s(time_num, by=island, k=12),
   data = mld,
   rho = 0.35,
   AR.start = mld$new_series
 )
-# save(m2, file = 'results/mld_anomaly_time_mod.rds')
+save(m2, file = 'results/mld_anomaly_time_mod.rds')
 
 
 # 1. Explore MLD with season model (m1)
@@ -121,9 +121,10 @@ dev.off()
 load(file = 'results/mld_anomaly_time_mod.rds')
 hist(resid(m2))
 # plot(m2)
-summary(m2) # dev exp. 3.61%
+summary(m2) # dev exp. 3.8%
 plot(m2)  # default gam diagnostic plots
 acf(resid(m2, type = "pearson"))
+gratia::draw(m2)
 
 # is there a larger climatic process driving unexplained variation?
 

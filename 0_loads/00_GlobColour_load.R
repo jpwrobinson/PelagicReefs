@@ -87,8 +87,8 @@ ime_df <- bind_rows(df_list) %>%
   group_by(island, month) %>% 
   mutate(chl_max_monthly_mean = mean(Chl_max, na.rm=TRUE)) %>% ungroup() %>% 
   mutate(
-    chl_max_anom = Chl_max - chl_max_mean,
-    chl_max_month_anom = Chl_max - chl_max_monthly_mean,
+    chl_max_anom = (Chl_max - chl_max_mean) / chl_max_mean, # anomaly for that island
+    chl_max_month_anom = (Chl_max - chl_max_monthly_mean) / chl_max_monthly_mean, ## anomaly for that island-month
     island_messie = island,
     island = trimws(str_replace_all(island, 'Atoll', '')),
     island = trimws(str_replace_all(island, 'Island', '')),
@@ -179,3 +179,9 @@ ggplot(imey, aes(year, cv, col=region.col, group=island)) + geom_line() + facet_
 
 ggplot(imey, aes(year, amp, col=region.col, group=island)) + geom_line() + facet_wrap(~region) +
   scale_colour_identity()
+
+
+# MEI from NOAA PSL: multivariate ENSO index, Combined SST, SLP, winds, OLR
+library(rsoi)
+mei <- download_mei()
+
