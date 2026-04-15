@@ -58,10 +58,10 @@ gMLD<-pred_mld |>
     colors = chl_grad_cols,
     labels = label_percent(), 
     limits=c(0, .25),
-    name = 'chl-a enhancement') +
+    name = 'IME strength') +
   labs(x = NULL, y = NULL, subtitle = 'Mixed layer depth') + th
 
-  gPrecip<-pred_precip |>
+gPrecip<-pred_precip |>
   mutate(.epred = ifelse(abs(avg_monthly_mm_anom) < 0.00001, NA, .epred)) %>% 
   group_by(region.num, island, lat, month_num) |>
   summarise(median_epred = median(.epred)/100, .groups = "drop") |>
@@ -74,7 +74,7 @@ gMLD<-pred_mld |>
     labels = label_percent(),
     limits=c(0, .25),
     na.value = alpha('grey90',0.5),
-    name = 'chl-a enhancement') +
+    name = 'IME strength') +
   labs(x = NULL, y = NULL, subtitle = 'Precipitation')  + th
 
 gCombo<-pred_combo |>
@@ -88,6 +88,6 @@ gCombo<-pred_combo |>
     colors = chl_grad_cols,
     limits=c(0, .28),
     labels = label_percent(), 
-    name = 'chl-a enhancement') +
+    name = 'IME strength') +
   labs(x = NULL, y = NULL, subtitle = 'Mixed layer + precipitation')  + th
 

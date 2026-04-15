@@ -13,7 +13,7 @@ gInset<-ggplot(dat_month, aes(Chl_increase_nearby/100)) +
   geom_histogram(col='black', fill='grey50', binwidth=0.1) +
   scale_y_continuous(expand=c(0,0)) +
   scale_x_continuous(expand=c(0,0), labels=label_percent()) +
-  labs(y = 'N island-months', x = 'chl-a enhancement') +
+  labs(y = 'N island-months', x = 'IME strength') +
   theme(axis.text = element_text(size = 9),
         axis.title = element_text(size = 9))
 
@@ -21,7 +21,7 @@ gA<-ggplot(dat, aes(mean_chlorophyll, median_chl_percent/100, fill=region.col)) 
   # geom_point(data = dat_month %>% mutate(median_chl_percent = Chl_increase_nearby/100), alpha=0.5, size=1, aes(col=region.col)) +
   geom_point(alpha=1, size=2.5, pch=21, col='black') +
   geom_text_repel(aes(label=island), size=2.5) +
-  labs(y = 'chl-a enhancement', x = 'chl-a, mg/m3') +
+  labs(y = 'IME strength', x = 'chl-a, mg/m3') +
   scale_y_continuous(labels = label_percent()) +
   scale_fill_identity() +
   scale_color_identity()
@@ -35,7 +35,7 @@ gA<-gA + inset_element(gInset,
 # dat_month$island_fac<-factor(dat_month$island, levels=fac_level)
 
 focs<-c('Laysan', 'Necker', 'Kauai','Hawaii',
-        'Jarvis', 'Kingman', 'Guam', 'Tau')
+        'Jarvis', 'Kingman', 'Tau', 'Guam')
 
 pp<-dat_month %>% filter(island %in% focs) %>% 
   mutate(island_fac = factor(island, levels=focs),
@@ -61,6 +61,7 @@ gBtemp<-ggplot(pp, aes(month_num, Chl_increase_nearby/100)) +
 
 th_top<-theme(strip.background = element_blank(), strip.text = element_blank(),
               axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+              axis.line.x = element_blank(),
               plot.margin=unit(c(0.4, 0.1, 0, 0.1), 'cm'))
   
 gB<-plot_grid(gBtemp %+% pp[pp$row=='a',] + 

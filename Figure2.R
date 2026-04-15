@@ -3,7 +3,7 @@ load(file = 'results/mod_ime.rds')
 source('fig_IME_seasonal.R')
 
 # Panel a = drivers of IME (monthly + spatial)
-bayes<-data.frame(b = bayes_R2(m_chl_inc)[1,'Estimate'], x = 1, y = c(9.3))
+bayes<-data.frame(b = bayes_R2(m_chl_inc)[1,'Estimate'], x = 0.9, y = c(9.3))
 # r2(m_chl_inc, by_component = TRUE) # 51% fixed effects. 65% full model.
 
 # For each draw, compute group contribution as sum of |coefficient|
@@ -26,37 +26,37 @@ coef_draws <- as_draws_df(m_chl_inc) %>%
 
 coef_draws %>% group_by(group) %>% summarise(median_hdi(proportion, 0.95))
 
-gInset<-ggplot(coef_draws, aes(x = proportion, y = group, col=group)) +
-  geom_text(data = data.frame(group = c('seasonal', 'oceanographic', 'geomorphic'),
-                              proportion = c(0.28, 0.5, 0.7),
-                              lab = c('Seasonal', 'Oceanographic', 'Geomorphic')),
-            aes(label = lab, col=group), vjust=-1.5, fontface=2, size=2) +
-  stat_pointinterval(.width = c(0.5, 0.95)) +
-  # stat_slabinterval(.width = c(0.5, 0.95), point_interval = median_qi,                   
-  #                   slab_alpha = 0.5, interval_alpha = 1, point_alpha = 1) +
-  # geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
-  scale_x_continuous(labels = scales::percent, limits = c(0, 0.8), expand=c(0,0)) +
-  scale_y_discrete(expand = expansion(mult = 0.1)) +
-  labs(x = "explained variance", y = NULL) +
-  theme(legend.position = "none", 
-        axis.text.y = element_blank(), axis.line.y = element_blank(),
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(size = 8),
-        axis.ticks.y = element_blank(),
-        panel.border = element_rect(color='black'),
-        panel.grid.major.x = element_line(color='grey'))
+# gInset<-ggplot(coef_draws, aes(x = proportion, y = group, col=group)) +
+#   geom_text(data = data.frame(group = c('seasonal', 'oceanographic', 'geomorphic'),
+#                               proportion = c(0.28, 0.5, 0.7),
+#                               lab = c('Seasonal', 'Oceanographic', 'Geomorphic')),
+#             aes(label = lab, col=group), vjust=-1.5, fontface=2, size=2) +
+#   stat_pointinterval(.width = c(0.5, 0.95)) +
+#   # stat_slabinterval(.width = c(0.5, 0.95), point_interval = median_qi,                   
+#   #                   slab_alpha = 0.5, interval_alpha = 1, point_alpha = 1) +
+#   # geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
+#   scale_x_continuous(labels = scales::percent, limits = c(0, 0.8), expand=c(0,0)) +
+#   scale_y_discrete(expand = expansion(mult = 0.1)) +
+#   labs(x = "explained variance", y = NULL) +
+#   theme(legend.position = "none", 
+#         axis.text.y = element_blank(), axis.line.y = element_blank(),
+#         axis.text.x = element_text(size = 8),
+#         axis.title.x = element_text(size = 8),
+#         axis.ticks.y = element_blank(),
+#         panel.border = element_rect(color='black'),
+#         panel.grid.major.x = element_line(color='grey'))
 
 gEff<-ggplot(effects,
            aes(x = .value, y = var_fac)) +
-  geom_text(data = bayes, aes(x = x, y = y, label = paste0('R² = ', round(b*100,1),'% ')), size=2.5) +
+  geom_text(data = bayes, aes(x = x, y = y, label = paste0('R² = ', round(b*100,1),'% ')), size=3.5) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
   stat_pointinterval(.width = c(0.5, 0.95), position = position_dodge(width=0.5)) +  
-  labs(x = "Effect on chl-a enhancement", y = "") +
+  labs(x = "Effect on IME strength", y = "") +
   scale_colour_manual(values = c('#737373', '#d94801'), guide=NULL) +
   scale_x_continuous(limits=c(-.75, 1.25)) +
-  scale_y_discrete(labels =c('Monthly precipitation', 'Monthly mixed layer depth',
-                             'Mean mixed layer depth', 'Tidal energy','Chlorophyll a', 
-                             'Bathymetric slope', 'Island area', 'Reef area', 'Island')) +
+  scale_y_discrete(labels =c('Precipitation [anomaly]', 'Mixed layer depth [anomaly]',
+                             'Mixed layer depth [mean]', 'Tidal energy','Chlorophyll-a [mean]', 
+                             'Bathymetric slope', 'Island area', 'Reef area', 'Island [vs. atoll]')) +
   theme(legend.position = c(.9,.9), legend.title = element_blank(),
         plot.margin=unit(c(0,1,0.01, .1), 'cm'))
 
@@ -84,10 +84,10 @@ dd<-rbind(bathy_pred %>% select(-bathymetric_slope) %>% mutate(var = 'Bathymetry
           ted_pred %>% select(-ted_mean) %>% mutate(var = 'Tidal energy flux', unit='W~m^2'),
           chl_pred %>% select(-mean_chlorophyll) %>% mutate(var = 'Mean chl-a', unit='mg~m^3'),
           mld_pred %>% select(-mld_mean) %>% mutate(var = 'Mixed layer depth ', unit='m') , 
-          mldA_pred %>% select(-mld_anom) %>% mutate(var = 'Mixed layer depth', unit='m') , 
-          precip_pred %>% select(-avg_monthly_mm_anom) %>% mutate(var = 'Precipitation',unit='mm')) %>% 
+          mldA_pred %>% select(-mld_anom) %>% mutate(var = 'Mixed layer depth anomaly', unit='m') , 
+          precip_pred %>% select(-avg_monthly_mm_anom) %>% mutate(var = 'Precipitation anomaly',unit='mm')) %>% 
   mutate(g = ifelse(var %in% c('Bathymetry', 'Land area', 'Reef area'), 0, 1),
-         g = ifelse(var %in% c('Mixed layer depth', 'Precipitation'), 2, g))
+         g = ifelse(var %in% c('Mixed layer depth anomaly', 'Precipitation anomaly'), 2, g))
 
 labels<-dd %>% distinct(var, unit)
 
@@ -97,7 +97,7 @@ gGeo<-ggplot(dd %>% filter(g == 0)) +
   geom_text(data = dd %>% filter(g == 0) %>% distinct(var), 
             aes(y = Inf,x = -Inf, label = var), size = 3, vjust=2, hjust=-.05) +
   guides(fill = 'none') +
-  labs(y = 'chl-a enhancement', x = '') +
+  labs(y = 'IME strength', x = '') +
   scale_y_continuous(labels = label_percent()) +
   facet_grid(~var, scales='free', switch = 'x', 
              labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
@@ -110,7 +110,7 @@ gOce<-ggplot(dd %>% filter(g == 1)) +
   geom_text(data = dd %>% filter(g == 1) %>% distinct(var), 
             aes(y = Inf,x = -Inf, label = var), size = 3, vjust=2, hjust=-.05) +
   guides(fill = 'none') +
-  labs(y = 'chl-a enhancement', x = '') +
+  labs(y = 'IME strength', x = '') +
   scale_y_continuous(labels = label_percent()) +
   facet_grid(~var, scales='free', switch = 'x',
              labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
@@ -120,31 +120,34 @@ gOce<-ggplot(dd %>% filter(g == 1)) +
 gSea<-ggplot(dd %>% filter(g == 2) %>% 
                mutate(lab = paste0(var, ', ', unit))) + 
   geom_vline(xintercept = 0, linetype=2, col='black') +
-  geom_text(data = data.frame(raw = c(-4,4), estimate = Inf, label = c('Shallower', 'Deeper'), lab = 'Mixed layer depth, m'),
-            aes(x = raw, y = estimate, label = label), size = 2.5, vjust=2, hjust=c(1,0)) +
-  geom_text(data = data.frame(raw = c(-50,50), estimate = Inf, label = c('Drier', 'Wetter'), lab = 'Precipitation, mm'),
-            aes(x = raw, y = estimate, label = label), size = 2.5, vjust=2, hjust=c(1, 0)) +
-  geom_ribbon(aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100, fill = estimate__/100), alpha=0.9) +
+  geom_text(data = data.frame(raw = c(-4,4), estimate = Inf, label = c('Shallower', 'Deeper'), lab = 'Mixed layer depth anomaly, m'),
+            aes(x = raw, y = estimate, label = label), size = 3, vjust=2, hjust=c(1,0)) +
+  geom_text(data = data.frame(raw = c(-50,50), estimate = Inf, label = c('Drier', 'Wetter'), lab = 'Precipitation anomaly, mm'),
+            aes(x = raw, y = estimate, label = label), size = 3, vjust=2, hjust=c(1, 0)) +
+  geom_ribbon(aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100, 
+                  fill = estimate__/100
+                  ), alpha=0.9) +
   geom_line(aes(raw, estimate__/100), linewidth=1.4) + 
   guides(fill = 'none') +
-  labs(y = 'chl-a enhancement', x = '') +
+  labs(y = 'IME strength', x = '') +
   scale_y_continuous(labels = label_percent()) +
   scale_fill_gradientn(
     colors = chl_grad_cols,
-    labels = label_percent(), 
+    labels = label_percent(),
     limits=c(0, .25),
-    name = 'chl-a increase') +
+    name = 'IME strength') +
   facet_grid(~lab, scales='free', switch = 'x',
              labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
   theme(strip.placement = 'bottom', strip.background = element_blank(),
-        plot.margin=unit(c(.5,1,0.01, 1), 'cm')) 
+        plot.margin=unit(c(.5,1,0.01, .1), 'cm')) 
 
 
-pdf(file = 'fig/Figure2.pdf', height=5, width=12)
+pdf(file = 'fig/Figure2.pdf', height=5, width=11)
 lh<-plot_grid(gEff, gSea, nrow=2, labels=c('a', 'b'), rel_heights=c(1, 1))
 plot_grid(lh, 
           gMLD + scale_y_discrete(position = 'right', limits=rev(island_order)) + 
-            labs(subtitle = NULL), labels=c('', 'c'))
+            labs(subtitle = 'IME seasonality predicted by mixed layer depth') +
+            theme(plot.subtitle = element_text(hjust=0.5, vjust=-1, size=10)), labels=c('', 'c'))
 dev.off()
 
 pdf(file = 'fig/FigureSX_IME_pred.pdf', height=4, width=6)
