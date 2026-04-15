@@ -34,26 +34,42 @@ gA<-gA + inset_element(gInset,
 # fac_level<-levels(with(dat, fct_reorder(island, -median_chl_percent)))
 # dat_month$island_fac<-factor(dat_month$island, levels=fac_level)
 
-focs<-c('Laysan', 'Necker', 'Kauai','Hawaii', 'Jarvis', 'Palmyra', 'Agrihan', 'Guam', 'Tutuila', 'Tau')
-pp<-dat_month %>% filter(island %in% focs) %>% 
-  mutate(island_fac = factor(island, levels=focs))
+focs<-c('Laysan', 'Necker', 'Kauai','Hawaii',
+        'Jarvis', 'Kingman', 'Guam', 'Tau')
 
-gB<-ggplot(pp, aes(month_num, Chl_increase_nearby/100)) + 
+pp<-dat_month %>% filter(island %in% focs) %>% 
+  mutate(island_fac = factor(island, levels=focs),
+         row = ifelse(island_fac %in% focs[1:4], 'a', 'z'))
+
+labber<-data.frame(island_fac=factor(levels(pp$island_fac)), month_num=11, 
+                   Chl_increase_nearby = c(rep(115, 4), rep(43,4))) %>% 
+  left_join(pp %>% distinct(island_fac, region.col, row))
+
+gBtemp<-ggplot(pp, aes(month_num, Chl_increase_nearby/100)) + 
     geom_area(alpha=0.5, aes(col=region.col,fill=region.col, group=island)) + 
-    # geom_text(data = dat_month %>% filter(island %in% focs) %>% slice_max(Chl_increase_nearby), size=2, vjust=3, aes(label=island)) +
-    geom_text(data = data.frame(island_fac=focs, month_num=11, Chl_increase_nearby = 110),
-            size=2.5, hjust=1, aes(label=island_fac)) +
     theme(legend.position = 'none', plot.margin=unit( c(.5,.5,0.5,0), 'cm')) +
-    labs(x = '', y = 'chl-a enhancement') +
-    facet_wrap(~island_fac, scales='fixed', nrow=2) +
+    labs(x = '', y = 'IME strength') +
+    facet_wrap(~island_fac, scales='fixed', nrow=1) +
     scale_colour_identity() +
     scale_fill_identity() +
     coord_cartesian(clip='off') +
     scale_y_continuous(expand=c(0,0), labels = label_percent()) +
     scale_x_continuous(breaks=c(1,  6, 11), labels=month.abb[c(1, 6, 11)]) +
     theme(strip.background = element_blank(), strip.text = element_blank(),
-          axis.text.x = element_text(size=8))
+          axis.text.x = element_text(size=8),
+          plot.margin=unit(c(0.1, 0.1, 0.1, 0.1), 'cm'))
+
+th_top<-theme(strip.background = element_blank(), strip.text = element_blank(),
+              axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+              plot.margin=unit(c(0.4, 0.1, 0, 0.1), 'cm'))
   
+gB<-plot_grid(gBtemp %+% pp[pp$row=='a',] + 
+                th_top +
+                geom_text(data = labber %>% filter(row=='a'),size=2.5, hjust=1, aes(label=island_fac, colour=region.col)),
+              gBtemp %+% pp[pp$row=='z',] + 
+                geom_text(data = labber %>% filter(row=='z'),size=2.5, hjust=1, aes(label=island_fac, colour=region.col)),
+        nrow = 2)
+                
 pdf(file = 'fig/Figure1.pdf', height=3, width=9)
 print(
   plot_grid(gA, gB, nrow=1, labels=c('a', 'b'), align='v')
