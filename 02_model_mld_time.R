@@ -24,26 +24,17 @@ m1<-bam(log(MLD) ~
           AR.start = mld$new_series,
           data=mld)
 
-m_bayes <- brm(
-  MLD ~ s(time_num, by = island) + s(month, bs="cc", k=12) + ar(time_num, gr=island),
-  data = mld,
-  # family = Gamma(link="log"),
-  family = lognormal(),
-  chains = 1, cores = 4
-  # init = 0 # params start at zero to prevent initialization error
-)
-
 save(m1, file = 'results/mld_time_mod.rds')
 
-# estimate rho using acf residuals - the lag 1 acf value. by= smoother is preferred to factor-smooth approach
+# estimate rho using acf residuals - the lag 1 acf value. this is island smooths only.
+# tested regional smoother with island fs smooths that penalize towards 0, this only predicted regional smooth (islands follow region)
 m2 <- bam(
-  # anomaly ~ s(time_num, island, k=12, bs = "fs"),
-  anomaly ~ s(time_num, by=island, k=12),
+  anomaly ~ s(time_num, by = island, k = 12),
   data = mld,
   rho = 0.35,
   AR.start = mld$new_series
 )
-save(m2, file = 'results/mld_anomaly_time_mod.rds')
+save(mld, m2, file = 'results/mld_anomaly_time_mod.rds')
 
 
 # 1. Explore MLD with season model (m1)
@@ -131,7 +122,8 @@ gratia::draw(m2)
 # get predicted temporal MLD anomaly
 df2<-expand.grid(island = unique(mld$island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
 df2$date<-rep(seq(min(mld$Date), max(mld$Date), length.out=100), each = length(unique(mld$island)))
-df2<-df2 %>% left_join(island %>% rename(island = island) %>% select(island, region)) 
+df2<-df2 %>% left_join(island %>% rename(island = island) %>% select(island, region, region.col)) 
+
 df2$MLD_pred<-predict(m2, newdata = df2, type='response')
 df2$se<-predict(m2, newdata = df2, type='response', se.fit = TRUE)$se.fit
 df2$MLD_lower<-with(df2, MLD_pred - 2*se)
@@ -143,7 +135,6 @@ ggplot(df2, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=island)
 ggplot(df2, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=region)) + 
   geom_line(aes(col=region, group=island))  + facet_grid(~region) +
   guides(col='none')
-
 
 ## this is regional smooth - but need to have island + region to understand the full model prediction
 region_smooth <- df2 %>%

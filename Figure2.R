@@ -16,8 +16,8 @@ coef_draws <- as_draws_df(m_chl_inc) %>%
     oceanographic = abs(b_Chlincreasenearby_mean_chlorophyll) + abs(b_Chlincreasenearby_mld_mean) + abs(bsp_Chlincreasenearby_mited_mean),
     seasonal = abs(b_Chlincreasenearby_avg_monthly_mm_anom) + abs(b_Chlincreasenearby_mld_anom),
     total = geomorphic + oceanographic + seasonal,
-    prop_geomorphic    = geomorphic    / total,
-    prop_oceanographic          = oceanographic          / total,
+    prop_geomorphic = geomorphic    / total,
+    prop_oceanographic = oceanographic / total,
     prop_seasonal = seasonal / total
   ) %>%
   select(starts_with("prop_")) %>% 

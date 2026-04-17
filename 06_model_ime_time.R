@@ -1,3 +1,4 @@
+source('0_loads/00_oceanographic_load.R')
 ## This script models temporal trends in the IME% (chl enhancement).
 ## It is not ideal because lots of year - month - island combinations are NA. They do have Chl_max, but not always an IME detection.
 
@@ -23,25 +24,29 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
          mld_mean_s = scale(mld_mean))
 
 
-## 1. Examining temopral trends in Chl_% by island, accounting for seasonality. High
-focal<-ime_df %>% filter(!is.na(Chl_increase_nearby)) # n = 8066 , ~3000 obs dropped
+## 1. Examining temopral trends in Chl_% by island, accounting for seasonality. 
+# n = 4415 , ~7500 obs dropped
+focal<-ime_df %>% filter(detected == 1 & !is.na(keep_IME) & !is.na(mld_anom)) %>% 
+  arrange(island, time_s) %>%
+  mutate(new_series = c(TRUE, diff(as.numeric(island)) != 0))
 
-m1<-bam(log(Chl_increase_nearby) ~
-          # s(time_s, island, k=12, bs = 'fs') +. # not using factor-smooth because dataset is balanced
-          s(time_s, by = island, k=12) +
-          s(mld_s, k=3) + s(mld_anom_s, k=3) +
-          s(month, bs = 'cc', k = 12, by = island),
+m1<-bam(Chl_increase_nearby ~
+          s(time_s, by = island, k=6) +
+          s(mld_s, k=3) + s(mld_anom_s, k=3),
         rho = 0.35,
         AR.start = focal$new_series,
-        # family = Gamma(link = 'log'),
+        discrete = TRUE,
+        method = 'fREML',
+        family = Gamma(link = 'log'),
         data=focal)
 
-# Dev. expl = 10.7%
+# Dev. expl = 3.3%
 load('results/mod_ime_time.rds')
 hist(resid(m1))
 summary(m1)
 acf(resid(m1))
-gratia::draw(m1)
+gratia::draw(m1, select = 'mld_s', partial_match=TRUE)
+gratia::draw(m1, select = 'mld_anom',  partial_match=TRUE)
 month_smooths <- grep("month", smooths(m1), value = TRUE)
 
 df1<-expand.grid(month = 1, island = unique(ime_df$island), time_s = seq(min(ime_df$time_s), max(ime_df$time_s), length.out=100))
@@ -57,41 +62,7 @@ ggplot(df1, aes(date, exp(pred), col=region.col, group=island)) + geom_line() + 
 save(ime_df, focal, m1, file = 'results/mod_ime_time.rds')
 
 
-## Is IME seasonality changing?
-m2 <- bam(
-  log(Chl_increase_nearby) ~ 
-    # s(time_s, by = island, k = 12) +
-    # s(month, by = island, bs = "cc", k = 12) +
-    ti(month, time_s, by = island,
-       bs = c("cc", "tp"), k = c(12, 6)),
-  data = ime_df,
-  rho = 0.35,
-  AR.start = ime_df$new_series
-)
-
-# Dev. expl. = %
-hist(resid(m2))
-summary(m2)
-overview(m2)
-acf(resid(m2))
-
-save(ime_df, focal, m2, file = 'results/mod_ime_time_seasonality.rds')
-
-load(file = 'results/mod_ime_time_seasonality.rds')
-
-## pull out edf values summed across smoother to understand where seasonality is time-variant
-data.frame(
-  term = names(m2$edf),
-  edf  = m2$edf
-) |>
-  dplyr::filter(grepl("ti\\(", term)) |>
-  dplyr::mutate(island = stringr::str_extract(term, "(?<=island)\\w+")) |>
-  dplyr::group_by(island) |>
-  dplyr::summarise(total_edf = sum(edf)) |>
-  dplyr::arrange(desc(total_edf)) %>% data.frame
-
-
-## Try binomial version = on/off IME
+## 2. Fit binomial version = on/off IME
 focal<-ime_df %>% filter(!is.na(mld_anom))
 
 m_detect <- bam(
@@ -104,8 +75,9 @@ m_detect <- bam(
   method = "fREML",
   discrete = TRUE
 )
+save(ime_df, focal, m_detect, file = 'results/mod_ime_time_binom.rds')
 
-summary(m_detect)
+summary(m_detect) # dev. expl = 
 gratia::draw(m_detect, select = 'mld_mean', partial_match=TRUE)
 gratia::draw(m_detect, select = 'mld_anom', partial_match=TRUE)
 gratia::draw(m_detect, select = 'time_s', partial_match=TRUE)
