@@ -11,8 +11,9 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
          island = factor(island), region = factor(region)
   ) %>% 
   arrange(island, time_s) %>%
-  mutate(new_series = c(TRUE, diff(as.numeric(island)) != 0),
-         detected = as.integer(!is.na(Chl_increase_nearby))) %>% 
+  mutate(new_series = c(TRUE, diff(as.numeric(island)) != 0)
+         # detected = as.integer(!is.na(Chl_increase_nearby))
+         ) %>% 
   # matching MLD, but note this is for the 1st of the month, whereas IME is 15th
   left_join(mld %>% mutate(date = as.Date(format(Date, "%Y-%m-15"))) %>% select(date, island, MLD)) %>% 
   # filter(!is.na(MLD)) %>% 
@@ -64,9 +65,10 @@ save(ime_df, focal, m1, file = 'results/mod_ime_time.rds')
 
 ## 2. Fit binomial version = on/off IME
 focal<-ime_df %>% filter(!is.na(mld_anom))
+# n = 9724
 
 m_detect <- bam(
-  detected ~ 
+  has_IME ~ 
     s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
     s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
     s(time_s, by = island, bs = "cr", k = 10),   # island-level probability
@@ -77,7 +79,7 @@ m_detect <- bam(
 )
 save(ime_df, focal, m_detect, file = 'results/mod_ime_time_binom.rds')
 
-summary(m_detect) # dev. expl = 
+summary(m_detect) # dev. expl = 9.6%
 gratia::draw(m_detect, select = 'mld_mean', partial_match=TRUE)
 gratia::draw(m_detect, select = 'mld_anom', partial_match=TRUE)
 gratia::draw(m_detect, select = 'time_s', partial_match=TRUE)

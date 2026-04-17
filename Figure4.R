@@ -4,6 +4,8 @@
 
 # Panel A = 06_ime_time. m_detect. code is ready.
 load(file = 'results/mod_ime_time_binom.rds')
+
+# A = MLD anomaly preds
 ex_smooths <- grep("month|time|mean", smooths(m_detect), value = TRUE)
 
 df_mldanom<-expand.grid(month = 1, time_s = 0, mld_mean_s = 0, island = unique(focal$island)[1], 
@@ -11,12 +13,14 @@ df_mldanom<-expand.grid(month = 1, time_s = 0, mld_mean_s = 0, island = unique(f
 df_mldanom$pred<-predict(m_detect, newdata = df_mldanom, type='response', exclude=ex_smooths)
 df_mldanom$se<-predict(m_detect, newdata = df_mldanom, type='response', exclude=ex_smooths, se.fit=TRUE)$se.fit
 
+# B = MLD anomaly preds
 ex_smooths <- grep("month|time|anom", smooths(m_detect), value = TRUE)
 df_mldmean<-expand.grid(month = 1, time_s = 0, mld_anom_s = 0, island = unique(focal$island)[1], 
                  mld_mean_s = seq(min(focal$mld_mean_s), max(focal$mld_mean_s), length.out=100))
 df_mldmean$pred<-predict(m_detect, newdata = df_mldmean, type='response', exclude=ex_smooths)
 df_mldmean$se<-predict(m_detect, newdata = df_mldmean, type='response', exclude=ex_smooths, se.fit=TRUE)$se.fit
 
+# Match with observed predictor scales
 df_mldanom<-df_mldanom %>% left_join(focal %>% distinct(island, region, region.col)) %>% 
   mutate(lower = pred - 2*se, upper = pred + 2*se)
 df_mldanom$mld_anom<-seq(min(focal$mld_anom), max(focal$mld_anom), length.out=100)
@@ -25,6 +29,7 @@ df_mldmean<-df_mldmean %>% left_join(focal %>% distinct(island, region, region.c
   mutate(lower = pred - 2*se, upper = pred + 2*se)
 df_mldmean$mld_mean<-seq(min(focal$mld_mean), max(focal$mld_mean), length.out=100)
 
+# Plot and multipanel
 gA<-ggplot(df_mldmean, aes(mld_mean, pred, col=region.col, group=island, ymin = lower, ymax = upper)) + 
   geom_ribbon(col='transparent', alpha=0.1) +
   geom_line(col = 'blue') + 
@@ -38,8 +43,9 @@ gB<-ggplot(df_mldanom, aes(mld_anom, pred, col=region.col, group=island, ymin = 
   scale_colour_identity() +
   labs(x = 'Mixed layer depth [anomaly], m', y = 'Probability of IME detection')
 
+gIME<-plot_grid(gA, gB, nrow=1, labels=c('a', 'b'))
 
-# Panel B = 02_model_mld_time. m2. MLD anomaly by island over time
+# Panel C = 02_model_mld_time. m2. MLD anomaly by island over time
 load(file = 'results/mld_anomaly_time_mod.rds')
 levs<-c('Northwestern Hawaiian', 'Hawaii', 'Mariana', 'Equatorial', 'Samoa')
   
@@ -74,13 +80,21 @@ gC<-ggplot(region_smooth, aes(date, MLD_pred)) +
   labs(x = '', y = 'Mixed layer depth anomaly, m') +
   theme(strip.text = element_text(hjust = 0, size = 12), strip.background = element_blank())
 
+pdf(file = 'fig/Figure4.pdf', height=5, width=9)
+plot_grid(gIME, gC, nrow=2, labels=c('', 'c'))
+dev.off()
 
-
-# Panel C. Raw IME strength over time? Or Chl_max_anomaly?
-ggplot(ime_df, aes(date, Chl_increase_nearby, group=island)) + 
-  geom_line() + 
-  facet_wrap(~region, nrow=5)
-
+# Panel D or Sup Fig. Raw IME strength over time
+ime_df_Q<-ime_df %>% 
+  mutate(quarter = case_when(
+    month %in% c(12, 1, 2) ~ "DJF",
+    month %in% c(3, 4, 5)  ~ "MAM",
+    month %in% c(6, 7, 8)  ~ "JJA",
+    month %in% c(9, 10, 11) ~ "SON"
+  ), season_year = if_else(month == 12, year + 1L, year)) %>% 
+  group_by(island, region, season_year, quarter) |>
+  summarise(Chl_increase_nearby = mean(Chl_increase_nearby, na.rm=TRUE)) %>% 
+  mutate(date = season_year + (match(quarter, c("DJF","MAM","JJA","SON")) - 1) / 4)
 
 island_order <- ime_df |>
   left_join(island %>% select(island, latitude)) %>% 
@@ -89,9 +103,9 @@ island_order <- ime_df |>
   pull(island)
 
 
-gX<-ggplot(ime_df, aes(date, island, fill=Chl_increase_nearby, col=Chl_increase_nearby)) + 
+gX<-ggplot(ime_df %>% mutate(Chl_increase_nearby = ifelse(Chl_increase_nearby > 1, 1, Chl_increase_nearby)), 
+           aes(date, island, fill=Chl_increase_nearby, col=Chl_increase_nearby)) + 
   geom_tile() +
-  scale_x_date(expand=c(0,0), date_breaks = '3 years', date_labels = '%Y') +
   scale_y_discrete(limits=rev(island_order), sec.axis = dup_axis()) +
   scale_fill_gradientn(
     colors = chl_grad_cols,
@@ -106,10 +120,14 @@ gX<-ggplot(ime_df, aes(date, island, fill=Chl_increase_nearby, col=Chl_increase_
     limits=c(0, 1),
     name = 'IME strength')  +
   labs(x = '', y = '') + guides(color='none') +
-  theme(axis.text.y = element_text(size=7),
-        legend.position = 'top')
+  theme(axis.text = element_text(size=7),
+        legend.position = 'top', 
+        plot.margin = unit(c(0,0,0,0), 'cm'))
 
 pdf(file = 'fig/FigureSX_IME_tiles.pdf', height=4, width=20)
-gX
+gX + scale_x_date(expand=c(0,0), date_breaks = '1 years', date_labels = '%Y', sec.axis = dup_axis()) 
 dev.off()
 
+pdf(file = 'fig/FigureSX_IME_tiles_3mo.pdf', height=4.5, width=10)
+gX + scale_x_continuous(expand=c(0,0), breaks=seq(1997, 2025, by = 1), sec.axis = dup_axis()) + ime_df_Q
+dev.off()
