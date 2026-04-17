@@ -113,7 +113,6 @@ load(file = 'results/mld_anomaly_time_mod.rds')
 hist(resid(m2))
 # plot(m2)
 summary(m2) # dev exp. 3.8%
-plot(m2)  # default gam diagnostic plots
 acf(resid(m2, type = "pearson"))
 gratia::draw(m2)
 

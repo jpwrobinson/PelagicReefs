@@ -80,7 +80,7 @@ gC<-ggplot(region_smooth, aes(date, MLD_pred)) +
   labs(x = '', y = 'Mixed layer depth anomaly, m') +
   theme(strip.text = element_text(hjust = 0, size = 12), strip.background = element_blank())
 
-pdf(file = 'fig/Figure4.pdf', height=5, width=9)
+pdf(file = 'fig/Figure4.pdf', height=6, width=8)
 plot_grid(gIME, gC, nrow=2, labels=c('', 'c'))
 dev.off()
 

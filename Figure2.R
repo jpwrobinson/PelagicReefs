@@ -26,26 +26,6 @@ coef_draws <- as_draws_df(m_chl_inc) %>%
 
 coef_draws %>% group_by(group) %>% summarise(median_hdi(proportion, 0.95))
 
-# gInset<-ggplot(coef_draws, aes(x = proportion, y = group, col=group)) +
-#   geom_text(data = data.frame(group = c('seasonal', 'oceanographic', 'geomorphic'),
-#                               proportion = c(0.28, 0.5, 0.7),
-#                               lab = c('Seasonal', 'Oceanographic', 'Geomorphic')),
-#             aes(label = lab, col=group), vjust=-1.5, fontface=2, size=2) +
-#   stat_pointinterval(.width = c(0.5, 0.95)) +
-#   # stat_slabinterval(.width = c(0.5, 0.95), point_interval = median_qi,                   
-#   #                   slab_alpha = 0.5, interval_alpha = 1, point_alpha = 1) +
-#   # geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
-#   scale_x_continuous(labels = scales::percent, limits = c(0, 0.8), expand=c(0,0)) +
-#   scale_y_discrete(expand = expansion(mult = 0.1)) +
-#   labs(x = "explained variance", y = NULL) +
-#   theme(legend.position = "none", 
-#         axis.text.y = element_blank(), axis.line.y = element_blank(),
-#         axis.text.x = element_text(size = 8),
-#         axis.title.x = element_text(size = 8),
-#         axis.ticks.y = element_blank(),
-#         panel.border = element_rect(color='black'),
-#         panel.grid.major.x = element_line(color='grey'))
-
 gEff<-ggplot(effects,
            aes(x = .value, y = var_fac)) +
   geom_text(data = bayes, aes(x = x, y = y, label = paste0('R² = ', round(b*100,1),'% ')), size=3.5) +
@@ -60,10 +40,6 @@ gEff<-ggplot(effects,
   theme(legend.position = c(.9,.9), legend.title = element_blank(),
         plot.margin=unit(c(0,1,0.01, .1), 'cm'))
 
-# gEff<-gEff + inset_element(gInset, 
-#                        left = 0.6, bottom = 0.001, 
-#                        right = 1.15, top = 0.5)
-
 # Get conditional effects
 source('func_mod_conditional.R')
 bathy_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'bathymetric_slope')
@@ -74,8 +50,8 @@ ted_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'ted_mean')
 chl_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'mean_chlorophyll')
 mld_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'mld_mean')
 
-mldA_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'mld_anom')
-precip_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'avg_monthly_mm_anom')
+mldA_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'mld_anom', n = 1000)
+precip_pred<-mod_post(mod = m_chl_inc, dat_raw = dat_month, var = 'avg_monthly_mm_anom', n= 1000)
 
 
 dd<-rbind(bathy_pred %>% select(-bathymetric_slope) %>% mutate(var = 'Bathymetry', unit='slope~degree'), 
@@ -119,28 +95,36 @@ gOce<-ggplot(dd %>% filter(g == 1)) +
 
 ## creating fill grid for MLD and precip in main Figure
 plot_data<-dd %>% filter(g == 2) %>% mutate(lab = paste0(var, ', ', unit))
-ribbon_grid <-plot_data   %>%
-  group_by(var) %>% 
-  rowwise()  %>%
-  mutate(y_seq = list(seq(lower95, upper95, length.out = 1000)))  %>%
-  unnest(y_seq)  %>%
-  ungroup() 
+
+y_grid <- seq(
+  min(plot_data$lower95, na.rm = TRUE),
+  max(plot_data$upper95, na.rm = TRUE),
+  length.out = 1000
+)
+ribbon_grid <- plot_data |>
+  select(var, lab, raw, lower95, upper95, estimate__) |>
+  group_by(var, lab) |>
+  group_modify(~ crossing(.x, y = y_grid)) |>
+  ungroup() |>
+  mutate(in_ci = y >= lower95 & y <= upper95)
 
 # version with uncertainty fill
-gSea<-ggplot(ribbon_grid, aes(x = raw, y = y_seq/100)) +
+gSea<-ggplot() +
   geom_vline(xintercept = 0, linetype=2, col='black') +
   geom_text(data = data.frame(raw = c(-4,4), estimate = Inf, label = c('Shallower', 'Deeper'), lab = 'Mixed layer depth anomaly, m'),
             aes(x = raw, y = estimate, label = label), size = 3, vjust=2, hjust=c(1,0)) +
   geom_text(data = data.frame(raw = c(-50,50), estimate = Inf, label = c('Drier', 'Wetter'), lab = 'Precipitation anomaly, mm'),
             aes(x = raw, y = estimate, label = label), size = 3, vjust=2, hjust=c(1, 0)) +
-  geom_tile(aes(fill = y_seq/100), alpha=0.5, height = diff(range(plot_data$upper95/100 - plot_data$lower95/100))) +
-  geom_line(data = plot_data, aes(y = estimate__/100), color = "white", linewidth = 0.8) + 
+  geom_raster(data = filter(ribbon_grid, in_ci), aes(x = raw, y = y/100, fill = y/100), alpha=0.8, interpolate=TRUE) +
+  # geom_tile(aes(fill = y/100), alpha=0.5, height = diff(range(plot_data$upper95/100 - plot_data$lower95/100))) +
+  geom_line(data = plot_data, aes(y = estimate__/100, x = raw), color = "white", linewidth = 0.8) + 
   guides(fill = 'none') +
   labs(y = 'IME strength', x = '') +
   scale_y_continuous(labels = label_percent()) +
   scale_fill_gradientn(
     colors = chl_grad_cols,
     labels = label_percent(),
+    na.value = NA,
     limits=c(0, .3),
     name = 'IME strength')  +
   facet_grid(~lab, scales='free', switch = 'x',
