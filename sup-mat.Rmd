@@ -5,7 +5,7 @@ header-includes:
 - \newcommand{\blandscape}{\begin{landscape}}
 - \newcommand{\elandscape}{\end{landscape}}
 - \usepackage{graphicx}
-- \setkeys{Gin}{width=0.9\linewidth,keepaspectratio}  # 🔥 This forces figures to max 90% of the text width
+- \setkeys{Gin}{width=0.9\linewidth,keepaspectratio}  # This forces figures to max 90% of the text width
 - \usepackage{pdflscape}    
 output:
   pdf_document: null
@@ -50,6 +50,13 @@ knitr::include_graphics("fig/FigureSX_IME_seasonal_pred.pdf"); i = i + 1
 ```
 **Fig. S`r i`** | Heatmap of seasonal effects on chl-a enhancement for a mixed layer depth, b precipitation and c both covariates combined. Islands with less than 1 mm monthly rainfall are shown in grey. All values are median posterior predictions excluding effects of other covariates.
 \newpage
+
+```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+knitr::include_graphics("fig/FigureSX_MLD_amp.pdf"); i = i + 1
+```
+**Fig. S`r i`** | Seasonal variability in the mixed layer depth at each island. In a, lines are predicted mixed layer depth at each island from a general additive model of time and month, overlaid with points indicating timing of coral reef fish surveys. Predicted values were used to estimate b the mixed layer depth seasonal amplitude at each island, or the range of depths experienced by each island from Jan to Dec.
+\newpage
+
 
 ```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_metab.pdf"); i = i + 1

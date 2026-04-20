@@ -18,11 +18,13 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
   left_join(mld %>% mutate(date = as.Date(format(Date, "%Y-%m-15"))) %>% select(date, island, MLD)) %>% 
   # filter(!is.na(MLD)) %>% 
   mutate(mld_s = scale(MLD)[,1]) %>% 
-  group_by(island) %>% 
-  mutate(mld_mean = mean(MLD, na.rm=TRUE),
-         mld_anom = MLD - mld_mean, island=factor(island)) %>% ungroup() %>% 
-  mutate(mld_anom_s = scale(mld_anom),
-         mld_mean_s = scale(mld_mean))
+  group_by(island, month) %>% 
+  mutate(mld_mean = mean(MLD, na.rm=TRUE)) %>% 
+  ungroup() %>% 
+  mutate(mld_anom = MLD - mld_mean, 
+         mld_anom_s = scale(mld_anom),
+         mld_mean_s = scale(mld_mean),
+         island=factor(island))
 
 
 ## 1. Examining temopral trends in Chl_% by island, accounting for seasonality. 
@@ -103,3 +105,19 @@ ggplot(df2, aes(mld_anom, pred, col=region.col, group=island, ymin = lower, ymax
   scale_colour_identity() +
   labs(x = '', y = 'Probability IME detection')
 
+
+## 3. Fit deep events anomaly
+focal <- ime_df |> mutate(deep_event = as.integer(mld_anom > 20), year_s = scale(year)[,1])
+
+m_deep <- bam(
+  deep_event ~ s(year_s, by = island, bs = "cr", k = 10), 
+  family = binomial,
+  data = focal,
+  method = "fREML",
+  discrete = TRUE
+)
+
+ggplot(focal %>% filter(deep_event ==1), aes(year)) + geom_histogram() + facet_wrap(~island)
+
+summary(m_deep) # dev expl = 16%
+gratia::draw(m_deep, select = 'year_s', partial_match=TRUE)
