@@ -75,12 +75,13 @@ gC<-ggplot(region_smooth, aes(date, MLD_pred)) +
   guides(col='none', fill='none') +
   scale_colour_identity() +
   scale_fill_identity() +
-  scale_x_date(date_breaks = '5 years', date_labels = '%Y') +
+  scale_x_date(date_breaks = '7 years', date_labels = paste0("'", '%y')) +
   facet_wrap(~region, nrow=1) +
   labs(x = '', y = 'Mixed layer depth anomaly, m') +
-  theme(strip.text = element_text(hjust = 0, size = 12), strip.background = element_blank())
+  theme(strip.text = element_text(hjust = 0, size = 10), strip.background = element_blank(),
+      axis.text.x = element_text(size = 10))
 
-pdf(file = 'fig/Figure4.pdf', height=6, width=8)
+pdf(file = 'fig/Figure4.pdf', height=6, width=8.5)
 plot_grid(gIME, gC, nrow=2, labels=c('', 'c'))
 dev.off()
 
