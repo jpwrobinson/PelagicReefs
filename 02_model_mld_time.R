@@ -51,10 +51,10 @@ df$MLD_pred<-exp(predict(m1, newdata = df, type='response'))
 
 # get predicted temporal MLD holding month constant
 df2<-expand.grid(month = 1, island = unique(mld$island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
-df2$MLD_pred<-predict(m1, newdata = df2, type='response')
+df2$MLD_pred<-exp(predict(m1, newdata = df2, type='response'))
 df2<-df2 %>% left_join(island %>% rename(island = island) %>% select(island, region)) 
 
-ggplot(df2, aes(time_num, exp(MLD_pred), col=island)) + geom_line() + facet_wrap(~region)
+ggplot(df2, aes(time_num, MLD_pred, col=island)) + geom_line() + facet_wrap(~region)
 
 # add categorical vars and survey dates
 df<-df %>% 

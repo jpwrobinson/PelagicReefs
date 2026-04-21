@@ -22,3 +22,12 @@ plot_data %>% group_by(lab) %>% slice_min(estimate__)
 
 mld_pred %>% slice_max(estimate__)
 mld_pred %>% slice_min(estimate__)
+
+
+# Fig 4 - posterior slopes - fish
+load('results/mod_planktivore_metabolic.rds')
+load('results/mod_herbivore_metabolic.rds')
+summary(m2_plank)
+summary(m2_herb)
+
+island %>% distinct(island, mld_amp) %>% dplyr::slice_min(mld_amp, n = 5) 

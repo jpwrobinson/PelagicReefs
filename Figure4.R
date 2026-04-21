@@ -30,18 +30,21 @@ df_mldmean<-df_mldmean %>% left_join(focal %>% distinct(island, region, region.c
 df_mldmean$mld_mean<-seq(min(focal$mld_mean), max(focal$mld_mean), length.out=100)
 
 # Plot and multipanel
-gA<-ggplot(df_mldmean, aes(mld_mean, pred, col=region.col, group=island, ymin = lower, ymax = upper)) + 
+gA<-ggplot(df_mldmean, aes(mld_mean, pred, ymin = lower, ymax = upper)) + 
   geom_ribbon(col='transparent', alpha=0.1) +
   geom_line(col = 'blue') + 
   scale_colour_identity() +
-  labs(x = 'Mixed layer depth [mean], m', y = 'Probability of IME detection')
+  scale_y_continuous(limits=c(0, 0.8), expand=c(0,0)) +
+  labs(x = 'Mixed layer depth [mean], m', y = 'Probability of IME detection', subtitle = 'Seasonal mean MLD')
 
-gB<-ggplot(df_mldanom, aes(mld_anom, pred, col=region.col, group=island, ymin = lower, ymax = upper)) + 
+gB<-ggplot(df_mldanom, aes(mld_anom, pred)) + 
+  geom_text(data = data.frame(mld_anom = c(-15, 15), pred = 0.78, z = c('Shallowing', 'Deepening')), aes(label = z), size=3) +
   geom_vline(xintercept = 0, linetype=5) +
-  geom_ribbon(col='transparent', alpha=0.1) +
+  geom_ribbon(col='transparent', alpha=0.1, aes(ymin = lower, ymax = upper)) +
   geom_line(col = 'blue') + 
   scale_colour_identity() +
-  labs(x = 'Mixed layer depth [anomaly], m', y = 'Probability of IME detection')
+  scale_y_continuous(limits=c(0, 0.8), expand=c(0,0)) +
+  labs(x = 'Mixed layer depth [anomaly], m', y = 'Probability of IME detection', subtitle = 'Seasonal anomaly MLD')
 
 gIME<-plot_grid(gA, gB, nrow=1, labels=c('a', 'b'))
 

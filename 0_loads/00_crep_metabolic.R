@@ -34,14 +34,16 @@ depth<-
 
 # use bathymetry/benthic dataset as basis for model. join fish metabolic and then predictors from Gove/Williams
 depth<- depth %>% 
-  left_join(crep %>% select(SITEVISITID, PLANKTIVORE, PRIMARY), by = 'SITEVISITID') %>% 
+  left_join(crep %>% select(SITEVISITID, PLANKTIVORE, PRIMARY, PISCIVORE), by = 'SITEVISITID') %>% 
   mutate(planktivore_metab=PLANKTIVORE,
-         herbivore_metab = PRIMARY) %>%
-  select(-PLANKTIVORE, -PRIMARY) %>% 
-  left_join(biom %>% select(SITEVISITID, PLANKTIVORE, PRIMARY), by = 'SITEVISITID') %>% 
+         herbivore_metab = PRIMARY,
+         piscivore_metab = PISCIVORE) %>%
+  select(-PLANKTIVORE, -PRIMARY, -PISCIVORE) %>% 
+  left_join(biom %>% select(SITEVISITID, PLANKTIVORE, PRIMARY, PISCIVORE), by = 'SITEVISITID') %>% 
   mutate(planktivore_biom=PLANKTIVORE,
-         herbivore_biom = PRIMARY) %>% 
-  select(-PLANKTIVORE, -PRIMARY) %>% 
+         herbivore_biom = PRIMARY,
+         piscivore_biom = PISCIVORE) %>% 
+  select(-PLANKTIVORE, -PRIMARY, -PISCIVORE) %>% 
   # Bring Gove, MLD and TD variables
   left_join(island %>% mutate(island_bathy = SITE_SLOPE_400m) %>% 
               select(region.col, island, island_code, sst_mean:geomorphic_type, island_bathy, precip_amp_mm:mld_mean, mld_amp, ted_mean)) %>% 
@@ -106,4 +108,33 @@ pairs2(
     select(island_area_km2, reef_area_km2, island_bathy, site_bathy_400m,depth_m,hard_coral,
            precip_amp_mm, avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
            chl_a_mg_m3_mean, mld_mean, mld_amp, ted_mean))
+dev.off()
+
+
+# 3. Create piscivore
+# drop NA piscivore sites (n = 0)
+pisc<-depth %>% filter(!is.na(piscivore_metab))
+# drop 0 piscivore sites (n = 300)
+pisc<-pisc %>% filter(piscivore_metab>0)
+# drop missing hard coral sites (675)
+pisc<-pisc %>% filter(!is.na(hard_coral)) ## need to check with Tom
+# keep forereef only (drops 31 sites)
+pisc<-pisc %>% filter(reef_zone=='Forereef') ## need to check with Tom
+
+# scale and center cont. covariates
+pisc_scaled <- pisc %>% 
+  mutate(reef_area_km2 = log10(reef_area_km2), 
+         island_area_km2 = log10(land_area_km2),
+         across(c(depth_m:hard_coral, 
+                  sst_mean:irradiance_einsteins_m2_d1_mean, island_bathy,
+                  precip_amp_mm:ted_mean), 
+                ~scale(., center=TRUE, scale=TRUE)[,1]))
+
+pdf(file = 'fig/ime_crep/crep_piscivore_cov_correlations.pdf', height=7, width=15)
+pairs2(
+  pisc_scaled %>% 
+    filter(!is.na(ted_mean)) %>% 
+    select(island_area_km2, reef_area_km2, island_bathy, site_bathy_400m,depth_m,hard_coral,
+           precip_amp_mm, avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
+           chl_a_mg_m3_mean, mld_mean, mld_amp, ted_mean, month_num))
 dev.off()
