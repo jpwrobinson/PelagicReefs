@@ -34,7 +34,7 @@ precip_ann_C<-precip %>% group_by(island_group) %>%
 
 # 2. mixed layer depth = shallower MLD helps upwelling to reach reefs, increases planktivores
 # mld<-read.csv('data/crep_oceanographic/MLD_All_Islands-lrg_island_means.csv') %>% 
-mld<-read.csv('data/glorys/mld_1993-2021_glory_island.csv') %>% 
+mld<-read.csv('data/glorys/mld_1993-2026_glory_island.csv') %>% 
   filter(island != 'Maro Reef') %>% 
   mutate(Date = as.Date(time), year = year(Date), month = month(Date), 
          MLD = mean, mean = NULL,
@@ -44,11 +44,11 @@ mld<-read.csv('data/glorys/mld_1993-2021_glory_island.csv') %>%
          island_group = ifelse(island %in% c('Saipan', 'Tinian', 'Aguijan'), 'Saipan_C', island_group),
          island_group = ifelse(island %in% c('Ofu & Olosega', 'Tau'), 'Tau_C', island_group))
 
-pdf(file = 'fig/crep_island_MLD.pdf', height=7, width=15)
-print(
-  ggplot(mld, aes(Date, MLD)) + geom_line() + facet_wrap(~island)
-)
-dev.off()
+# pdf(file = 'fig/crep_island_MLD.pdf', height=7, width=15)
+# print(
+#   ggplot(mld, aes(Date, MLD)) + geom_line() + facet_wrap(~island)
+# )
+# dev.off()
 
 # Island values - mean
 mld_avg<-mld %>% group_by(island) %>% 
