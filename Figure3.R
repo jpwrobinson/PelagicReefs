@@ -7,6 +7,10 @@ bayes<-data.frame(b = c(bayes_R2(m2_plank)[1,'Estimate'],
                         bayes_R2(m2_herb)[1,'Estimate']),
                   x = 0.5, y = c(6.5, 6.5), fg = c('Planktivore', 'Herbivore'))
 
+direc<-data.frame(b = c('Wetter', 'Drier', 'Deeper', 'Shallower'),
+                  x = c(0.2, -0.2,0.2, -0.2), 
+                  y = c(2.3, 2.3, 1.3, 1.3), fg = 'Herbivore')
+
 ## Effect sizes
 effects <- rbind(
   m2_plank %>%
@@ -37,6 +41,7 @@ gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
     stat_pointinterval(.width = c(0.5, 0.95), pch=19, 
                        position = position_dodge(width=0.65)) +  
     geom_text(data = bayes, aes(x = x, y = y, label = paste0('R² = ', round(b*100,1),'% ')), size=2.5) +
+    geom_text(data = direc, aes(x = x, y = y, label = b), size=2.5) +
     facet_grid(~fg) +
     scale_color_manual(values = fg_cols) +
     labs(x = "Effect on metabolic flux", y = "") +
