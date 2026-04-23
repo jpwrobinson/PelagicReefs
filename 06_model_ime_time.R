@@ -104,36 +104,3 @@ ggplot(df2, aes(mld_anom, pred, col=region.col, group=island, ymin = lower, ymax
   geom_line(col = 'blue') + 
   scale_colour_identity() +
   labs(x = '', y = 'Probability IME detection')
-
-
-## 3. Fit deep events anomaly
-focal <- ime_df |> mutate(deep_event = as.integer(mld_anom > 20), year_s = scale(year)[,1])
-
-priors <- c(
-  prior(normal(0, 0.5), class = "Intercept"),   # shrink intercept toward 0 on log-scale
-  prior(normal(0, 0.5), class = "b"),           # shrink slopes modestly
-  prior(exponential(1), class = "sd")           # penalize large sd; mean ~1, P(s>~3) small
-)
-
-m_deep <- brm(
-  deep_event ~ year_s + (1 | year_s * island),
-  family = bernoulli,
-  data = focal,
-  prior =priors, chains = 3, iter = 2000, warmup = 500, cores = 4)
-
-ggplot(focal %>% filter(deep_event ==1), aes(year)) + geom_histogram() + facet_wrap(~island)
-
-summary(m_deep) # dev expl = 16%
-pp_check(m_deep, resp = 'deep_event')
-conditional_effects(m_deep)
-mcmc_plot(m_deep)
-ran_effects(m_deep)
-bayes_R2(m_deep) # 
-
-df2<-expand.grid(island = unique(focal$island), year_s = seq(min(focal$year_s), max(focal$year_s), length.out = 29))
-df2$year<-rep(seq(min(ime_df$year), max(ime_df$year), length.out=29), each = length(unique(ime_df$island)))
-df2$pred<-predict(m_deep, newdata = df2, type='response')
-df2$se<-predict(m_deep, newdata = df2, type='response', se.fit=TRUE)$se.fit
-
-ggplot(df2, aes(year, pred)) + geom_line() + facet_wrap(~island)
-
