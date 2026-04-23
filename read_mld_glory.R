@@ -12,7 +12,7 @@ latlon$lon<-ifelse(latlon$lon < 0, 360+latlon$lon, latlon$lon)
 # read mld, extract time
 # Global Ocean Physics Reanalysis
 # GLORYS12V1 product is the CMEMS global ocean eddy-resolving (1/12° horizontal resolution, 50 vertical levels) reanalysis 
-mld<-terra::rast('data/glorys/cmems_mod_glo_phy_my_0.083deg_P1M-m_mlotst_118.33E-289.42E_49.33S-56.58N_1993-01-01-2021-06-01.nc')
+mld<-terra::rast('data/glorys/cmems_mod_glo_phy_my_0.083deg_P1M-m_mlotst_118.33E-289.42E_49.33S-56.58N_1993-01-01-2026-02-01.nc')
 times<-terra::time(mld)
 
 # align geometries (wrap sf object latitude)
@@ -33,11 +33,7 @@ ggplot(data=latlon) +
     coord_sf() +
     lims(x = c(201, 206), y = c(18.5,22.5)) +
     scale_fill_viridis_c(name = "Mixed Layer Depth (m)", direction = -1, na.value = "grey80") +
-    labs(
-      x = "Longitude (0–360°)",
-      y = "Latitude",
-      title = "Mixed Layer Depth around Pacific"
-    ) +
+    labs(x = "Longitude (0–360°)", y = "Latitude", title = "Mixed Layer Depth around Pacific") +
     theme_minimal()
 
 # identify the cells that intersect each island polygon
@@ -136,7 +132,7 @@ vals<-mld_extract(raster=mld_crep, buffer=buf, latlon=atolls, test=FALSE)
 vals<-vals %>% group_by(island, REGION, time) %>% 
   summarise(mean = mean(mean), sd = mean(sd), median = mean(median), n_cells = max(n_cells), na_cells = max(na_cells))
 
-write.csv(vals, file = 'data/glorys/mld_1993-2021_glory_island.csv')
+write.csv(vals, file = 'data/glorys/mld_1993-2026_glory_island.csv')
 
 
 

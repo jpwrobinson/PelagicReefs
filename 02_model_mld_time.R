@@ -47,11 +47,11 @@ summary(m1) # 77.1% dev. explained. much of this is month. (how much?)
   
 # get predicted monthly MLD holding time constant
 df<-expand.grid(month = c(1:12), island = unique(mld$island), time_num = 0)
-df$MLD_pred<-predict(m1, newdata = df, type='response')
+df$MLD_pred<-exp(predict(m1, newdata = df, type='response'))
 
 # get predicted temporal MLD holding month constant
 df2<-expand.grid(month = 1, island = unique(mld$island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
-df2$MLD_pred<-predict(m1, newdata = df2, type='response')
+df2$MLD_pred<-exp(predict(m1, newdata = df2, type='response'))
 df2<-df2 %>% left_join(island %>% rename(island = island) %>% select(island, region)) 
 
 ggplot(df2, aes(time_num, MLD_pred, col=island)) + geom_line() + facet_wrap(~region)
@@ -84,7 +84,7 @@ for(i in 1:length(regs)){
     geom_text_repel(data = df %>% filter(region %in% regs[i] & month == 12), aes(label = island), nudge_x = 0.5, size=3) +
     geom_point(data = survey_dates %>% filter(region %in% regs[i]), pch=21, col='white', fill = 'black', size=3) +
     scale_x_continuous(breaks=c(1,3,6,9, 12), labels=c('Jan', 'Mar', 'Jun', 'Sept', 'Dec')) +
-    scale_y_continuous(limits=c(15, 60)) +
+    scale_y_continuous(limits=c(10, 60)) +
     scale_colour_identity() +
     labs(x = '', y = 'Mixed layer depth', subtitle = regs[i]) +
     theme(legend.position = 'none', 
@@ -112,7 +112,7 @@ dev.off()
 load(file = 'results/mld_anomaly_time_mod.rds')
 hist(resid(m2))
 # plot(m2)
-summary(m2) # dev exp. 3.8%
+summary(m2) # dev exp. 4.5%
 acf(resid(m2, type = "pearson"))
 gratia::draw(m2)
 
