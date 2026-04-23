@@ -35,16 +35,40 @@ gA<-ggplot(df_mldmean, aes(mld_mean, pred, ymin = lower, ymax = upper)) +
   geom_line(col = 'blue') + 
   scale_colour_identity() +
   scale_y_continuous(limits=c(0, 0.8), expand=c(0,0)) +
-  labs(x = 'Mixed layer depth [mean], m', y = 'Probability of IME detection', subtitle = 'Seasonal mean MLD')
+  labs(x = 'Mixed layer depth [mean], m', y = 'P (IME detection)')
 
 gB<-ggplot(df_mldanom, aes(mld_anom, pred)) + 
-  geom_text(data = data.frame(mld_anom = c(-15, 15), pred = 0.78, z = c('Shallowing', 'Deepening')), aes(label = z), size=3) +
+  geom_text(data = data.frame(mld_anom = c(-25, 25), pred = 0.78, z = c('Shallower', 'Deeper')), aes(label = z), size=3) +
   geom_vline(xintercept = 0, linetype=5) +
   geom_ribbon(col='transparent', alpha=0.1, aes(ymin = lower, ymax = upper)) +
   geom_line(col = 'blue') + 
   scale_colour_identity() +
   scale_y_continuous(limits=c(0, 0.8), expand=c(0,0)) +
-  labs(x = 'Mixed layer depth [anomaly], m', y = 'Probability of IME detection', subtitle = 'Seasonal anomaly MLD')
+  scale_x_continuous(breaks = c(-30, -15, 0, 15, 30, 45), 
+                   sec.axis = dup_axis(breaks =0, labels = 'Monthly mean')) +
+  labs(x = 'Mixed layer depth [anomaly], m', y = 'P (IME detection)') +
+  theme(axis.title.x.top = element_blank(), axis.line.x.top = element_blank())
+
+histA <- ggplot(focal, aes(mld_mean)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+  scale_x_continuous(expand=c(0,0)) + theme_void() 
+
+histB<-  ggplot(focal, aes(mld_anom)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+  scale_x_continuous(expand=c(0,0)) + theme_void() 
+
+# inset histos
+gA<-gA + annotation_custom(
+    grob = ggplotGrob(histA),
+    xmin = min(focal$mld_mean), max(focal$mld_mean),  # Adjust the x-axis placement of the inset
+    ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset
+  )
+
+gB<-gB + annotation_custom(
+  grob = ggplotGrob(histB),
+  xmin = min(focal$mld_anom), max(focal$mld_anom),  # Adjust the x-axis placement of the inset
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset
+)
 
 # deep / shallow probs
 load('results/mld_time_extreme.rds')
@@ -60,10 +84,8 @@ gC<-ggplot(preds, aes(x = year, y = .epred, color = .category, fill = .category)
   stat_lineribbon(.width = c(0.50, 0.95), alpha = 0.3) +
   scale_fill_manual(values = c("shallow" = "#3182bd", "deep" = "#de2d26")) +
   scale_color_manual(values = c("shallow" = "#3182bd", "deep" = "#de2d26")) +
-  labs(
-    x = "",
-    y = "Probability of extreme MLD"
-  ) +
+  labs(x = "",y = "P (MLD anomaly ± 20 m)") +
+  scale_x_continuous(breaks=seq(1995, 2025, by = 5)) +
   annotate('text', x = 2020, y = 0.03, label = 'Deep', col = '#de2d26') +
   annotate('text', x = 1996, y = 0.014, label = 'Shallow', col = "#3182bd") +
   theme(legend.position = "none")
@@ -131,9 +153,8 @@ gSX <- gBase +
   labs(x = '', y = 'Mixed layer depth, m') 
 
 
+pdf(file = 'fig/Figure4.pdf', height=5, width=8.5)
 gIME<-plot_grid(gA, gB, gC, nrow=1, labels=c('a', 'b', 'c'))
-
-pdf(file = 'fig/Figure4.pdf', height=6, width=8.5)
 plot_grid(gIME, gD, nrow=2, labels=c('', 'd'))
 dev.off()
 
