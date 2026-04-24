@@ -31,3 +31,5 @@ summary(m2_plank)
 summary(m2_herb)
 
 island %>% distinct(island, mld_amp) %>% dplyr::slice_min(mld_amp, n = 5) 
+
+
