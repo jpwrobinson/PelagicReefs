@@ -23,6 +23,14 @@ plot_data %>% group_by(lab) %>% slice_min(estimate__)
 mld_pred %>% slice_max(estimate__)
 mld_pred %>% slice_min(estimate__)
 
+## Fig 3 - IME ~ MLD + TIME
+nyears<-diff(range(year(region_smooth$date)))
+
+region_smooth %>% group_by(region) %>% 
+  summarise(mld_change = diff(range(region_fit))) %>% 
+  mutate(mld_per_year = mld_change / nyears,
+         mld_per_decade = mld_per_year * 10)
+
 
 # Fig 4 - posterior slopes - fish
 load('results/mod_planktivore_metabolic.rds')
