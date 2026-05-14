@@ -14,7 +14,7 @@ car::vif(glm(log(planktivore_metab) ~
                land_area_km2 + avg_monthly_mm +
                reef_area_km2 + site_bathy_400m + island_bathy +  
                # mean_chlorophyll +
-               ted_mean +
+               ted_mean + 
                 mld_amp, data=plank_scaled))
 
 
@@ -26,10 +26,10 @@ m2_plank<-brm(planktivore_metab ~
                     hard_coral + 
                     depth_m +
                     avg_monthly_mm + 
-                    mld_amp + 
+                    mld_mean + 
                     # precip_amp_mm +
                     # mean_chlorophyll +
-                    (1 | year) +
+                    (1 | year ), # also tested year slopes but not supported by loo
                     (1 | island),
                   family = lognormal(),
         data = plank_scaled,
@@ -80,7 +80,7 @@ effects <- checker %>%
                                          'avg_monthly_mm', 'population_statusU',
                                          'site_bathy_400m', 'hard_coral', 'depth_m',
                                          # 'chl_a_mg_m3_mean'
-                                        'mld_amp')))) %>% 
+                                        'mld_mean')))) %>% 
   filter(!is.na(var_fac)) %>% 
   group_by(var_fac) %>% mutate(medi = abs(median(.value)))
 
@@ -91,7 +91,7 @@ ggplot(effects, aes(x = .value, y = var_fac)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
   labs(x = "Effect size", y = "") +
   xlim(c(-1.2, 1.2))
-sdev.off()
+dev.off()
 
 ## Change in planktivore flux along MLD
 
@@ -138,9 +138,9 @@ m2_plank %>% emmeans(~ mld_amp, var = 'mld_amp',
                epred =TRUE)
 
 mld_range<-(max(plank$mld_amp) - min(plank$mld_amp))
-meta_range<-(1.541 - 0.388 )
+meta_range<-(1.555 - 0.388)
 change_per_m<- meta_range / mld_range
 (change_per_m) / 1.117 
 (change_per_m*10) / 1.117 * 100
 # Metabolic rate decreases by 0.031 per metre of MLD amplitude
-# Metabolic rate decreases by 32% per 10 metre of MLD amplitude
+# Metabolic rate decreases by 31% per 10 metre of MLD amplitude

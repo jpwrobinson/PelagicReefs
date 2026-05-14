@@ -40,18 +40,20 @@ save(mld, m2, file = 'results/mld_anomaly_time_mod.rds')
 # 1. Explore MLD with season model (m1)
 load(file = 'results/mld_time_mod.rds')
 hist(resid(m1))
-# draw(m1)
+draw(m1)
 # plot(m1)
 acf(resid(m1))
 summary(m1) # 77.1% dev. explained. much of this is month. (how much?)
   
 # get predicted monthly MLD holding time constant
+ex_smooths <- grep("month", smooths(m1), value = TRUE)
+
 df<-expand.grid(month = c(1:12), island = unique(mld$island), time_num = 0)
 df$MLD_pred<-exp(predict(m1, newdata = df, type='response'))
 
 # get predicted temporal MLD holding month constant
 df2<-expand.grid(month = 1, island = unique(mld$island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
-df2$MLD_pred<-exp(predict(m1, newdata = df2, type='response'))
+df2$MLD_pred<-exp(predict(m1, newdata = df2, type='response',exclude=ex_smooths))
 df2<-df2 %>% left_join(island %>% rename(island = island) %>% select(island, region)) 
 
 ggplot(df2, aes(time_num, MLD_pred, col=island)) + geom_line() + facet_wrap(~region)
@@ -183,3 +185,66 @@ ggplot(region_smooth, aes(date, region_fit, ymin = ymin, ymax = ymax, fill=regio
   
 
 dev.off()
+
+
+## 3. Fit deep events anomaly
+focal <- mld |> mutate(
+  mld_category = case_when(
+    anomaly > 20 ~ "deep",      # >20m deeper than usual
+    anomaly < -20 ~ "shallow",  # >20m shallower than usual
+    TRUE ~ "normal"),
+  year_s = scale(year)[,1],
+  mld_category = factor(mld_category, levels = c("normal", "shallow", "deep")))
+
+priors <- c(
+  prior(normal(0, 2), class = "Intercept", dpar = "mushallow"),
+  prior(normal(0, 2), class = "Intercept", dpar = "mudeep"),
+  prior(normal(0, 1), class = "b", dpar = "mushallow"),
+  prior(normal(0, 1), class = "b", dpar = "mudeep"),
+  prior(exponential(1), class = "sd", dpar = "mushallow"),
+  prior(exponential(1), class = "sd", dpar = "mudeep")
+)
+
+m_deep <- brm(
+  mld_category ~ year_s + (1 + year_s | island),
+  family = categorical(link = 'logit'),
+  data = focal,
+  prior =priors, chains = 3, iter = 2000, warmup = 500, cores = 4)
+
+save(m_deep, focal, file = 'results/mld_time_extreme.rds')
+
+
+ggplot(focal %>% filter(deep_event ==1), aes(year)) + 
+  geom_histogram() + facet_wrap(~island)
+
+summary(m_deep) 
+# - mudeep: log-odds of deep vs normal
+# - mushallow: log-odds of shallow vs normal
+
+pp_check(m_deep, resp = 'deep_event')
+conditional_effects(m_deep, categorical=TRUE)
+mcmc_plot(m_deep)
+ranef(m_deep,dpar = "mudeep")$island
+
+# bayes_R2(m_deep) # 1%
+
+preds <- tibble(year_s = seq(min(focal$year_s), max(focal$year_s), length.out = 100)) %>%
+  left_join(focal %>% distinct(year, year_s)) %>% 
+  add_epred_draws(m_deep, ndraws = 1000, re_formula = NA) %>%  # population-level only
+  ungroup() %>%
+  filter(.category != "normal")
+
+# Plot with uncertainty ribbons
+ggplot(preds, aes(x = year, y = .epred, color = .category, fill = .category)) +
+  stat_lineribbon(.width = c(0.50, 0.95), alpha = 0.3) +
+  scale_fill_manual(values = c("shallow" = "#3182bd", "deep" = "#de2d26")) +
+  scale_color_manual(values = c("shallow" = "#3182bd", "deep" = "#de2d26")) +
+  labs(
+    x = "",
+    y = "Probability"
+  ) +
+  annotate('text', x = 2020, y = 0.03, label = 'Deep event', col = '#de2d26') +
+  annotate('text', x = 1996, y = 0.014, label = 'Shallow event', col = "#3182bd") +
+  theme(legend.position = "none")
+
+
