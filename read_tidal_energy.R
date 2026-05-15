@@ -91,32 +91,42 @@ tc_C2<-tc_all %>%
 # for (p in pp) print(p)
 # dev.off()
 
-
-## Read spatial version of tidal
+## Spatial data on tidal conversion
 library(terra)
 library(tidyverse)
 
-# Read as whitespace-delimited table
-tidal_data <- read.table("data/tidal/tidal_DAT/Hawaii_2.dat",
-  header = FALSE
-)
+file.list<-list.files('data/tidal/tidal_DAT')
+file.list<-file.list[str_detect(file.list, '.dat')]
 
-# Convert data frame to matrix
-tidal_matrix <- as.matrix(tidal_data)
+pdf(file = 'data/tidal/tidal_DAT/tidal_maps.pdf', height=7, width=12)
 
-# The matrix needs to be flipped/transposed for raster
-# Raster expects rows = Y (lat), cols = X (lon)
-# But we need to define the extent (bounding box)
+for(i in 1:length(file.list)){
 
-# For Hawaii region, typical bounds might be:
-# Longitude: ~180-210° (or -180 to -150°)
-# Latitude: ~15-30°N
+  
+  tidal_data <- read.table(paste0("data/tidal/tidal_DAT/",file.list[i]),  header = FALSE)
+  
+  # Extract coordinates
+  lon <- as.numeric(tidal_data[1, -1])  # First row, skip the NaN
+  lat <- as.numeric(tidal_data[-1, 1])  # First column, skip the NaN
+  
+  # Extract data matrix (skip first row and column) and flip for latitude 
+  tidal_matrix <- as.matrix(tidal_data[-1, -1])
+  tidal_matrix <- tidal_matrix[nrow(tidal_matrix):1, ]
+  
+  
+  # Create raster
+  # terra expects matrix in [row, col] = [lat, lon] order
+  tidal_rast <- rast(tidal_matrix, 
+                     extent = ext(min(lon), max(lon), min(lat), max(lat)),
+                     crs = "EPSG:4326")
+  
+  # plot to pdf
+  plot(log(tidal_rast), main = file.list[i])
+  
+  assign(str_replace_all(file.list[i], '.dat', ''), tidal_rast)
 
-# Create raster - you'll need to adjust extent based on your actual area
-tidal_rast <- rast(€, 
-                   # extent = ext(180, 210, 15, 30),  # xmin, xmax, ymin, ymax
-                   crs = "EPSG:4326")
+}
 
-# Quick check
-plot(log(tidal_rast))
-range(values(tidal_rast), na.rm = TRUE)
+dev.off()
+
+save(Hawaii_1, Hawaii_2, Kiribati, Palmyra, Mariana, file = 'data/tidal/tidal_DAT/tidal_rasters.Rdata')
