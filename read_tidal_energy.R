@@ -90,3 +90,33 @@ tc_C2<-tc_all %>%
 # pdf(file = 'fig/crep_island_TC.pdf', height=7, width=15)
 # for (p in pp) print(p)
 # dev.off()
+
+
+## Read spatial version of tidal
+library(terra)
+library(tidyverse)
+
+# Read as whitespace-delimited table
+tidal_data <- read.table("data/tidal/tidal_DAT/Hawaii_2.dat",
+  header = FALSE
+)
+
+# Convert data frame to matrix
+tidal_matrix <- as.matrix(tidal_data)
+
+# The matrix needs to be flipped/transposed for raster
+# Raster expects rows = Y (lat), cols = X (lon)
+# But we need to define the extent (bounding box)
+
+# For Hawaii region, typical bounds might be:
+# Longitude: ~180-210° (or -180 to -150°)
+# Latitude: ~15-30°N
+
+# Create raster - you'll need to adjust extent based on your actual area
+tidal_rast <- rast(€, 
+                   # extent = ext(180, 210, 15, 30),  # xmin, xmax, ymin, ymax
+                   crs = "EPSG:4326")
+
+# Quick check
+plot(log(tidal_rast))
+range(values(tidal_rast), na.rm = TRUE)
