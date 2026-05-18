@@ -115,11 +115,11 @@ focal<-ime_df %>% filter(!is.na(mld_anom)) %>%
 focal<-focal %>% filter(Chl_increase_nearby>0)
 
 m_hurdle <- bam(
-  log(Chl_increase_nearby) ~ 
+  Chl_increase_nearby ~ 
     s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
     s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
     s(time_s, by = island, bs = "cr", k = 10),   # island-level probability
-  # family = (),
+  family = Gamma(link = 'log'),
   data = focal,
   method = "fREML",
   discrete = TRUE
