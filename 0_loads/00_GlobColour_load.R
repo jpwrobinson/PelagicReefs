@@ -32,6 +32,7 @@ for (v in var_names) {
 # strength_IME : IME strength, defined as Chl increase next to the island (Chl_max - Chl_REF) 
 # area_IME : IME area 
 # has_IME : 1 if belonging to an IME, 0 otherwise, NaN if too many clouds next to the island (no seasonal instance) 
+# is_primaryIME : 1 if the IME is primary, 0 if sub-IME 
 # keep_IME : NaN if no IME of if belonging to a shared IME (lead by another island), 0 if more than 60% gaps in chl within the IME region (no seasonal instance), 1 otherwise 
 
 # extract time and convert from base (days since 1970)
@@ -137,7 +138,10 @@ dev.off()
 # NA cases tend to refer to rows where cChl was NA. This indicates there is no IME for XYZ???
 # how many Chl_max are NA?
 ime_df %>% filter(is.na(Chl_max)) # 3 months in 1998 for Swains
-ime_df %>% filter(is.na(Chl_increase_nearby)) # 3,426 month~island combos
+ime_df %>% filter(is.na(Chl_increase_nearby)) # 5,020 month~island combos [higher in new algo version]
+ime_df %>% filter(has_IME ==1 & is_primaryIME == 0) # 1,120 month~island combos
+
+1120 / dim(ime_df)[1] * 100 # 10% have an IME from a different island
 
 label_df <- ime_df %>%
   group_by(island) %>%
@@ -169,19 +173,7 @@ ggplot(ime_df %>% mutate(dir=ifelse(chl_max_anom>0, 'pos', 'neg')),
 dev.off()
 
 
-# look at changes in seasonality
-imey<-ime_df %>% group_by(island, region, region.col, year) %>% 
-  summarise(cv = sd(Chl_max) / mean(Chl_max),
-            amp = max(Chl_max) - min(Chl_max))
-
-ggplot(imey, aes(year, cv, col=region.col, group=island)) + geom_line() + facet_wrap(~region) +
-  scale_colour_identity()
-
-ggplot(imey, aes(year, amp, col=region.col, group=island)) + geom_line() + facet_wrap(~region) +
-  scale_colour_identity()
-
-
 # MEI from NOAA PSL: multivariate ENSO index, Combined SST, SLP, winds, OLR
-library(rsoi)
-mei <- download_mei()
-
+# library(rsoi)
+# mei <- download_mei()
+# 
