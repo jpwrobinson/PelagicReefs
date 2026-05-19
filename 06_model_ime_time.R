@@ -104,3 +104,69 @@ ggplot(df2, aes(mld_anom, pred, col=region.col, group=island, ymin = lower, ymax
   geom_line(col = 'blue') + 
   scale_colour_identity() +
   labs(x = '', y = 'Probability IME detection')
+
+
+
+## 3. Fit hurdel version = on/off IME + strength
+focal<-ime_df %>% filter(!is.na(mld_anom)) %>% 
+  mutate(Chl_increase_nearby = ifelse(is.na(Chl_increase_nearby), 0, Chl_increase_nearby),
+         Chl_increase_nearby = ifelse(Chl_increase_nearby<0, 0, Chl_increase_nearby))
+
+focal<-focal %>% filter(Chl_increase_nearby>0)
+
+m_hurdle <- bam(
+  Chl_increase_nearby ~ 
+    s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
+    s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
+    s(time_s, by = island, bs = "cr", k = 10),   # island-level probability
+  family = Gamma(link = 'log'),
+  data = focal,
+  method = "fREML",
+  discrete = TRUE
+)
+
+save(ime_df, focal, m_hurdle, file = 'results/mod_ime_time_hurdle.rds')
+
+# n = 9724
+m_hurdleB <- brm(
+  bf(Chl_increase_nearby ~ 
+       s(mld_mean_s, k=3) + s(mld_anom_s, k=3) +
+       # s(month, bs = 'cc', k = 12, by = island) + 
+       s(time_s, by = island, bs = "cr", k = 10)),
+  family = hurdle_lognormal(),  # or hurdle_gamma()
+  data = focal,
+  chains = 1,
+  cores = 4,
+  backend = 'cmdstanr'
+)
+
+# Tweedie models do not allow you to separately model the zero-generating process.
+# Zeros are an inherent part of the continuous distribution. - this is not true for IME??
+# m_tweedie <- bam(
+#   Chl_increase_nearby ~ 
+#        s(mld_mean_s, k=3) + s(mld_anom_s, k=3) +
+#        s(month, bs = 'cc', k = 12, by = island) +
+#        s(time_s, by = island, bs = "cr", k = 10),
+#   family = tw(), 
+#   method = "fREML",
+#   discrete = TRUE,
+#   data = focal
+# )
+
+
+summary(m_hurdle) # dev. expl = 19.5%
+gratia::draw(m_hurdle, select = 'mld_mean', partial_match=TRUE)
+gratia::draw(m_hurdle, select = 'mld_anom', partial_match=TRUE)
+gratia::draw(m_hurdle, select = 'time_s', partial_match=TRUE)
+
+
+summary(m_hurdle2)
+conditional_effects(m_hurdle2, c('mld_mean_s', 'mld_anom_s', 'time_s'))
+conditional_effects(m_hurdle2, c('mld_mean_s', 'mld_anom_s', 'time_s'), dpar='hu')
+
+
+summary(m_tweedie) # dev. expl = 20.2%
+gratia::draw(m_tweedie, select = 'mld_mean', partial_match=TRUE)
+gratia::draw(m_tweedie, select = 'mld_anom', partial_match=TRUE)
+gratia::draw(m_tweedie, select = 'time_s', partial_match=TRUE)
+

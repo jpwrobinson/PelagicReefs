@@ -138,7 +138,7 @@ gBase<-ggplot(data = region_smooth %>% filter(var == 'obs'), aes(date, MLD_pred)
   theme(strip.text = element_text(hjust = 0, size = 10), strip.background = element_blank(),
       axis.text.x = element_text(size = 10))
 
-gD<-gBase %+% (region_smooth %>% filter(var == 'anom')) + 
+gF<-gBase %+% (region_smooth %>% filter(var == 'anom')) + 
   geom_hline(yintercept = 0, linetype=5, alpha=0.5) +
   geom_line(data = preds %>% filter(var == 'anom'), aes(col=region.col, group=island), alpha=0.5) +
   labs(x = '', y = 'Mixed layer depth, m') 
@@ -152,10 +152,11 @@ gSX <- gBase +
   scale_x_date(date_breaks = '5 years', date_labels = paste0('%Y')) +
   labs(x = '', y = 'Mixed layer depth, m') 
 
+# source('Figure3_hurdle.R')
 
 pdf(file = 'fig/Figure3.pdf', height=5, width=8.5)
 gIME<-plot_grid(gA, gB, gC, nrow=1, labels=c('a', 'b', 'c'))
-plot_grid(gIME, gD, nrow=2, labels=c('', 'd'))
+plot_grid(gIME, gF, nrow=2, labels=c('', 'd'))
 dev.off()
 
 pdf(file = 'fig/FigureSX_MLD_time_obs.pdf', height=3, width=12.5)
