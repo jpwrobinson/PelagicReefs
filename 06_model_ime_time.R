@@ -37,13 +37,15 @@ m_detect <- brm(bf(
     s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
     s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
     s(time_s, by = island, bs = "cr", k = 10)),   # island-level probability
-  # rho = 0.4,
-  # AR.start = focal$new_series,
   family = bernoulli,
   data = focal,
-  backend = "cmdstanr"
+  backend = "cmdstanr",
+  chains = 3,
+  cores = 4
   # method = "fREML",
-  # discrete = TRUE
+  # discrete = TRUE,
+  # rho = 0.4,
+  # AR.start = focal$new_series
 )
 
 save(ime_df, focal, m_detect, file = 'results/mod_ime_time_binom.rds')
@@ -60,24 +62,29 @@ gratia::draw(m_detect, select = 'mld_mean', partial_match=TRUE)
 gratia::draw(m_detect, select = 'mld_anom', partial_match=TRUE)
 gratia::draw(m_detect, select = 'time_s', partial_match=TRUE)
 
+conditional_effects(m_detect, effects = 'mld_mean_s')
+conditional_effects(m_detect, effects = 'mld_anom_s')
+conditional_effects(m_detect, effects = 'time_s')
 
 ## 2. Gamma on has_IME == 1
 # n = 6132 , ~5020 obs dropped
 focalCont<-focal %>% filter(has_IME == 1)
 
-m_hurdle<-bam(Chl_increase_nearby ~ 
+m_hurdle<-brm(bf(
+  Chl_increase_nearby ~ 
           s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
           s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
-          s(time_s, by = island, bs = "cr", k = 10),   # island-level probability
-        # rho = 0.35,
-        # AR.start = focal$new_series,
-        # discrete = TRUE,
-        # method = 'fREML',
-        chains = 3,
-          cores = 4,
-          # backend = 'cmdstanr',
+          s(time_s, by = island, bs = "cr", k = 10)),   # island-level probability
         family = Gamma(link = 'log'),
-        data=focalCont)
+        data = focalCont,
+        backend = "cmdstanr",
+        chains = 3,
+        cores = 4
+        # method = "fREML",
+        # discrete = TRUE,
+        # rho = 0.4,
+        # AR.start = focal$new_series
+        )
 
 save(ime_df, focal, m_hurdle, file = 'results/mod_ime_time_hurdle.rds')
 
