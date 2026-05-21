@@ -108,6 +108,7 @@ ime_df <- bind_rows(df_list) %>%
 
 write.csv(ime_df, file = 'data/GlobColour/GlobColour_IME_output.csv', row.names=FALSE)
 
+ime_df<-read.csv('data/GlobColour/GlobColour_IME_output.csv')
 island.vec<-ime_df %>% distinct(island) %>% pull(island)
 
 pdf(file = 'fig/ime_db/ime_globcol_timeseries.pdf', height=7, width=12)
@@ -145,6 +146,15 @@ ime_df %>% filter(has_IME ==1 & is_primaryIME == 0)  %>% group_by(island) %>% su
   arrange(-n)
 
 1120 / dim(ime_df)[1] * 100 # 10% have an IME from a different island
+
+# how are Chl_increase and IME strength correlated?
+for(i in 1:length(island.vec)){
+with(ime_df %>% filter(!is.na(Chl_increase_nearby) & island %in% island.vec[i]), 
+     print(paste(island.vec[i], round(cor(Chl_increase_nearby, strength_IME), 2)))) # r = 0.86
+}
+
+ggplot(ime_df, aes(Chl_increase_nearby, strength_IME)) + geom_point() +
+  facet_wrap(~island)
 
 # plot IMe area over time. any spikes indicate when IME may be sat in a Chl_max zone [e.g. equatorial boundary current]
 ggplot(ime_df, aes(date, area_IME, group=island)) + geom_line() + facet_wrap(~island) +
