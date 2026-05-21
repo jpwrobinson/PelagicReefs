@@ -5,49 +5,53 @@
 # Panel A = 06_ime_time. m_detect. code is ready.
 load(file = 'results/mod_ime_time_binom.rds')
 
-# A = MLD anomaly preds
-ex_smooths <- grep("month|time|mean", smooths(m_detect), value = TRUE)
+# A = MLD anomaly preds, B = MLD anomaly preds
+df_mldmean<-marginal_post(m_detect, focal, 'mld_mean_s', 'mld_mean')
+df_mldanom<-marginal_post(m_detect, focal, 'mld_anom_s', 'mld_anom')
 
-df_mldanom<-expand.grid(month = 1, time_s = 0, mld_mean_s = 0, island = unique(focal$island)[1], 
-                 mld_anom_s = seq(min(focal$mld_anom_s), max(focal$mld_anom_s), length.out=100))
-df_mldanom$pred<-predict(m_detect, newdata = df_mldanom, type='response', exclude=ex_smooths)
-df_mldanom$se<-predict(m_detect, newdata = df_mldanom, type='response', exclude=ex_smooths, se.fit=TRUE)$se.fit
+df_mldmeanG<-marginal_post(m_hurdle, focal, 'mld_mean_s', 'mld_mean')
+df_mldanomG<-marginal_post(m_hurdle, focal, 'mld_anom_s', 'mld_anom')
 
-# B = MLD anomaly preds
-ex_smooths <- grep("month|time|anom", smooths(m_detect), value = TRUE)
-df_mldmean<-expand.grid(month = 1, time_s = 0, mld_anom_s = 0, island = unique(focal$island)[1], 
-                 mld_mean_s = seq(min(focal$mld_mean_s), max(focal$mld_mean_s), length.out=100))
-df_mldmean$pred<-predict(m_detect, newdata = df_mldmean, type='response', exclude=ex_smooths)
-df_mldmean$se<-predict(m_detect, newdata = df_mldmean, type='response', exclude=ex_smooths, se.fit=TRUE)$se.fit
-
-# Match with observed predictor scales
-df_mldanom<-df_mldanom %>% left_join(focal %>% distinct(island, region, region.col)) %>% 
-  mutate(lower = pred - 2*se, upper = pred + 2*se)
-df_mldanom$mld_anom<-seq(min(focal$mld_anom), max(focal$mld_anom), length.out=100)
-
-df_mldmean<-df_mldmean %>% left_join(focal %>% distinct(island, region, region.col)) %>% 
-  mutate(lower = pred - 2*se, upper = pred + 2*se)
-df_mldmean$mld_mean<-seq(min(focal$mld_mean), max(focal$mld_mean), length.out=100)
 
 # Plot and multipanel
-gA<-ggplot(df_mldmean, aes(mld_mean, pred, ymin = lower, ymax = upper)) + 
-  geom_ribbon(col='transparent', alpha=0.1) +
-  geom_line(col = 'blue') + 
-  scale_colour_identity() +
-  scale_y_continuous(limits=c(0, 0.8), expand=c(0,0)) +
-  labs(x = 'Mixed layer depth [mean], m', y = 'P (IME detection)')
+gA<-ggplot(df_mldmean, aes(mld_mean, .epred)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  labs(x = "Mixed layer depth [mean], m", y = "P(IME detected)")
 
-gB<-ggplot(df_mldanom, aes(mld_anom, pred)) + 
-  geom_text(data = data.frame(mld_anom = c(-25, 25), pred = 0.78, z = c('Shallower', 'Deeper')), aes(label = z), size=3) +
-  geom_vline(xintercept = 0, linetype=5) +
-  geom_ribbon(col='transparent', alpha=0.1, aes(ymin = lower, ymax = upper)) +
-  geom_line(col = 'blue') + 
-  scale_colour_identity() +
-  scale_y_continuous(limits=c(0, 0.8), expand=c(0,0)) +
-  scale_x_continuous(breaks = c(-30, -15, 0, 15, 30, 45), 
-                   sec.axis = dup_axis(breaks =0, labels = 'Monthly mean')) +
-  labs(x = 'Mixed layer depth [anomaly], m', y = 'P (IME detection)') +
-  theme(axis.title.x.top = element_blank(), axis.line.x.top = element_blank())
+gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  labs(x = "Mixed layer depth [anomaly], m", y = "P(IME detected)")
+
+gC<-ggplot(df_mldmeanG, aes(mld_mean, .epred)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  scale_y_continuous(labels=label_percent()) +
+  labs(x = "Mixed layer depth [mean], m", y = "IME strength")
+
+gD<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  scale_y_continuous(labels=label_percent()) +
+  labs(x = "Mixed layer depth [anomaly], m", y = "IME strength")
+
+plot_grid(gA, gB, gC, gD)
+ 
+#   geom_text(data = data.frame(mld_anom = c(-25, 25), pred = 0.78, z = c('Shallower', 'Deeper')), aes(label = z), size=3) +
+#   geom_vline(xintercept = 0, linetype=5) +
+#   geom_ribbon(col='transparent', alpha=0.1, aes(ymin = lower, ymax = upper)) +
+#   geom_line(col = 'blue') + 
+#   scale_colour_identity() +
+#   scale_y_continuous(limits=c(0, 0.8), expand=c(0,0)) +
+#   scale_x_continuous(breaks = c(-30, -15, 0, 15, 30, 45), 
+#                    sec.axis = dup_axis(breaks =0, labels = 'Monthly mean')) +
+#   labs(x = 'Mixed layer depth [anomaly], m', y = 'P (IME detection)') +
+#   theme(axis.title.x.top = element_blank(), axis.line.x.top = element_blank())
 
 histA <- ggplot(focal, aes(mld_mean)) +
   geom_histogram(bins = 20, fill = "steelblue", color = "white") +

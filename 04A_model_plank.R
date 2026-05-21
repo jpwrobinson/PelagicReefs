@@ -12,7 +12,8 @@ priors <- c(
 # check vif. mean chl-a is correlated with reef area and MLD amp
 car::vif(glm(log(planktivore_metab) ~ 
                land_area_km2 + avg_monthly_mm +
-               reef_area_km2 + site_bathy_400m + island_bathy +  
+               reef_area_km2 + site_bathy_400m + island_bathy + 
+               population_status +
                # mean_chlorophyll +
                ted_mean + 
                 mld_amp, data=plank_scaled))
@@ -27,35 +28,18 @@ m2_plank<-brm(planktivore_metab ~
                     depth_m +
                     avg_monthly_mm + 
                     mld_mean + 
+                    population_status +
                     # precip_amp_mm +
                     # mean_chlorophyll +
-                    (1 | year ), # also tested year slopes but not supported by loo
+                    (1 | year ) + # also tested year slopes but not supported by loo
                     (1 | island),
-                  family = lognormal(),
+                  family = lognormal(link = 'identity'),
         data = plank_scaled,
         prior = priors,
         # backend = "cmdstanr",
         chains = 3, iter = 2000, warmup = 500, cores = 4)
 
 save(m2_plank, plank_scaled, file = 'results/mod_planktivore_metabolic.rds')
-
-m3_plank<-brm(planktivore_biom ~ 
-                reef_area_km2 + island_area_km2 + 
-                site_bathy_400m + 
-                hard_coral + 
-                depth_m + 
-                mld_amp + 
-                avg_monthly_mm +
-                #mean_chlorophyll +
-                (1 | year) +
-                (1 | island),
-              family = lognormal(),
-              data = plank_scaled,
-              prior = priors,
-              # backend = "cmdstanr",
-              chains = 3, iter = 2000, warmup = 500, cores = 4)
-
-save(m3_plank, file = 'results/mod_planktivore_biomass.rds')
 
 load('results/mod_planktivore_metabolic.rds')
 checker<-m2_plank
@@ -65,8 +49,8 @@ conditional_effects(checker)
 ranef(checker)
 # random_effects(checker)
 bayes_R2(checker) 
-# metabolic = 51.5%
-# biomass = 14.7%
+# metabolic = 51.3%
+# biomass = 14.7% [now deleted]
 
 ### OUTPUTS
 

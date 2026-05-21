@@ -29,7 +29,11 @@ depth<-
   select(region, island, SITEVISITID, year, date_ym, month, month_num, depth_m, site_bathy_400m,
           hard_coral, reef_zone#, population_status
          ) %>% 
-  left_join(region_df %>% select(-region), by = 'island')
+  left_join(region_df %>% select(-region), by = 'island') %>% 
+  mutate(island_group = recode(island, 'Maui|Lanai|Molokai|Lanai|Kahoolawe' = 'Maui_C',
+                                      'Saipan|Tinian|Aguijan' = 'Saipan_C',
+                                      'Ofu|Olosega|Tau' = 'Tau_C')) %>% 
+  left_join(island_complex %>% select(island_group, population_status))
 
 
 # use bathymetry/benthic dataset as basis for model. join fish metabolic and then predictors from Gove/Williams
@@ -54,7 +58,6 @@ depth<- depth %>%
   # keep forereef only (drops 31 sites)
   filter(reef_zone=='Forereef') %>%  ## need to check with Tom. Drops 712.
   filter(!is.na(hard_coral)) ## these are places without reef zone, so were dropped
-
 
 # 1. Create planktivore
 # drop NA planktivore sites (n = 0)
