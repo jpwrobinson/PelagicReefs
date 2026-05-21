@@ -48,10 +48,12 @@ depth<- depth %>%
   left_join(island %>% mutate(island_bathy = SITE_SLOPE_400m) %>% 
               select(region.col, island, island_code, sst_mean:geomorphic_type, island_bathy, precip_amp_mm:mld_mean, mld_amp, ted_mean)) %>% 
   mutate(avg_monthly_mm = ifelse(is.na(avg_monthly_mm), 0, avg_monthly_mm),
-         precip_amp_mm = ifelse(is.na(precip_amp_mm), 0, precip_amp_mm)) #%>% 
+         precip_amp_mm = ifelse(is.na(precip_amp_mm), 0, precip_amp_mm)) %>% 
   # left_join(ime_dat %>% 
   #             select(island_group, months_ime, median_ime_percent, chl_ime))
-
+  # keep forereef only (drops 31 sites)
+  filter(reef_zone=='Forereef') %>%  ## need to check with Tom. Drops 712.
+  filter(!is.na(hard_coral)) ## these are places without reef zone, so were dropped
 
 
 # 1. Create planktivore
@@ -59,10 +61,7 @@ depth<- depth %>%
 plank<-depth %>% filter(!is.na(planktivore_metab))
 # drop 0 planktivore sites (n = 49)
 plank<-plank %>% filter(planktivore_metab>0)
-# drop missing hard coral sites (675)
-plank<-plank %>% filter(!is.na(hard_coral)) ## need to check with Tom
-# keep forereef only (drops 31 sites)
-plank<-plank %>% filter(reef_zone=='Forereef') ## need to check with Tom
+
 
 # scale and center cont. covariates
 plank_scaled <- plank %>% 
@@ -87,10 +86,6 @@ dev.off()
 herb<-depth %>% filter(!is.na(herbivore_metab))
 # drop 0 herbivore sites (n = 3)
 herb<-herb %>% filter(herbivore_metab>0)
-# drop missing hard coral sites (n = 681)
-herb<-herb %>% filter(!is.na(hard_coral)) ## need to check with Tom
-# keep forereef only (drops 30 sites)
-herb<-herb %>% filter(reef_zone=='Forereef') ## need to check with Tom
 
 # scale and center cont. covariates
 herb_scaled <- herb %>% 

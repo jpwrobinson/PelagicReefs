@@ -50,17 +50,20 @@ m_detect <- brm(bf(
 
 save(ime_df, focal, m_detect, file = 'results/mod_ime_time_binom.rds')
 
-summary(m_detect) # dev. expl = 3.8%
+load('results/mod_ime_time_binom.rds')
 
-hist(resid(m_detect))
-acf(resid(m_detect))
-m_detect$AR1.rho
-intervals(m_detect$lme, which = "var-cov")  # 95% CI for rho
+summary(m_detect)
 
+# hist(resid(m_detect))
+# acf(resid(m_detect))
+# m_detect$AR1.rho
+# intervals(m_detect$lme, which = "var-cov")  # 95% CI for rho
+ 
+# gratia::draw(m_detect, select = 'mld_mean', partial_match=TRUE)
+# gratia::draw(m_detect, select = 'mld_anom', partial_match=TRUE)
+# gratia::draw(m_detect, select = 'time_s', partial_match=TRUE)
 
-gratia::draw(m_detect, select = 'mld_mean', partial_match=TRUE)
-gratia::draw(m_detect, select = 'mld_anom', partial_match=TRUE)
-gratia::draw(m_detect, select = 'time_s', partial_match=TRUE)
+pp_check(m_detect)
 
 conditional_effects(m_detect, effects = 'mld_mean_s')
 conditional_effects(m_detect, effects = 'mld_anom_s')
@@ -96,7 +99,9 @@ acf(resid(m_hurdle))
 gratia::draw(m_hurdle, select = 'mld_s', partial_match=TRUE)
 gratia::draw(m_hurdle, select = 'mld_anom',  partial_match=TRUE)
 
-save(ime_df, focal, m1, file = 'results/mod_ime_time.rds')
+conditional_effects(m_hurdle, effects = 'mld_mean_s')
+conditional_effects(m_hurdle, effects = 'mld_anom_s')
+conditional_effects(m_hurdle, effects = 'time_s')
 
 
 
