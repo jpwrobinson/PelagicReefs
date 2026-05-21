@@ -142,6 +142,9 @@ ime_df %>% filter(is.na(Chl_max)) # 3 months in 1998 for Swains
 ime_df %>% filter(is.na(Chl_increase_nearby)) # 5,020 month~island combos [higher in new algo version]
 ime_df %>% filter(has_IME ==1 & is_primaryIME == 0) # 1,120 month~island combos
 
+ime_df %>% filter(has_IME ==1 & is_primaryIME == 0)  %>% group_by(island) %>% summarise(n = length(is_primaryIME)) %>% 
+  arrange(-n)
+
 1120 / dim(ime_df)[1] * 100 # 10% have an IME from a different island
 
 # how are Chl_increase and IME strength correlated?
@@ -153,6 +156,12 @@ with(ime_df %>% filter(!is.na(Chl_increase_nearby) & island %in% island.vec[i]),
 ggplot(ime_df, aes(Chl_increase_nearby, strength_IME)) + geom_point() +
   facet_wrap(~island)
 
+# plot IMe area over time. any spikes indicate when IME may be sat in a Chl_max zone [e.g. equatorial boundary current]
+ggplot(ime_df, aes(date, area_IME, group=island)) + geom_line() + facet_wrap(~island) +
+  scale_y_continuous(labels = comma)
+
+
+## plot Chl_max anomaly - how variable is Chlmax?
 label_df <- ime_df %>%
   group_by(island) %>%
   summarise(
