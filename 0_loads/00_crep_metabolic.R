@@ -61,13 +61,13 @@ depth<- depth %>%
 
 # 1. Create planktivore
 # drop NA planktivore sites (n = 0)
-plank<-depth %>% filter(!is.na(planktivore_metab))
-# drop 0 planktivore sites (n = 49)
-plank<-plank %>% filter(planktivore_metab>0)
+# plank<-depth %>% filter(!is.na(planktivore_metab))
+# # drop 0 planktivore sites (n = 49)
+# plank<-plank %>% filter(planktivore_metab>0)
 
 
 # scale and center cont. covariates
-plank_scaled <- plank %>% 
+plank_scaled <- depth %>% 
   mutate(reef_area_km2 = log10(reef_area_km2), 
          island_area_km2 = log10(land_area_km2),
          across(c(depth_m:hard_coral, 
@@ -86,12 +86,12 @@ dev.off()
 
 # 2. Create herbivore
 # drop NA herbivore sites (n = 0)
-herb<-depth %>% filter(!is.na(herbivore_metab))
+# herb<-depth %>% filter(!is.na(herbivore_metab))
 # drop 0 herbivore sites (n = 3)
-herb<-herb %>% filter(herbivore_metab>0)
+# herb<-herb %>% filter(herbivore_metab>0)
 
 # scale and center cont. covariates
-herb_scaled <- herb %>% 
+herb_scaled <- depth %>% 
   mutate(reef_area_km2 = log10(reef_area_km2), 
          island_area_km2 = log10(land_area_km2),
          across(c(depth_m:hard_coral, 

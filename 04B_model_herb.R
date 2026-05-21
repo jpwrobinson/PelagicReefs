@@ -23,11 +23,12 @@ m2_herb<-brm(herbivore_metab ~
                 site_bathy_400m + 
                 hard_coral + 
                 depth_m + 
-                mld_amp + 
+                mld_mean + 
+               population_status +
                # mean_chlorophyll +
                 (1 | year) +
                 (1 | island),
-              family = lognormal(),
+              family = hurdle_lognormal(),
               data = herb_scaled,
               prior = priors,
               # backend = "cmdstanr",

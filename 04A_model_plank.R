@@ -33,7 +33,8 @@ m2_plank<-brm(planktivore_metab ~
                     # mean_chlorophyll +
                     (1 | year ) + # also tested year slopes but not supported by loo
                     (1 | island),
-                  family = lognormal(link = 'identity'),
+                  # family = lognormal(link = 'identity'),
+                    family = hurdle_lognormal(),
         data = plank_scaled,
         prior = priors,
         # backend = "cmdstanr",
@@ -49,7 +50,7 @@ conditional_effects(checker)
 ranef(checker)
 # random_effects(checker)
 bayes_R2(checker) 
-# metabolic = 51.3%
+# metabolic = 51.0%
 # biomass = 14.7% [now deleted]
 
 ### OUTPUTS
@@ -79,52 +80,40 @@ dev.off()
 
 ## Change in planktivore flux along MLD
 
-conditional_effects(checker, c('mld_amp')) %>% 
+conditional_effects(checker, c('mld_mean')) %>% 
   plot(rug=TRUE)
 
 # Extract posterior samples
 nd<-plank_scaled %>%  
   data_grid(geomorphic_type = 'Atoll',
+            population_status = 'U',
             depth_m = 0,
             site_bathy_400m = 0,
             hard_coral = 0,
             avg_monthly_mm = 0,
             reef_area_km2 = 0,
             island_area_km2 = 0,
-            mld_amp = seq_range(mld_amp, n = 1000))  %>% 
-  mutate(mld_amp_raw = seq_range(plank$mld_amp, n = 1000)) %>%
+            mld_mean = seq_range(mld_mean, n = 1000))  %>% 
+  mutate(mld_mean_raw = seq_range(plank$mld_mean, n = 1000)) %>%
   add_epred_draws(m2_plank, ndraws = 1000, re_formula = NA) 
 
-med<-nd %>% mutate(mld_amp = round(mld_amp_raw, 1)) %>% 
-  group_by(mld_amp) %>% summarise(med = median(.epred),
+med<-nd %>% mutate(mld_mean = round(mld_mean_raw, 1)) %>% 
+  group_by(mld_mean) %>% summarise(med = median(.epred),
                                   upper = quantile(.epred, 0.975))
 
-ann<-island %>% select(region.col, island, mld_amp) %>% mutate(mld_amp = round(mld_amp,1)) %>% 
+ann<-island %>% select(region.col, island, mld_mean) %>% mutate(mld_mean = round(mld_mean,1)) %>% 
   left_join(med)
 
 pdf(file = 'fig/ime_crep/mld_planktivore.pdf', height=4, width=7)
-ggplot(nd, aes(x = mld_amp_raw, y = median)) +
-  geom_point(data = ann, aes(x = mld_amp, y = upper, col=region.col)) +
-  geom_line(data = ann, aes(x = mld_amp, y = 18 + 0.4 * (as.numeric(as.factor(region.col)) - 1), col=region.col, group=region.col), 
+ggplot(nd, aes(x = mld_mean_raw, y = median)) +
+  geom_point(data = ann, aes(x = mld_mean, y = upper, col=region.col)) +
+  geom_line(data = ann, aes(x = mld_mean, y = 18 + 0.4 * (as.numeric(as.factor(region.col)) - 1), col=region.col, group=region.col), 
             position = position_dodge(width=0.5), linewidth=1.5) +
   geom_text(data = ann, size=2, angle=90, hjust=0,
-            aes(x = mld_amp, y = upper+0.5, col=region.col, label=island)) +
+            aes(x = mld_mean, y = upper+0.5, col=region.col, label=island)) +
   stat_lineribbon(aes(y = .epred), .width = 0.95, alpha = 0.5, show.legend=F, fill = fg_cols[2]) +
   scale_colour_identity() +
   guides(color='none') +
   theme(axis.text = element_text(size = 14), axis.title = element_text(size = 14)) +
-  labs(x = 'Mixed layer amplitude, m', y = 'Planktivore metabolic flux')
+  labs(x = 'Mixed layer mean, m', y = 'Planktivore metabolic flux')
 dev.off()
-
-m2_plank %>% emmeans(~ mld_amp, var = 'mld_amp', 
-               at = list(mld_amp = c(min(plank_scaled$mld_amp), 
-                                              max(plank_scaled$mld_amp))), 
-               epred =TRUE)
-
-mld_range<-(max(plank$mld_amp) - min(plank$mld_amp))
-meta_range<-(1.555 - 0.388)
-change_per_m<- meta_range / mld_range
-(change_per_m) / 1.117 
-(change_per_m*10) / 1.117 * 100
-# Metabolic rate decreases by 0.031 per metre of MLD amplitude
-# Metabolic rate decreases by 31% per 10 metre of MLD amplitude

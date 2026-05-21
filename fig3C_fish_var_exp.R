@@ -1,6 +1,6 @@
 
-load('results/mod_planktivore_metabolic.rds')
-load('results/mod_herbivore_metabolic.rds')
+# load('results/mod_planktivore_metabolic.rds')
+# load('results/mod_herbivore_metabolic.rds')
 
 blanker<-data.frame(fg.col  = '#01579F', group = 'blanker', proportion = NA)
 
@@ -16,11 +16,13 @@ g1 <- coef_draws %>%
   mutate(
     abs_geomorphic = abs(b_geomorphic_typeIsland) + abs(b_reef_area_km2) + abs(b_island_area_km2) + abs(b_site_bathy_400m),
     abs_habitat = abs(b_hard_coral) + abs(b_depth_m),
-    abs_seasonal = abs(b_avg_monthly_mm) + abs(b_mld_amp),
-    total = abs_geomorphic + abs_habitat + abs_seasonal,
+    abs_seasonal = abs(b_avg_monthly_mm) + abs(b_mld_mean),
+    abs_human = abs(b_population_statusU), 
+    total = abs_geomorphic + abs_habitat + abs_seasonal + abs_human,
     prop_geomorphic    = abs_geomorphic    / total,
     prop_habitat          = abs_habitat          / total,
-    prop_seasonal = abs_seasonal / total
+    prop_seasonal = abs_seasonal / total,
+    prop_human = abs_human / total
   ) %>%
   mutate(fg = 'Planktivore', fg.col='#01579F')
 
@@ -35,11 +37,13 @@ g2 <- coef_draws %>%
   mutate(
     abs_geomorphic = abs(b_geomorphic_typeIsland) + abs(b_reef_area_km2) + abs(b_island_area_km2) + abs(b_site_bathy_400m),
     abs_habitat = abs(b_hard_coral) + abs(b_depth_m),
-    abs_seasonal = abs(b_avg_monthly_mm) + abs(b_mld_amp),
-    total = abs_geomorphic + abs_habitat + abs_seasonal,
+    abs_seasonal = abs(b_avg_monthly_mm) + abs(b_mld_mean),
+    abs_human = abs(b_population_statusU), 
+    total = abs_geomorphic + abs_habitat + abs_seasonal + abs_human,
     prop_geomorphic    = abs_geomorphic    / total,
     prop_habitat          = abs_habitat          / total,
-    prop_seasonal = abs_seasonal / total
+    prop_seasonal = abs_seasonal / total,
+    prop_human = abs_human / total
   ) %>%
   mutate(fg = 'Herbivore', fg.col='#FF8C00')
 
@@ -65,8 +69,8 @@ gC<-ggplot(vars_abs, aes(x = proportion, y = group, fill = fg.col, col=fg.col)) 
   geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
   geom_text(data = labs, aes(label = fg),  position = position_dodge(0.5), size=3) +
   scale_x_continuous(labels = scales::percent, limits = c(0, 1)) +
-  scale_y_discrete(limits = c('seasonal', 'habitat', 'blanker', 'geomorphic'),
-                   labels = c('Within-island\nseasonality', 'Site-level\nhabitat', '', 'Island-level\ngeomorphology')) +
+  scale_y_discrete(limits = c('seasonal', 'habitat', 'blanker', 'geomorphic', 'human'),
+                   labels = c('Within-island\nseasonality', 'Site-level\nhabitat', '', 'Island-level\ngeomorphology', 'Population status')) +
   labs(x = "Proportion of explained variance",
        y = NULL) +
   scale_fill_identity() + scale_colour_identity() +

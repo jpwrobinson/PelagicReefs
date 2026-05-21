@@ -5,7 +5,7 @@ load('results/mod_herbivore_metabolic.rds')
 
 bayes<-data.frame(b = c(bayes_R2(m2_plank)[1,'Estimate'],
                         bayes_R2(m2_herb)[1,'Estimate']),
-                  x = 0.5, y = c(6.5, 6.5), fg = c('Planktivore', 'Herbivore'))
+                  x = 0.9, y = c(6.5, 6.5), fg = c('Planktivore', 'Herbivore'))
 
 direc<-data.frame(b = c('Wetter', 'Drier', 'Deeper', 'Shallower'),
                   x = c(0.2, -0.2,0.2, -0.2), 
@@ -22,9 +22,9 @@ effects <- rbind(
   filter(.variable != 'Intercept') %>% 
   mutate(.variable = str_replace_all(.variable, 'b_', ''),
          var_fac = factor(.variable, 
-                          levels = rev(c('geomorphic_typeIsland','reef_area_km2','island_area_km2','site_bathy_400m',
+                          levels = rev(c('population_statusU', 'geomorphic_typeIsland','reef_area_km2','island_area_km2','site_bathy_400m',
                                          'hard_coral', 'depth_m',
-                                         'avg_monthly_mm','mld_amp'
+                                         'avg_monthly_mm','mld_mean'
                                          )))) %>% 
   filter(!is.na(var_fac)) %>% 
   group_by(var_fac) %>% mutate(medi = abs(median(.value))) 
@@ -45,11 +45,11 @@ gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
     facet_grid(~fg) +
     scale_color_manual(values = fg_cols) +
     labs(x = "Effect on metabolic flux", y = "") +
-    scale_x_continuous(limits=c(-.9, 0.7), expand=c(0,0)) +
+    scale_x_continuous(limits=c(-.9, 1.3), expand=c(0,0)) +
     guides(color='none') +
     scale_y_discrete(labels = c('Mixed layer depth', 'Precipitation', 
                                 'Depth', 'Hard coral',
-                                'Bathymetric slope','Island area', 'Reef area', 'Island'), 
+                                'Bathymetric slope','Island area', 'Reef area', 'Island', 'Unpopulated'), 
                      sec.axis = dup_axis(labels=NULL)) +
     theme(strip.text = element_text(face=2, hjust=0, size=11),
           strip.background = element_blank(),
