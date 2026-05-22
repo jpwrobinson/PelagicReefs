@@ -46,6 +46,16 @@ island_order <- nd |>
   arrange(region.num, -lat) |>
   pull(island)
 
+lat <- nd |>
+  distinct(island, lat, region.num) |>
+  arrange(region.num, -lat) |>
+  mutate(lat = round(lat, 0),
+         lat = ifelse(lat > 26, paste0(lat, 'N'), lat),
+         lat = ifelse(lat < -14, paste0(lat, 'S'), lat),
+         lat = ifelse(lat == 0, 'Equator', lat)) |>
+  # distinct(lat, .keep_all = TRUE) %>% 
+  mutate(lat_label = if_else(duplicated(lat), '', lat))
+  
 
 # Plot
 gMLD<-pred_mld |>
@@ -54,7 +64,7 @@ gMLD<-pred_mld |>
   ggplot(aes(x = month_num, y = island, fill = median_epred)) +
   geom_tile() +
   scale_x_continuous(breaks = 1:12, labels = month.abb, expand=c(0,0)) +
-  scale_y_discrete(limits=rev(island_order)) +
+  scale_y_discrete(limits=rev(island_order), sec.axis = dup_axis(labels = rev(lat$lat_label))) +
   scale_fill_gradientn(
     colors = chl_grad_cols,
     labels = label_percent(), 
@@ -69,7 +79,7 @@ gPrecip<-pred_precip |>
   ggplot(aes(x = month_num, y = island, fill = median_epred)) +
   geom_tile() +
   scale_x_continuous(breaks = 1:12, labels = month.abb, expand=c(0,0)) +
-  scale_y_discrete(limits=rev(island_order)) +
+  scale_y_discrete(limits=rev(island_order), sec.axis = dup_axis(labels = rev(lat$lat_label))) +
   scale_fill_gradientn(
     colors = chl_grad_cols,
     labels = label_percent(),
@@ -84,7 +94,7 @@ gCombo<-pred_combo |>
   ggplot(aes(x = month_num, y = island, fill = median_epred)) +
   geom_tile() +
   scale_x_continuous(breaks = 1:12, labels = month.abb, expand=c(0,0)) +
-  scale_y_discrete(limits=rev(island_order)) +
+  scale_y_discrete(limits=rev(island_order), sec.axis = dup_axis(labels = rev(lat$lat_label))) +
   scale_fill_gradientn(
     colors = chl_grad_cols,
     limits=c(0, .28),

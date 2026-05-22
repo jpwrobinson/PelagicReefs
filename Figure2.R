@@ -161,7 +161,7 @@ gSea<-ggplot() +
 pdf(file = 'fig/Figure2.pdf', height=5, width=11)
 lh<-plot_grid(gEff, gSea, nrow=2, labels=c('a', 'b'), rel_heights=c(1, 1))
 plot_grid(lh, 
-          gMLD + scale_y_discrete(position = 'right', limits=rev(island_order)) + 
+          gMLD + scale_y_discrete(limits=rev(island_order), sec.axis = dup_axis(labels = rev(lat$lat_label))) +
             labs(subtitle = 'IME seasonality predicted by mixed layer depth') +
             theme(plot.subtitle = element_text(hjust=0.5, vjust=-1, size=10)), labels=c('', 'c'))
 dev.off()
