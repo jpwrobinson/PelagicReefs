@@ -12,11 +12,12 @@ priors <- c(
 # check vif. mean chl-a is correlated with reef area and MLD amp
 car::vif(glm(log(planktivore_metab) ~ 
                land_area_km2 + avg_monthly_mm +
-               reef_area_km2 + site_bathy_400m + island_bathy + 
+               reef_area_km2 + 
+               site_bathy_400m + island_bathy + 
                population_status +
                # mean_chlorophyll +
                ted_mean + 
-                mld_amp, data=plank_scaled))
+                mld_mean, data=plank_scaled %>% filter(planktivore_metab>0)))
 
 
 # 1. Planktivore
@@ -29,6 +30,7 @@ m2_plank<-brm(planktivore_metab ~
                     avg_monthly_mm + 
                     mld_mean + 
                     population_status +
+                    ted_mean +
                     # precip_amp_mm +
                     # mean_chlorophyll +
                     (1 | year ) + # also tested year slopes but not supported by loo
@@ -65,7 +67,7 @@ effects <- checker %>%
                                          'avg_monthly_mm', 'population_statusU',
                                          'site_bathy_400m', 'hard_coral', 'depth_m',
                                          # 'chl_a_mg_m3_mean'
-                                        'mld_mean')))) %>% 
+                                        'ted_mean', 'mld_mean')))) %>% 
   filter(!is.na(var_fac)) %>% 
   group_by(var_fac) %>% mutate(medi = abs(median(.value)))
 

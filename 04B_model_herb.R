@@ -25,6 +25,7 @@ m2_herb<-brm(herbivore_metab ~
                 depth_m + 
                 mld_mean + 
                population_status +
+               ted_mean +
                # mean_chlorophyll +
                 (1 | year) +
                 (1 | island),
@@ -56,7 +57,7 @@ effects <- checker %>%
                                          'avg_monthly_mm', 'population_statusU',
                                          'site_bathy_400m', 'hard_coral', 'depth_m',
                                          # 'chl_a_mg_m3_mean'
-                                         'mld_amp')))) %>% 
+                                         'mld_mean', 'ted_mean')))) %>% 
   filter(!is.na(var_fac)) %>% 
   group_by(var_fac) %>% mutate(medi = abs(median(.value)))
 
