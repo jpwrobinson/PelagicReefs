@@ -47,7 +47,9 @@ g2 <- coef_draws %>%
   ) %>%
   mutate(fg = 'Herbivore', fg.col='#FF8C00')
 
-labs<-data.frame(fg = c('Planktivore', 'Herbivore'), fg.col=c('#01579F', '#FF8C00'), group = 'seasonal', proportion = c(0.6, 0.7))
+labs<-data.frame(fg = c('Planktivore', 'Herbivore'), 
+                 fg.col=c('#01579F', '#FF8C00'), group = 'seasonal', 
+                 proportion = c(0.45, 0.55))
 
 # bind and pivot
 vars_prop<-rbind(g1, g2) %>% 
@@ -60,8 +62,8 @@ vars_abs<-rbind(g1, g2) %>%
 
 vars<-rbind(vars, blanker)
 
-gC<-ggplot(vars_abs, aes(x = proportion, y = group, fill = fg.col, col=fg.col)) +
-  annotate('rect', xmin = -Inf, xmax=Inf, ymin = 2.5, ymax = Inf, fill='grey', alpha=0.1) +
+gC<-ggplot(vars_prop, aes(x = proportion, y = group, fill = fg.col, col=fg.col)) +
+  annotate('rect', xmin = -Inf, xmax=Inf, ymin = 3, ymax = 4.5, fill='grey', alpha=0.1) +
   annotate('rect', xmin = -Inf, xmax=Inf, ymin =-Inf, ymax = 1.5, fill='grey', alpha=0.1) +
   stat_slabinterval(.width = c(0.5, 0.95), point_interval = median_qi,                   
                     slab_alpha = 0.5, interval_alpha = 1, point_alpha = 1,

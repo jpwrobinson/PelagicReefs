@@ -8,7 +8,7 @@ bayes<-data.frame(b = c(bayes_R2(m2_plank)[1,'Estimate'],
                   x = 0.9, y = c(6.5, 6.5), fg = c('Planktivore', 'Herbivore'))
 
 direc<-data.frame(b = c('Wetter', 'Drier', 'Deeper', 'Shallower'),
-                  x = c(0.2, -0.2,0.2, -0.2), 
+                  x = c(0.4, -0.4,0.5, -0.5), 
                   y = c(2.3, 2.3, 1.3, 1.3), fg = 'Herbivore')
 
 ## Effect sizes
@@ -31,12 +31,14 @@ effects <- rbind(
 
 
 # Plot effect sizes
-labs<-data.frame(x = Inf, y = c(2.4, 4.4, 8.4), label = c('Habitat', 'Oceanographic', 'Geomorphic'), fg='Herbivore')
+labs<-data.frame(x = Inf, y = c(2.4, 4.4, 8.4), 
+                 label = c('Habitat', 'Oceanographic', 'Geomorphic'), 
+                 fg='Herbivore')
 
 gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
     # geom_text(data = labs, aes(x, y, label = label), size=3.5, fontface=1, hjust=1, col='black') +
     annotate('rect', xmin = -Inf, xmax=Inf, ymin = -Inf, ymax = 2.5, fill='grey', alpha=0.1) +
-    annotate('rect', xmin = -Inf, xmax=Inf, ymin = 4.5, ymax = Inf, fill='grey', alpha=0.1) +
+    annotate('rect', xmin = -Inf, xmax=Inf, ymin = 4.5, ymax = 8.5, fill='grey', alpha=0.1) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
     stat_pointinterval(.width = c(0.5, 0.95), pch=19, 
                        position = position_dodge(width=0.65)) +  
@@ -49,7 +51,7 @@ gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
     guides(color='none') +
     scale_y_discrete(labels = c('Mixed layer depth', 'Precipitation', 
                                 'Depth', 'Hard coral',
-                                'Bathymetric slope','Island area', 'Reef area', 'Island', 'Unpopulated'), 
+                                'Bathymetric slope','Island area', 'Reef area', 'Island [vs. atoll]', 'Unpopulated'), 
                      sec.axis = dup_axis(labels=NULL)) +
     theme(strip.text = element_text(face=2, hjust=0, size=11),
           strip.background = element_blank(),
