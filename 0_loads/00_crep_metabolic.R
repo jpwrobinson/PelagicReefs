@@ -38,16 +38,18 @@ depth<-
 
 # use bathymetry/benthic dataset as basis for model. join fish metabolic and then predictors from Gove/Williams
 depth<- depth %>% 
-  left_join(crep %>% select(SITEVISITID, PLANKTIVORE, PRIMARY, PISCIVORE), by = 'SITEVISITID') %>% 
+  left_join(crep %>% select(SITEVISITID, PLANKTIVORE, PRIMARY, SECONDARY, PISCIVORE), by = 'SITEVISITID') %>% 
   mutate(planktivore_metab=PLANKTIVORE,
          herbivore_metab = PRIMARY,
+         secondary_metab = SECONDARY,
          piscivore_metab = PISCIVORE) %>%
-  select(-PLANKTIVORE, -PRIMARY, -PISCIVORE) %>% 
-  left_join(biom %>% select(SITEVISITID, PLANKTIVORE, PRIMARY, PISCIVORE), by = 'SITEVISITID') %>% 
+  select(-PLANKTIVORE, -PRIMARY, -SECONDARY, -PISCIVORE) %>% 
+  left_join(biom %>% select(SITEVISITID, PLANKTIVORE, PRIMARY, SECONDARY, PISCIVORE), by = 'SITEVISITID') %>% 
   mutate(planktivore_biom=PLANKTIVORE,
          herbivore_biom = PRIMARY,
+         secondary_biom = SECONDARY,
          piscivore_biom = PISCIVORE) %>% 
-  select(-PLANKTIVORE, -PRIMARY, -PISCIVORE) %>% 
+  select(-PLANKTIVORE, -PRIMARY, -SECONDARY, -PISCIVORE) %>% 
   # Bring Gove, MLD and TD variables
   left_join(island %>% mutate(island_bathy = SITE_SLOPE_400m) %>% 
               select(region.col, island, island_code, sst_mean:geomorphic_type, island_bathy, precip_amp_mm:mld_mean, mld_amp, ted_mean)) %>% 
@@ -64,7 +66,6 @@ depth<- depth %>%
 # plank<-depth %>% filter(!is.na(planktivore_metab))
 # # drop 0 planktivore sites (n = 49)
 # plank<-plank %>% filter(planktivore_metab>0)
-
 
 # scale and center cont. covariates
 plank_scaled <- depth %>% 
@@ -136,3 +137,19 @@ pairs2(
            precip_amp_mm, avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
            chl_a_mg_m3_mean, mld_mean, mld_amp, ted_mean, month_num))
 dev.off()
+
+
+rel_metab<-depth %>% select(region, island, SITEVISITID, planktivore_metab:piscivore_metab) %>% 
+  mutate(community_metab = planktivore_metab + herbivore_metab + secondary_metab + piscivore_metab,
+         rel_plank = planktivore_metab / community_metab) 
+
+ggplot(rel_metab %>% 
+         group_by(island, region) %>% 
+         summarise(sd = sd(rel_plank), rel_plank = median(rel_plank)), aes(region, rel_plank, col=region)) + geom_point()
+
+ggplot(rel_metab, aes(fct_reorder2(island, rel_plank, region), rel_plank, col=region)) + geom_boxplot()  +
+  labs(x = '', y = 'Planktivore metabolic flux, % of community') +
+  scale_y_continuous(labels = label_percent()) + coord_flip()
+
+# range by region
+rel_metab %>% group_by(region) %>% reframe(range(rel_plank))
