@@ -132,31 +132,6 @@ gSea<-ggplot() +
   theme(strip.placement = 'bottom', strip.background = element_blank(),
         plot.margin=unit(c(.5,1,0.01, .1), 'cm')) 
 
-# version with col gradient in median line
-# gSea<-ggplot(dd %>% filter(g == 2) %>% 
-#                mutate(lab = paste0(var, ', ', unit))) + 
-#   geom_vline(xintercept = 0, linetype=2, col='black') +
-#   geom_text(data = data.frame(raw = c(-4,4), estimate = Inf, label = c('Shallower', 'Deeper'), lab = 'Mixed layer depth anomaly, m'),
-#             aes(x = raw, y = estimate, label = label), size = 3, vjust=2, hjust=c(1,0)) +
-#   geom_text(data = data.frame(raw = c(-50,50), estimate = Inf, label = c('Drier', 'Wetter'), lab = 'Precipitation anomaly, mm'),
-#             aes(x = raw, y = estimate, label = label), size = 3, vjust=2, hjust=c(1, 0)) +
-#   geom_ribbon(aes(raw, estimate__/100, ymax= upper95/100, ymin = lower95/100, 
-#                   fill = estimate__/100
-#                   ), alpha=0.9) +
-#   geom_line(aes(raw, estimate__/100), linewidth=1.4) + 
-#   guides(fill = 'none') +
-#   labs(y = 'IME strength', x = '') +
-#   scale_y_continuous(labels = label_percent()) +
-#   scale_fill_gradientn(
-#     colors = chl_grad_cols,
-#     labels = label_percent(),
-#     limits=c(0, .25),
-#     name = 'IME strength') +
-#   facet_grid(~lab, scales='free', switch = 'x',
-#              labeller = labeller(var = as_labeller(setNames(labels$unit, labels$var), label_parsed))) +
-#   theme(strip.placement = 'bottom', strip.background = element_blank(),
-#         plot.margin=unit(c(.5,1,0.01, .1), 'cm')) 
-
 
 pdf(file = 'fig/Figure2.pdf', height=5, width=11)
 lh<-plot_grid(gEff, gSea, nrow=2, labels=c('a', 'b'), rel_heights=c(1, 1))

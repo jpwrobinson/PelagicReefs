@@ -107,7 +107,7 @@ source('read_chla_clim.R')
 # add precip, SSH, MLD and TC to island and island complex
 island<-island %>% 
   left_join(precip_ann) %>% 
-  left_join(vir2 %>% filter(sensor == 'ESA') %>% select(island, mean_chlorophyll)) %>% 
+  left_join(vir2 %>% filter(sensor == 'GlobColour') %>% select(island, mean_chlorophyll)) %>% 
   left_join(mld_avg) %>% 
   left_join(amp) %>%
   left_join(ssh_vals) %>% 
@@ -116,7 +116,7 @@ island<-island %>%
 
 island_complex<-island_complex %>% 
   left_join(precip_ann_C) %>%
-  left_join(vir2_C %>% filter(sensor == 'ESA') %>% ungroup() %>% select(island_group, mean_chlorophyll)) %>% 
+  left_join(vir2_C %>% filter(sensor == 'GlobColour') %>% ungroup() %>% select(island_group, mean_chlorophyll)) %>% 
   left_join(mld_avg_C) %>% 
   left_join(ssh_vals_C) %>% 
   left_join(tc_C %>% ungroup() %>% select(-ted_sd, -region), by = 'island_group') %>% 
