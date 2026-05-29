@@ -61,6 +61,12 @@ depth<- depth %>%
   filter(reef_zone=='Forereef') %>%  ## need to check with Tom. Drops 712.
   filter(!is.na(hard_coral)) ## these are places without reef zone, so were dropped
 
+# check time-series
+depth %>% group_by(island, region) %>% summarise(n_year = n_distinct(year)) %>% 
+  ggplot() + geom_col(aes(fct_reorder2(island, region, n_year), n_year, fill=region)) + coord_flip()
+depth %>% group_by(island, region) %>% summarise(n_year = max(year) - min(year)) %>% 
+  ggplot() + geom_col(aes(fct_reorder2(island, region, n_year), n_year, fill=region)) + coord_flip() + labs(x = 'Range of surveys')
+
 # 1. Create planktivore
 # drop NA planktivore sites (n = 0)
 # plank<-depth %>% filter(!is.na(planktivore_metab))

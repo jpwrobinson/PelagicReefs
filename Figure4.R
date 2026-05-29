@@ -52,7 +52,7 @@ gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
     geom_text(data = direc, aes(x = x, y = y, label = b), size=2.5) +
     facet_grid(~fct_rev(fg)) +
     scale_color_manual(values = fg_cols) +
-    labs(x = "Effect on metabolic flux", y = "") +
+    labs(x = "Effect on fish-assemblage respiration rate", y = "") +
     scale_x_continuous(limits=c(-.9, 1.3), expand=c(0,0)) +
     guides(color='none') +
     scale_y_discrete(labels = c('Depth', 'Hard coral',

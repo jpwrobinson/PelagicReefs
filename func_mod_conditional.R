@@ -30,7 +30,7 @@ marginal_post<-function(mod, dat_raw, var, var_raw, n = 100){
     mld_mean_s = 0,
     month      = 6,
     time_s     = 0,
-    island     = focal$island[1]   # single island, effect is shared across islands
+    island     = focal$island[2]   # single island, effect is shared across islands
   ) %>% select(-as.name(var))
   
   colnames(pred_grid)[1]<-c(as.name(var)) # need full name for epred_draws
@@ -46,6 +46,37 @@ marginal_post<-function(mod, dat_raw, var, var_raw, n = 100){
     group_by(var, var_raw) |>
     median_qi(.epred, .width = c(0.5, 0.95))
 
+  colnames(epred_marginal)[1:2]<-c(as.name(var), as.name(var_raw))
+  
+  return(epred_marginal)
+  
+}
+
+marginal_post_island<-function(mod, dat_raw, var, var_raw, n = 100){
+  
+  pred_grid <- expand.grid(
+    var = seq_range(mod$data[[var]], n=n),
+    var_raw = seq_range(dat_raw[[var_raw]], n=n),
+    mld_anom_s = 0,
+    mld_mean_s = 0,
+    month      = 6,
+    time_s     = 0,
+    island     = focal$island   # single island, effect is shared across islands
+  ) %>% select(-as.name(var))
+  
+  colnames(pred_grid)[1]<-c(as.name(var)) # need full name for epred_draws
+  pred_grid$var<-pred_grid[[var]] # need generic for marginalise operation
+  
+  epred <- pred_grid |>
+    add_epred_draws(mod, re_formula = NA, ndraws = 500)
+  
+  # marginalise over islands (average the posterior draws across islands)
+  epred_marginal <- epred |>
+    group_by(var, var_raw, .draw, island) |>
+    summarise(.epred = mean(.epred), .groups = "drop") |>
+    group_by(var, var_raw, island) |>
+    median_qi(.epred, .width = c(0.5, 0.95))
+  
   colnames(epred_marginal)[1:2]<-c(as.name(var), as.name(var_raw))
   
   return(epred_marginal)

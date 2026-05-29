@@ -1,9 +1,10 @@
-
+source('func_mod_conditional.R')
 
 ## IME plots
 
 # Panel A = 06_ime_time. m_detect. code is ready.
 load(file = 'results/mod_ime_time_binom.rds')
+load(file = 'results/mod_ime_time_hurdle.rds')
 
 # A = MLD anomaly preds, B = MLD anomaly preds
 df_mldmean<-marginal_post(m_detect, focal, 'mld_mean_s', 'mld_mean')
@@ -12,6 +13,7 @@ df_mldanom<-marginal_post(m_detect, focal, 'mld_anom_s', 'mld_anom')
 df_mldmeanG<-marginal_post(m_hurdle, focal, 'mld_mean_s', 'mld_mean')
 df_mldanomG<-marginal_post(m_hurdle, focal, 'mld_anom_s', 'mld_anom')
 
+marginal_post_island(m_hurdle, focal, 'time_s', 'time')
 
 # Plot and multipanel
 gA<-ggplot(df_mldmean, aes(mld_mean, .epred)) +
@@ -21,10 +23,11 @@ gA<-ggplot(df_mldmean, aes(mld_mean, .epred)) +
   labs(x = "Mixed layer depth [mean], m", y = "P(IME detected)")
 
 gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +
-  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+    geom_vline(xintercept = 0, linetype=5) +
+    geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
-  geom_line(colour = "steelblue", linewidth = 0.9) +
-  labs(x = "Mixed layer depth [anomaly], m", y = "P(IME detected)")
+    geom_line(colour = "steelblue", linewidth = 0.9) +
+    labs(x = "Mixed layer depth [anomaly], m", y = "P(IME detected)")
 
 gC<-ggplot(df_mldmeanG, aes(mld_mean, .epred)) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
@@ -34,6 +37,7 @@ gC<-ggplot(df_mldmeanG, aes(mld_mean, .epred)) +
   labs(x = "Mixed layer depth [mean], m", y = "IME strength")
 
 gD<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +
+  geom_vline(xintercept = 0, linetype=5) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
   geom_line(colour = "steelblue", linewidth = 0.9) +

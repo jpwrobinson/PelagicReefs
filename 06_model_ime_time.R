@@ -46,7 +46,7 @@ m_detect <- brm(bf(
 
 # compare with original bam, frequentist model
 # m_detect2 <- bam(
-#   has_IME ~ 
+#   has_IME ~
 #     s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
 #     s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
 #     s(time_s, by = island, bs = "cr", k = 10),   # island-level probability
@@ -58,16 +58,16 @@ m_detect <- brm(bf(
 #   AR.start = focal$new_series
 # )
 
-# hist(resid(m_detect))
-# acf(resid(m_detect))
-# m_detect$AR1.rho
-# intervals(m_detect$lme, which = "var-cov")  # 95% CI for rho
+# hist(resid(m_detect2))
+# acf(resid(m_detect2))
+# intervals(m_detect2$lme, which = "var-cov")  # 95% CI for rho
+# m_detect2$AR1.rho
 
-# gratia::draw(m_detect, select = 'mld_mean', partial_match=TRUE)
-# gratia::draw(m_detect, select = 'mld_anom', partial_match=TRUE)
-# gratia::draw(m_detect, select = 'time_s', partial_match=TRUE)
+gratia::draw(m_detect2, select = 'mld_mean', partial_match=TRUE)
+gratia::draw(m_detect2, select = 'mld_anom', partial_match=TRUE)
+gratia::draw(m_detect2, select = 'time_s', partial_match=TRUE)
 
-save(ime_df, focal, m_detect, file = 'results/mod_ime_time_binom.rds')
+save(ime_df, focal, m_detect, m_detect2, file = 'results/mod_ime_time_binom.rds')
 
 load('results/mod_ime_time_binom.rds')
 
@@ -77,6 +77,12 @@ pp_check(m_detect)
 conditional_effects(m_detect, effects = 'mld_mean_s')
 conditional_effects(m_detect, effects = 'mld_anom_s')
 conditional_effects(m_detect, effects = 'time_s')
+
+smooth_estimates <- smooth_estimates(m_detect) %>%
+  filter(smooth == "s(time_s):island")
+
+# 2. Visualize island-specific trajectories
+draw_smooth <- draw(m_detect, select = "s(time_s)")
 
 ## 2. Gamma on has_IME == 1
 # n = 6132 , ~5020 obs dropped
@@ -102,23 +108,23 @@ pp_check(m_hurdle)
 conditional_effects(m_hurdle, effects = 'mld_mean_s')
 conditional_effects(m_hurdle, effects = 'mld_anom_s')
 conditional_effects(m_hurdle, effects = 'time_s')
-
-
-# Tweedie models do not allow you to separately model the zero-generating process.
-# Zeros are an inherent part of the continuous distribution. - this is not true for IME??
-m_tweedie <- bam(
-  Chl_increase_nearby ~
-       s(mld_mean_s, k=3) + s(mld_anom_s, k=3) +
-       s(month, bs = 'cc', k = 12, by = island) +
-       s(time_s, by = island, bs = "cr", k = 10),
-  family = tw(),
-  method = "fREML",
-  discrete = TRUE,
-  data = focal
-)
-
-summary(m_tweedie) # dev. expl = 20.2%
-gratia::draw(m_tweedie, select = 'mld_mean', partial_match=TRUE)
-gratia::draw(m_tweedie, select = 'mld_anom', partial_match=TRUE)
-gratia::draw(m_tweedie, select = 'time_s', partial_match=TRUE)
-
+# 
+# 
+# # Tweedie models do not allow you to separately model the zero-generating process.
+# # Zeros are an inherent part of the continuous distribution. - this is not true for IME??
+# m_tweedie <- bam(
+#   Chl_increase_nearby ~
+#        s(mld_mean_s, k=3) + s(mld_anom_s, k=3) +
+#        s(month, bs = 'cc', k = 12, by = island) +
+#        s(time_s, by = island, bs = "cr", k = 10),
+#   family = tw(),
+#   method = "fREML",
+#   discrete = TRUE,
+#   data = focal
+# )
+# 
+# summary(m_tweedie) # dev. expl = 20.2%
+# gratia::draw(m_tweedie, select = 'mld_mean', partial_match=TRUE)
+# gratia::draw(m_tweedie, select = 'mld_anom', partial_match=TRUE)
+# gratia::draw(m_tweedie, select = 'time_s', partial_match=TRUE)
+# 
