@@ -50,7 +50,6 @@ summary(checker)
 pp_check(checker, resp = 'planktivore_metab')
 conditional_effects(checker)
 ranef(checker)
-# random_effects(checker)
 bayes_R2(checker) 
 # metabolic = 51.0%
 # biomass = 14.7% [now deleted]

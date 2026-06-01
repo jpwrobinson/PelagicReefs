@@ -63,9 +63,9 @@ depth<- depth %>%
 
 # check time-series
 depth %>% group_by(island, region) %>% summarise(n_year = n_distinct(year)) %>% 
-  ggplot() + geom_col(aes(fct_reorder2(island, region, n_year), n_year, fill=region)) + coord_flip()
+  ggplot() + geom_col(aes(fct_reorder2(island, region, n_year), n_year, fill=region)) + coord_flip() + labs(x ='',y= 'Number of unique survey years')
 depth %>% group_by(island, region) %>% summarise(n_year = max(year) - min(year)) %>% 
-  ggplot() + geom_col(aes(fct_reorder2(island, region, n_year), n_year, fill=region)) + coord_flip() + labs(x = 'Range of surveys')
+  ggplot() + geom_col(aes(fct_reorder2(island, region, n_year), n_year, fill=region)) + coord_flip() + labs(x ='', y= 'Range of surveys')
 
 # 1. Create planktivore
 # drop NA planktivore sites (n = 0)
