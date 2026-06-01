@@ -146,7 +146,7 @@ crep<-crep %>% mutate(tidal_value = extract(tidal_pacific, cbind(lon, lat), meth
 nana<-crep %>% group_by(ISLAND) %>%
   summarise(na = length(which(is.na(tidal_value))), n = length(SITEVISITID), prop_na = na/n) %>% data.frame
 
-nana %>% filter(prop_na == 1) %>% write.csv('data/tidal_DAT/tidal_missing_island.csv', row.names=FALSE)
+nana %>% filter(prop_na == 1) %>% write.csv('data/tidal/tidal_DAT/tidal_missing_island.csv', row.names=FALSE)
 
 # Check a specific NA site
 problem_site <- crep %>% filter(ISLAND=='Hawaii')
