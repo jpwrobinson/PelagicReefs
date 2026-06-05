@@ -71,9 +71,9 @@ dat_month<-ime_month %>%
   ungroup()
 
 dat_scaled<-ime_dat %>%  
-  select(island:land_area_km2, median_chl_percent, REGION:ted_sum) %>% 
+  select(island:land_area_km2, mean_chl_percent, REGION:ted_sum) %>% 
   mutate(reef_area_km2 = log10(reef_area_km2), land_area_km2 = log10(land_area_km2+1)) %>% 
-  mutate(across(c(land_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:ted_sum, -geomorphic_type,-population_status, -median_chl_percent, -REGION), 
+  mutate(across(c(land_area_km2, reef_area_km2, avg_monthly_mm, sst_mean:ted_sum, -geomorphic_type,-population_status, -mean_chl_percent, -REGION), 
                 ~scale(., center=TRUE, scale=TRUE))) %>% na.omit()
 
 dat_scaled_month<-dat_month %>% 
