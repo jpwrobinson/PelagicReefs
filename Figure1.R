@@ -17,8 +17,8 @@ gInset<-ggplot(dat_month, aes(Chl_increase_nearby/100)) +
   theme(axis.text = element_text(size = 9),
         axis.title = element_text(size = 9))
 
-gA<-ggplot(dat, aes(mean_chlorophyll, median_chl_percent/100, fill=region.col)) + 
-  # geom_point(data = dat_month %>% mutate(median_chl_percent = Chl_increase_nearby/100), alpha=0.5, size=1, aes(col=region.col)) +
+gA<-ggplot(dat, aes(mean_chlorophyll, mean_chl_percent/100, fill=region.col)) + 
+  # geom_point(data = dat_month %>% mutate(mean_chl_percent = Chl_increase_nearby/100), alpha=0.5, size=1, aes(col=region.col)) +
   geom_point(alpha=1, size=2.5, pch=21, col='black') +
   geom_text_repel(aes(label=island), size=2.5) +
   labs(y = 'IME strength', x = 'chl-a, mg/m3') +
@@ -31,7 +31,7 @@ gA<-gA + inset_element(gInset,
                    right = 1, top = 1)
 
 # Panel b = island seasonal IME, 3 panels
-# fac_level<-levels(with(dat, fct_reorder(island, -median_chl_percent)))
+# fac_level<-levels(with(dat, fct_reorder(island, -mean_chl_percent)))
 # dat_month$island_fac<-factor(dat_month$island, levels=fac_level)
 
 focs<-c('Laysan', 'Necker', 'Kauai','Hawaii',
