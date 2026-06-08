@@ -9,7 +9,6 @@ source('0_loads/00_ime_dataframe.R')
 crep<-read.csv(file = 'data/metabolic/crep_site_metabolic_rates.csv') 
 biom<-read.csv(file = 'data/metabolic/crep_site_biomass.csv') 
 
-
 # using full CREP data set with filled bathymetry
 depth<-
   read.csv('data/noaa-crep/crep_for_analysis.csv') %>% 
