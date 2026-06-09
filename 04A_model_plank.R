@@ -13,7 +13,7 @@ priors <- c(
 car::vif(glm(log(planktivore_metab) ~ 
                land_area_km2 + avg_monthly_mm +
                reef_area_km2 + 
-               site_bathy_400m + island_bathy + 
+               site_bathy_400m + 
                population_status +
                # mean_chlorophyll +
                ted_mean + 
@@ -50,8 +50,9 @@ summary(checker)
 pp_check(checker, resp = 'planktivore_metab')
 conditional_effects(checker)
 ranef(checker)
-bayes_R2(checker) 
-# metabolic = 51.0%
+bayes_R2(checker, re.form=NA) 
+# metabolic = 51.1% [ran + fix]
+# metabolic = 44.6% [fix]
 # biomass = 14.7% [now deleted]
 
 ### OUTPUTS
@@ -118,3 +119,7 @@ ggplot(nd, aes(x = mld_mean_raw, y = median)) +
   theme(axis.text = element_text(size = 14), axis.title = element_text(size = 14)) +
   labs(x = 'Mixed layer mean, m', y = 'Planktivore metabolic flux')
 dev.off()
+
+
+
+

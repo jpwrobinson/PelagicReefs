@@ -3,8 +3,8 @@
 load('results/mod_planktivore_metabolic.rds')
 load('results/mod_herbivore_metabolic.rds')
 
-bayes<-data.frame(b = c(bayes_R2(m2_plank)[1,'Estimate'],
-                        bayes_R2(m2_herb)[1,'Estimate']),
+bayes<-data.frame(b = c(bayes_R2(m2_plank, re.form=NA)[1,'Estimate'],
+                        bayes_R2(m2_herb, re.form=NA)[1,'Estimate']),
                   x = 0.9, y = c(6.5, 6.5), fg = c('Planktivore', 'Herbivore'))
 
 direc<-data.frame(b = c('Wetter', 'Deeper'),
@@ -35,10 +35,6 @@ effects <- rbind(
 
 
 # Plot effect sizes
-labs<-data.frame(x = Inf, y = c(2.4, 4.4, 8.4), 
-                 label = c('Habitat', 'Oceanographic', 'Geomorphic'), 
-                 fg='Herbivore')
-
 gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
     # geom_text(data = labs, aes(x, y, label = label), size=3.5, fontface=1, hjust=1, col='black') +
     # annotate('rect', xmin = -Inf, xmax=Inf, ymin = -Inf, ymax = 2.5, fill='grey', alpha=0.1) +
@@ -67,12 +63,19 @@ gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
 
 # source('fig3C_fish_var_exp.R')
 
+labs<-data.frame(x = Inf, y = c(2.4, 4.4, 8.4), 
+                 label = c('Habitat', 'Oceanographic', 'Geomorphic'), 
+                 fg='Herbivore')
+
+gB<-ggplot(rel_bayes, aes(y=rel_R2, x=1, fill=cov)) + 
+  geom_col(position='stack') +
+  labs(x = '', y = 'Unique R2')
+
 pdf(file = 'fig/Figure4.pdf', height=4, width=7.5)
-print(gA)
-# print(
-#   plot_grid(gA, 
-#             gC + theme(plot.margin = unit(c(.9,.19, .19, -.5), 'cm')), 
-#             nrow=1, labels=c('a', 'b'), align='hv', rel_widths=c(1, 0.5))
-# )
+print(
+  plot_grid(gA,
+            gB + theme(plot.margin = unit(c(.9,.19, .19, -.5), 'cm')),
+            nrow=1, labels=c('a', 'b'), align='hv', rel_widths=c(1, 0.5))
+)
 dev.off()
 

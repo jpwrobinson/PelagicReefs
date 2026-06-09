@@ -22,12 +22,14 @@ crep_guild<-crep %>%
   group_by(ISLAND, SITEVISITID, REGION, trophic_guild, tbiom) %>% 
   summarise(biom = sum(biomass_g_m2)) %>% 
   ungroup() %>% 
-  mutate(rel_biom = biom/tbiom) %>% 
+  mutate(rel_biom = biom/tbiom)
+
+crep_guild_avg<-crep_guild %>% 
   group_by(ISLAND, REGION, trophic_guild) %>% 
   summarise(rel_biom = median(rel_biom)) %>% 
   mutate(ISLAND = factor(ISLAND, levels = rev(levs)))
 
-ggplot(crep_guild, aes(ISLAND, rel_biom, fill=trophic_guild)) + geom_col()
+ggplot(crep_guild_avg, aes(ISLAND, rel_biom, fill=trophic_guild)) + geom_col()
 
 pdf(file = 'fig/ime_crep/crep_planktivore_composition.pdf', height=6, width=10)
 ggplot(crep_guild %>% 
@@ -37,6 +39,10 @@ ggplot(crep_guild %>%
        coord_flip() + labs(x = '',y = 'Relative biomass', colour='') +
   scale_y_continuous(labels=label_percent()) 
 dev.off()
+
+ggplot(crep_guild %>% filter(trophic_guild %in% c('planktivores', 'facultative planktivore')) %>% 
+  pivot_wider(-c(tbiom,rel_biom), names_from = 'trophic_guild', values_from = 'biom')) +
+  geom_point(aes(`facultative planktivore`, planktivores))
 
 # missing species
 missin<-crep %>% filter(is.na(trophic_guild)) %>% distinct(TAXONNAME)

@@ -11,10 +11,12 @@ priors <- c(
 # check vif. mean chl-a is correlated with reef area and MLD amp
 car::vif(glm(log(herbivore_metab) ~ 
                land_area_km2 + avg_monthly_mm +
-               reef_area_km2 + site_bathy_400m + 
+               reef_area_km2 + 
+               site_bathy_400m + 
+               population_status +
                # mean_chlorophyll +
-               ted_mean +
-               mld_amp, data=herb_scaled))
+               ted_mean + 
+               mld_mean, data=herb_scaled %>% filter(herbivore_metab>0)))
 
 # 1. Herbivore
 # model N = 4340 [2009-2024]
@@ -35,7 +37,7 @@ m2_herb<-brm(herbivore_metab ~
               # backend = "cmdstanr",
               chains = 3, iter = 2000, warmup = 500, cores = 4)
 
-save(m2_herb, file = 'results/mod_herbivore_metabolic.rds')
+save(m2_herb, herb_scaled, file = 'results/mod_herbivore_metabolic.rds')
 
 
 load('results/mod_herbivore_metabolic.rds')
