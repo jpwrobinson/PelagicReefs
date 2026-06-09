@@ -67,9 +67,6 @@ labs<-data.frame(x = Inf, y = c(2.4, 4.4, 8.4),
                  label = c('Habitat', 'Oceanographic', 'Geomorphic'), 
                  fg='Herbivore')
 
-gB<-ggplot(rel_bayes, aes(y=rel_R2, x=1, fill=cov)) + 
-  geom_col(position='stack') +
-  labs(x = '', y = 'Unique R2')
 
 pdf(file = 'fig/Figure4.pdf', height=4, width=7.5)
 print(

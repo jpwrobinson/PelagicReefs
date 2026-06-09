@@ -29,9 +29,12 @@ depth<-
           hard_coral, reef_zone#, population_status
          ) %>% 
   left_join(region_df %>% select(-region), by = 'island') %>% 
-  mutate(island_group = recode(island, 'Maui|Lanai|Molokai|Lanai|Kahoolawe' = 'Maui_C',
-                                      'Saipan|Tinian|Aguijan' = 'Saipan_C',
-                                      'Ofu|Olosega|Tau' = 'Tau_C')) %>% 
+  mutate(island_group = case_match(island,
+                                   c("Maui", "Lanai", "Molokai", "Kahoolawe") ~ "Maui_C",
+                                   c("Saipan", "Tinian", "Aguijan")            ~ "Saipan_C",
+                                   c("Ofu & Olosega", "Tau")                  ~ "Tau_C",
+                                   .default = island
+  )) %>% 
   left_join(island_complex %>% select(island_group, population_status))
 
 

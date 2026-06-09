@@ -3,7 +3,7 @@ load(file = 'results/mod_ime.rds')
 source('fig_IME_seasonal.R')
 
 # Panel a = drivers of IME (monthly + spatial)
-bayes<-data.frame(b = bayes_R2(m_chl_inc)[1,'Estimate'], x = 0.9, y = c(9.3))
+bayes<-data.frame(b = bayes_R2(m_chl_inc, re.form=NA)[1,'Estimate'], x = 0.9, y = c(9.3))
 # r2(m_chl_inc, by_component = TRUE) # 51% fixed effects. 65% full model.
 
 # For each draw, compute group contribution as sum of |coefficient|

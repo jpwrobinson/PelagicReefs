@@ -1,5 +1,5 @@
 # LOAD 
-source('00_crep_metabolic.R')
+source('0_loads/00_crep_metabolic.R')
 
 # basic model fitting herbivore metabolic by island and biophysical covariates
 priors <- c(
@@ -13,7 +13,7 @@ car::vif(glm(log(herbivore_metab) ~
                land_area_km2 + avg_monthly_mm +
                reef_area_km2 + 
                site_bathy_400m + 
-               population_status +
+               # population_status +
                # mean_chlorophyll +
                ted_mean + 
                mld_mean, data=herb_scaled %>% filter(herbivore_metab>0)))
@@ -45,7 +45,7 @@ checker<-m2_herb
 summary(checker)
 pp_check(checker, resp = 'herbivore_metab')
 conditional_effects(checker)
-bayes_R2(checker) # 32.6%
+bayes_R2(checker, re.form=NA) # 32.6%
 
 ### OUTPUTS
 
