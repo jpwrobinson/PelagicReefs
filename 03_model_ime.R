@@ -12,6 +12,9 @@ cmdstanr::set_cmdstan_path()
 # Is the strength of upwelling (IME) linked to MLD and tidal conversion?
 
 # exp. vars = MLD + tidal conversion
+source='MODIS-1'
+source='MODIS-2'
+source='GlobColour'
 source('0_loads/00_ime_dataframe.R')
 
 # y distributions
@@ -57,55 +60,30 @@ data = mod_dat,
 # backend = "cmdstanr",
 chains = 3, iter = 2000, warmup = 500, cores = 4)
 
+if(source == 'MODIS-1'){m_chl_inc_modis1<-m_chl_inc}
+if(source == 'GlobColour'){m_chl_inc_globcol<-m_chl_inc}
+if(source == 'MODIS-2'){m_chl_inc_modis2<-m_chl_inc}
 
-## model 2 = chl_max (is it relevant for reef fish?)
-mod_dat2<-dat_scaled_month %>% filter(!is.na(Chl_max) & !is.na(bathymetric_slope))
-
-car::vif(glm(Chl_max ~ 
-               land_area_km2 + #avg_monthly_mm +
-               reef_area_km2 + bathymetric_slope + 
-               # population_status + VIF = 5.68
-               avg_monthly_mm_anom +
-               mld_mean + mld_anom +
-               ted_mean,
-               # mean_chlorophyll + 
-               , family = Gamma, data=mod_dat2))
-
-m_chl_max<-brm(bf(Chl_max ~ 
-                    bathymetric_slope +
-                    geomorphic_type * reef_area_km2 + land_area_km2 + 
-                    # avg_monthly_mm +
-                    # mean_chlorophyll + 
-                    avg_monthly_mm_anom +
-                    mld_mean + mld_anom +
-                    mi(ted_mean),
-                    # (1 + mld | island),
-                  family = lognormal()
-) +
-  bf(ted_mean | mi() ~ reef_area_km2),
-prior = c(
-  prior(normal(0, 1), class = "b", resp = 'Chlmax')
-  # prior(exponential(1), class = "sd", resp = 'Chlmax')
-),
-data = mod_dat2,
-# backend = "cmdstanr",
-chains = 3, iter = 2000, warmup = 500, cores = 4)
+save(m_chl_inc_modis1, m_chl_inc_globcol, m_chl_inc_modis2, file = 'results/mod_ime_sensor_test.rds')
 
 
 # load(file = 'results/mod_ime.rds')
 checker<-m_chl_inc
-checker<-m_chl_max
 summary(checker)
 pp_check(checker, resp = 'Chlincreasenearby')
-pp_check(checker, resp = 'Chlmax')
+# pp_check(checker, resp = 'Chlmax')
 conditional_effects(checker)
-bayes_R2(checker) # 54% for Chl-increase, 72% for chl-max
+bayes_R2(checker) # 54% for Chl-increase, 72% for chl-max [70.5% for GlobColour]
 
 save(dat_month, dat_scaled_month, mod_dat, mod_dat2, m_chl_inc, m_chl_max, effects, file = 'results/mod_ime.rds')
 
 
+bayes_R2(m_chl_inc_modis1) # 54.1%. N = 305. 31 islands.
+bayes_R2(m_chl_inc_modis2) # 54.2%. 
+bayes_R2(m_chl_inc_globcol) # 70.4%. N = 305. 31 islands.
+
 # For linear model, extract posterior draws
-effects <- m_chl_inc %>%
+effects1 <- m_chl_inc_modis1 %>%
   gather_draws(b_Chlincreasenearby_geomorphic_typeIsland, b_Chlincreasenearby_reef_area_km2, b_Chlincreasenearby_land_area_km2,
                b_Chlincreasenearby_bathymetric_slope, 
                b_Chlincreasenearby_avg_monthly_mm_anom, b_Chlincreasenearby_mld_mean, b_Chlincreasenearby_mld_anom,
@@ -119,14 +97,13 @@ effects <- m_chl_inc %>%
                                          'mld_anom', 'avg_monthly_mm_anom' 
                                          ))))
 
-effects2 <- m_chl_max %>%
-  gather_draws(b_Chlmax_geomorphic_typeIsland, b_Chlmax_reef_area_km2, b_Chlmax_land_area_km2,
-               b_Chlmax_bathymetric_slope,
-               b_Chlmax_avg_monthly_mm_anom, b_Chlmax_mld_mean, b_Chlmax_mld_anom,
-               # b_Chlmax_mean_chlorophyll,
-               bsp_Chlmax_mited_mean) %>%  
-  mutate(.variable = str_replace_all(.variable, 'b_Chlmax_', ''),
-         .variable = str_replace_all(.variable, 'bsp_Chlmax_mi', ''),
+effects2 <- m_chl_inc_modis2 %>%
+  gather_draws(b_Chlincreasenearby_geomorphic_typeIsland, b_Chlincreasenearby_reef_area_km2, b_Chlincreasenearby_land_area_km2,
+               b_Chlincreasenearby_bathymetric_slope, 
+               b_Chlincreasenearby_avg_monthly_mm_anom, b_Chlincreasenearby_mld_mean, b_Chlincreasenearby_mld_anom,
+               b_Chlincreasenearby_mean_chlorophyll, bsp_Chlincreasenearby_mited_mean) %>%  
+  mutate(.variable = str_replace_all(.variable, 'b_Chlincreasenearby_', ''),
+         .variable = str_replace_all(.variable, 'bsp_Chlincreasenearby_mi', ''),
          var_fac = factor(.variable, 
                           levels = rev(c('geomorphic_typeIsland','reef_area_km2','land_area_km2',
                                          'bathymetric_slope',
@@ -134,18 +111,55 @@ effects2 <- m_chl_max %>%
                                          'mld_anom', 'avg_monthly_mm_anom' 
                           ))))
 
-# Plot effect sizes
-pdf(file = 'fig/ime_db/ime_month_crep_model.pdf', height=5, width=6)
-ggplot(effects, aes(x = .value, y = var_fac)) +
-  stat_halfeye(.width = c(0.5, 0.95)) +  
-  geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
-  labs(x = "Effect size", y = "", subtitle = 'y = Chl increase nearby, %') 
+effects3 <- m_chl_inc_globcol %>%
+  gather_draws(b_Chlincreasenearby_geomorphic_typeIsland, b_Chlincreasenearby_reef_area_km2, b_Chlincreasenearby_land_area_km2,
+               b_Chlincreasenearby_bathymetric_slope, 
+               b_Chlincreasenearby_avg_monthly_mm_anom, b_Chlincreasenearby_mld_mean, b_Chlincreasenearby_mld_anom,
+               b_Chlincreasenearby_mean_chlorophyll, bsp_Chlincreasenearby_mited_mean) %>%  
+  mutate(.variable = str_replace_all(.variable, 'b_Chlincreasenearby_', ''),
+         .variable = str_replace_all(.variable, 'bsp_Chlincreasenearby_mi', ''),
+         var_fac = factor(.variable, 
+                          levels = rev(c('geomorphic_typeIsland','reef_area_km2','land_area_km2',
+                                         'bathymetric_slope',
+                                         'mean_chlorophyll','ted_mean', 'mld_mean',
+                                         'mld_anom', 'avg_monthly_mm_anom' 
+                          ))))
 
-ggplot(effects2, aes(x = .value, y = var_fac)) +
-  stat_halfeye(.width = c(0.5, 0.95)) +  
-  geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
-  labs(x = "Effect size", y = "", subtitle = 'y = Chl max') 
+# 
+# # Plot effect sizes
+# pdf(file = 'fig/ime_db/ime_month_crep_model.pdf', height=5, width=6)
+# ggplot(effects, aes(x = .value, y = var_fac)) +
+#   stat_halfeye(.width = c(0.5, 0.95)) +  
+#   geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
+#   labs(x = "Effect size", y = "", subtitle = 'y = Chl increase nearby, %') 
+# 
+# ggplot(effects2, aes(x = .value, y = var_fac)) +
+#   stat_halfeye(.width = c(0.5, 0.95)) +  
+#   geom_vline(xintercept = 0, linetype = "dashed", color = "red") + 
+#   labs(x = "Effect size", y = "", subtitle = 'y = Chl max') 
+# 
+# 
+# dev.off()
 
+g1<-ggplot(effects, aes(x = .value, y = var_fac)) +
+  stat_halfeye(.width = c(0.5, 0.95)) +
+  xlim(-2, 2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  labs(x = "Effect size", y = "", subtitle = 'MODIS (original)')
 
+g2<-ggplot(effects2, aes(x = .value, y = var_fac)) +
+  stat_halfeye(.width = c(0.5, 0.95)) +
+  xlim(-2, 2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  labs(x = "Effect size", y = "", subtitle = 'MODIS (new algo)')
+
+g3<-ggplot(effects3, aes(x = .value, y = var_fac)) +
+  stat_halfeye(.width = c(0.5, 0.95)) +
+  xlim(-2, 2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  labs(x = "Effect size", y = "", subtitle = 'GlobColour')
+
+pdf(file = 'fig/ime_db/ime_climato_sensor.pdf', height=3.5, width=14)
+plot_grid(g1, g2, g3, nrow=1)
 dev.off()
 

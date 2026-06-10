@@ -9,6 +9,9 @@ source('0_loads/00_islands.R')
 nc <- nc_open('data/GlobColour/IME_database_GlobColour_2026algorithm.nc')
 ncM <- nc_open('data/GlobColour/IME_database_MODIS_2026algorithm.nc')
 
+islands<-read.csv('data/ime_layers_messie_2022/island_database.csv', skip = 6) %>% 
+  janitor::clean_names()
+
 # list all dimensions
 nc$dim
 
@@ -36,24 +39,22 @@ for (v in var_names) {
 
 
 # 1️⃣ extract dimensions
-islands <- nc$name$island             # ~34 islands
-lon <- ncvar_get(nc, "island_longitude")             # ~34 islands
-lat <- ncvar_get(nc, "island_latitude")             # ~34 islands
+island_names <- islands$island_name # ~664 islands loaded from NatGeosci dataset
+lon <- ncvar_get(nc, "island_longitude")
+lat <- ncvar_get(nc, "island_latitude")
 month <- ncvar_get(nc, "month")           # raw numeric
 
-
-# 2️⃣ list all variables you want (all 9 layers)
-var_names <- names(nc$var)[-c(1:5)]
+var_names <- names(nc$var)[-c(1:4)]
 
 # 3️⃣ loop over variables and build long table
-df_list <- lapply(var_names, function(var){
+df_list_gc <- lapply(var_names, function(var){
   
   # extract variable: dimensions = island x time
   df <- ncvar_get(nc, var) %>% as.data.frame()
   
   # convert to data.frame
-  colnames(df) <- as.character(dates)        # column names = actual dates
-  df$island <- islands                        # add island column
+  colnames(df) <- as.character(month)        # column names = actual dates
+  df$island <- island_names                        # add island column
   df$lon <- lon                        # add island column
   df$lat <- lat                        # add island column
   
@@ -61,30 +62,59 @@ df_list <- lapply(var_names, function(var){
   df_long <- df %>%
     pivot_longer(
       cols = -c(island,lon,lat),
-      names_to = "date",
+      names_to = "month",
       values_to = "value"
     ) %>%
     mutate(
-      date = as.Date(date),
+      month_name = month.abb[month],
       variable = var
     ) %>%
-    select(island, date, variable, value)
+    select(island, month, month_name, variable, value)
+  
+  return(df_long)
+})
+
+# repeat for MODIS
+df_list_modis <- lapply(var_names, function(var){
+  
+  # extract variable: dimensions = island x time
+  df <- ncvar_get(ncM, var) %>% as.data.frame()
+  
+  # convert to data.frame
+  colnames(df) <- as.character(month)        # column names = actual dates
+  df$island <- island_names                        # add island column
+  df$lon <- lon                        # add island column
+  df$lat <- lat                        # add island column
+  
+  # pivot longer
+  df_long <- df %>%
+    pivot_longer(
+      cols = -c(island,lon,lat),
+      names_to = "month",
+      values_to = "value"
+    ) %>%
+    mutate(
+      month_name = month.abb[month],
+      variable = var
+    ) %>%
+    select(island, month, month_name, variable, value)
   
   return(df_long)
 })
 
 # 4️⃣ combine all variables into one tidy data.frame
-ime_df <- bind_rows(df_list) %>% 
-  mutate(value = as.numeric(value),
-         month = month(date), year = year(date)) %>% 
-  pivot_wider( id_cols = c(island, date, month, year), names_from = variable, values_from=value) %>% 
-  group_by(island) %>% 
-  mutate(chl_max_mean = mean(Chl_max, na.rm=TRUE)) %>% ungroup() %>% 
-  group_by(island, month) %>% 
-  mutate(chl_max_monthly_mean = mean(Chl_max, na.rm=TRUE)) %>% ungroup() %>% 
+ime_df_gc <- bind_rows(df_list_gc) %>% 
+  mutate(value = as.numeric(value)) %>% 
+  pivot_wider( id_cols = c(island, month), names_from = variable, values_from=value) %>% 
+  mutate(data = 'GlobColour')
+
+ime_df_modis <- bind_rows(df_list_modis) %>% 
+  mutate(value = as.numeric(value)) %>% 
+  pivot_wider( id_cols = c(island, month), names_from = variable, values_from=value) %>% 
+  mutate(data = 'MODIS')
+
+ime_df<-rbind(ime_df_gc, ime_df_modis) %>% 
   mutate(
-    chl_max_anom = (Chl_max - chl_max_mean) / chl_max_mean, # anomaly for that island
-    chl_max_month_anom = (Chl_max - chl_max_monthly_mean) / chl_max_monthly_mean, ## anomaly for that island-month
     island_messie = island,
     island = trimws(str_replace_all(island, 'Atoll', '')),
     island = trimws(str_replace_all(island, 'Island', '')),
@@ -101,93 +131,4 @@ ime_df <- bind_rows(df_list) %>%
   left_join(region_df, by = 'island') %>% 
   left_join(island_cols)
 
-write.csv(ime_df, file = 'data/GlobColour/GlobColour_IME_output.csv', row.names=FALSE)
-
-ime_df<-read.csv('data/GlobColour/GlobColour_IME_output.csv')
-island.vec<-ime_df %>% distinct(island) %>% pull(island)
-
-pdf(file = 'fig/ime_db/ime_globcol_timeseries.pdf', height=7, width=12)
-
-for(i in 1:length(island.vec)){
-  
-    g1<-ggplot(ime_df %>% filter(island == island.vec[i]), aes(date, Chl_max)) + 
-      geom_line(col='grey') + geom_point() +
-    labs(x = '', subtitle = island.vec[i])
-    
-    g2<-ggplot(ime_df %>% filter(island == island.vec[i]), aes(date, Chl_increase_nearby)) + 
-      geom_line(col='grey') + geom_point() +
-      scale_y_continuous(labels=label_percent()) +
-      labs(x = '')
-    
-    g3<-ggplot(ime_df %>% filter(island == island.vec[i]) %>% 
-                mutate(dir=ifelse(chl_max_anom>0, 'pos', 'neg')), aes(date, chl_max_anom)) + 
-      geom_hline(yintercept = 0, col = 'grey', alpha=0.5) +
-      geom_line(col='grey') + geom_point(aes(colour = dir)) +
-      scale_color_manual(values= c('neg' = "#2C7BB6", 'pos' = "#FDAE61")) +
-      labs(x = '', y = 'Chl_max anomaly') + guides(colour='none')
-    
-    print(plot_grid(g1, g2, g3, nrow=3))
-    rm(g1, g2, g3)
-}
-dev.off()
-
-# NA cases tend to refer to rows where cChl was NA. This indicates there is no IME for XYZ???
-# how many Chl_max are NA?
-ime_df %>% filter(is.na(Chl_max)) # 3 months in 1998 for Swains
-ime_df %>% filter(is.na(Chl_increase_nearby)) # 5,020 month~island combos [higher in new algo version]
-ime_df %>% filter(has_IME ==1 & is_primaryIME == 0) # 1,120 month~island combos
-
-ime_df %>% filter(has_IME ==1 & is_primaryIME == 0)  %>% group_by(island) %>% summarise(n = length(is_primaryIME)) %>% 
-  arrange(-n)
-
-1120 / dim(ime_df)[1] * 100 # 10% have an IME from a different island
-
-# how are Chl_increase and IME strength correlated?
-for(i in 1:length(island.vec)){
-with(ime_df %>% filter(!is.na(Chl_increase_nearby) & island %in% island.vec[i]), 
-     print(paste(island.vec[i], round(cor(Chl_increase_nearby, strength_IME), 2)))) # r = 0.86
-}
-
-ggplot(ime_df, aes(Chl_increase_nearby, strength_IME)) + geom_point() +
-  facet_wrap(~island)
-
-# plot IMe area over time. any spikes indicate when IME may be sat in a Chl_max zone [e.g. equatorial boundary current]
-ggplot(ime_df, aes(date, area_IME, group=island)) + geom_line() + facet_wrap(~island) +
-  scale_y_continuous(labels = comma)
-
-
-## plot Chl_max anomaly - how variable is Chlmax?
-label_df <- ime_df %>%
-  group_by(island) %>%
-  summarise(
-    date = min(date),
-    chl_max_anom = 0.25
-  )
-
-pdf(file = 'fig/ime_db/ime_ChlMax_anomaly.pdf', height=7, width=12)
-ggplot(ime_df %>% mutate(dir=ifelse(chl_max_anom>0, 'pos', 'neg')), 
-       aes(date, chl_max_anom, col=region.col, #alpha=dir, 
-           group=island)) + 
-  geom_hline(yintercept = 0, col = 'grey', alpha=0.5) +
-  geom_line() + 
-  geom_text(data = label_df, aes(date, chl_max_anom, label = island), inherit.aes = FALSE, hjust = 0, size = 3) +
-  scale_colour_identity() + 
-  # scale_alpha_manual(values = c('neg' = 0.5, 'pos' = 1)) +
-  facet_wrap(~island) +
-  labs(y = 'Chl_max anomaly, (Chl_max - mean(Chl_max))', x= '')+
-  scale_y_continuous(limits=c(-.15, 0.28), expand=c(0,0)) +
-  scale_x_date(sec.axis=dup_axis()) +
-  theme(
-    strip.background = element_blank(),
-    strip.text = element_blank(),
-    panel.spacing = unit(0.2, "lines"),
-    plot.margin = margin(5, 5, 5, 5),
-    panel.grid.minor = element_blank()
-  )
-dev.off()
-
-
-# MEI from NOAA PSL: multivariate ENSO index, Combined SST, SLP, winds, OLR
-# library(rsoi)
-# mei <- download_mei()
-# 
+write.csv(ime_df, file = 'data/GlobColour/IME_climato_GlobColour_MODIS.csv', row.names=FALSE)
