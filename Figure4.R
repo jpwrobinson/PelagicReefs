@@ -57,7 +57,7 @@ gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
                                 'Precipitation', 'Mixed layer depth','Tidal energy',
                                 'Bathymetric slope','Island area', 'Reef area', 'Island [vs. atoll]', 'Unpopulated'), 
                      sec.axis = dup_axis(labels=NULL)) +
-    theme(strip.text = element_text(face=1, hjust=0, vjust=4, size=10),
+    theme(strip.text = element_text(face=1, hjust=0, vjust=3, size=10),
           strip.background = element_blank(),
           axis.text.y = element_text(size =10),
           axis.text.x = element_text(size =10))
