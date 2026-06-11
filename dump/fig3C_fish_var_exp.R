@@ -1,0 +1,81 @@
+
+# load('results/mod_planktivore_metabolic.rds')
+# load('results/mod_herbivore_metabolic.rds')
+
+blanker<-data.frame(fg.col  = '#01579F', group = 'blanker', proportion = NA)
+
+# Get variance explain by each covariate, sum by group
+
+# Planktivore
+coef_draws <- as_draws_df(m2_plank) %>%
+  select(starts_with("b_"))
+
+# For each draw, compute group contribution as sum of |coefficient|
+# weighted by predictor variance in the data
+g1 <- coef_draws %>%
+  mutate(
+    abs_geomorphic = abs(b_geomorphic_typeIsland) + abs(b_reef_area_km2) + abs(b_island_area_km2) + abs(b_site_bathy_400m),
+    abs_habitat = abs(b_hard_coral) + abs(b_depth_m),
+    abs_seasonal = abs(b_avg_monthly_mm) + abs(b_mld_mean),
+    abs_human = abs(b_population_statusU), 
+    total = abs_geomorphic + abs_habitat + abs_seasonal + abs_human,
+    prop_geomorphic    = abs_geomorphic    / total,
+    prop_habitat          = abs_habitat          / total,
+    prop_seasonal = abs_seasonal / total,
+    prop_human = abs_human / total
+  ) %>%
+  mutate(fg = 'Planktivore', fg.col='#01579F')
+
+
+# Herbivore
+coef_draws <- as_draws_df(m2_herb) %>%
+  select(starts_with("b_"))
+
+# For each draw, compute group contribution as sum of |coefficient|
+# weighted by predictor variance in the data
+g2 <- coef_draws %>%
+  mutate(
+    abs_geomorphic = abs(b_geomorphic_typeIsland) + abs(b_reef_area_km2) + abs(b_island_area_km2) + abs(b_site_bathy_400m),
+    abs_habitat = abs(b_hard_coral) + abs(b_depth_m),
+    abs_seasonal = abs(b_avg_monthly_mm) + abs(b_mld_mean),
+    abs_human = abs(b_population_statusU), 
+    total = abs_geomorphic + abs_habitat + abs_seasonal + abs_human,
+    prop_geomorphic    = abs_geomorphic    / total,
+    prop_habitat          = abs_habitat          / total,
+    prop_seasonal = abs_seasonal / total,
+    prop_human = abs_human / total
+  ) %>%
+  mutate(fg = 'Herbivore', fg.col='#FF8C00')
+
+labs<-data.frame(fg = c('Planktivore', 'Herbivore'), 
+                 fg.col=c('#01579F', '#FF8C00'), group = 'seasonal', 
+                 proportion = c(0.45, 0.55))
+
+# bind and pivot
+vars_prop<-rbind(g1, g2) %>% 
+  select(starts_with("prop_"), fg.col) %>%
+  pivot_longer(-fg.col,names_to = "group",values_to = "proportion", names_prefix = "prop_")
+
+vars_abs<-rbind(g1, g2) %>% 
+  select(starts_with("abs_"), fg.col) %>%
+  pivot_longer(-fg.col,names_to = "group",values_to = "proportion", names_prefix = "abs_")
+
+vars<-rbind(vars, blanker)
+
+gC<-ggplot(vars_prop, aes(x = proportion, y = group, fill = fg.col, col=fg.col)) +
+  annotate('rect', xmin = -Inf, xmax=Inf, ymin = 3, ymax = 4.5, fill='grey', alpha=0.1) +
+  annotate('rect', xmin = -Inf, xmax=Inf, ymin =-Inf, ymax = 1.5, fill='grey', alpha=0.1) +
+  stat_slabinterval(.width = c(0.5, 0.95), point_interval = median_qi,                   
+                    slab_alpha = 0.5, interval_alpha = 1, point_alpha = 1,
+                    position = position_dodge(0.5)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
+  geom_text(data = labs, aes(label = fg),  position = position_dodge(0.5), size=3) +
+  scale_x_continuous(labels = scales::percent, limits = c(0, 1)) +
+  scale_y_discrete(limits = c('seasonal', 'habitat', 'blanker', 'geomorphic', 'human'),
+                   labels = c('Within-island\nseasonality', 'Site-level\nhabitat', '', 'Island-level\ngeomorphology', 'Population status')) +
+  labs(x = "Proportion of explained variance",
+       y = NULL) +
+  scale_fill_identity() + scale_colour_identity() +
+  theme(legend.position = "none", 
+        axis.text.y = element_text(hjust=0.5),
+        axis.ticks.y = element_blank())

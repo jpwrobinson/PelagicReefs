@@ -20,14 +20,14 @@ gA<-ggplot(df_mldmean, aes(mld_mean, .epred)) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
   geom_line(colour = "steelblue", linewidth = 0.9) +
-  labs(x = "Mixed layer depth [mean], m", y = "P(IME detected)")
+  labs(x = "", y = "P(IME detected)")
 
 gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +
     geom_vline(xintercept = 0, linetype=5) +
     geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
     geom_line(colour = "steelblue", linewidth = 0.9) +
-    labs(x = "Mixed layer depth [anomaly], m", y = "P(IME detected)")
+    labs(x = "", y = "")
 
 gC<-ggplot(df_mldmeanG, aes(mld_mean, .epred)) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
@@ -42,9 +42,9 @@ gD<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +
               alpha = 0.2, fill = "steelblue") +
   geom_line(colour = "steelblue", linewidth = 0.9) +
   scale_y_continuous(labels=label_percent()) +
-  labs(x = "Mixed layer depth [anomaly], m", y = "IME strength")
+  labs(x = "Mixed layer depth [anomaly], m", y = "")
 
-plot_grid(gA, gB, gC, gD)
+plot_grid(gA, gB, gC, gD, align='hv', labels=c('a', 'b', 'c', 'd'))
  
 #   geom_text(data = data.frame(mld_anom = c(-25, 25), pred = 0.78, z = c('Shallower', 'Deeper')), aes(label = z), size=3) +
 #   geom_vline(xintercept = 0, linetype=5) +

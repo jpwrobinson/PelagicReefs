@@ -108,7 +108,8 @@ ime_df <- bind_rows(df_list) %>%
 
 write.csv(ime_df, file = 'data/GlobColour/GlobColour_IME_output.csv', row.names=FALSE)
 
-ime_df<-read.csv('data/GlobColour/GlobColour_IME_output.csv')
+ime_df<-read.csv('data/GlobColour/GlobColour_IME_output.csv') %>% 
+  mutate(date = as.Date(date))
 island.vec<-ime_df %>% distinct(island) %>% pull(island)
 
 pdf(file = 'fig/ime_db/ime_globcol_timeseries.pdf', height=7, width=12)
@@ -139,8 +140,8 @@ dev.off()
 # NA cases tend to refer to rows where cChl was NA. This indicates there is no IME for XYZ???
 # how many Chl_max are NA?
 ime_df %>% filter(is.na(Chl_max)) # 3 months in 1998 for Swains
-ime_df %>% filter(is.na(Chl_increase_nearby)) # 5,020 month~island combos [higher in new algo version]
-ime_df %>% filter(has_IME ==1 & is_primaryIME == 0) # 1,120 month~island combos
+ime_df %>% filter(is.na(Chl_increase_nearby)) %>% dim # 5,020 month~island combos
+ime_df %>% filter(has_IME ==1 & is_primaryIME == 0) %>% dim # 1,120 month~island combos
 
 ime_df %>% filter(has_IME ==1 & is_primaryIME == 0)  %>% group_by(island) %>% summarise(n = length(is_primaryIME)) %>% 
   arrange(-n)
@@ -153,12 +154,10 @@ with(ime_df %>% filter(!is.na(Chl_increase_nearby) & island %in% island.vec[i]),
      print(paste(island.vec[i], round(cor(Chl_increase_nearby, strength_IME), 2)))) # r = 0.86
 }
 
-ggplot(ime_df, aes(Chl_increase_nearby, strength_IME)) + geom_point() +
-  facet_wrap(~island)
 
 # plot IMe area over time. any spikes indicate when IME may be sat in a Chl_max zone [e.g. equatorial boundary current]
-ggplot(ime_df, aes(date, area_IME, group=island)) + geom_line() + facet_wrap(~island) +
-  scale_y_continuous(labels = comma)
+# ggplot(ime_df, aes(date, area_IME, group=island)) + geom_line() + facet_wrap(~island) +
+#   scale_y_continuous(labels = comma)
 
 
 ## plot Chl_max anomaly - how variable is Chlmax?
@@ -190,9 +189,3 @@ ggplot(ime_df %>% mutate(dir=ifelse(chl_max_anom>0, 'pos', 'neg')),
     panel.grid.minor = element_blank()
   )
 dev.off()
-
-
-# MEI from NOAA PSL: multivariate ENSO index, Combined SST, SLP, winds, OLR
-# library(rsoi)
-# mei <- download_mei()
-# 

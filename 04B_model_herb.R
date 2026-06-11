@@ -13,13 +13,13 @@ car::vif(glm(log(herbivore_metab) ~
                land_area_km2 + avg_monthly_mm +
                reef_area_km2 + 
                site_bathy_400m + 
-               # population_status +
+               population_status +
                # mean_chlorophyll +
                ted_mean + 
                mld_mean, data=herb_scaled %>% filter(herbivore_metab>0)))
 
 # 1. Herbivore
-# model N = 4340 [2009-2024]
+# model N = 3622 [2009-2024]
 m2_herb<-brm(herbivore_metab ~ 
                 geomorphic_type + reef_area_km2 + island_area_km2 + avg_monthly_mm +
                 site_bathy_400m + 
@@ -45,7 +45,7 @@ checker<-m2_herb
 summary(checker)
 pp_check(checker, resp = 'herbivore_metab')
 conditional_effects(checker)
-bayes_R2(checker, re.form=NA) # 32.6%
+bayes_R2(checker, re.form=NA) # 32.6% [27% marginal]
 
 ### OUTPUTS
 

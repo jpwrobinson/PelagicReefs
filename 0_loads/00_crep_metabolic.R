@@ -60,8 +60,9 @@ depth<- depth %>%
   # left_join(ime_dat %>% 
   #             select(island_group, months_ime, median_ime_percent, chl_ime))
   # keep forereef only (drops 31 sites)
-  filter(reef_zone=='Forereef') %>%  ## need to check with Tom. Drops 712.
-  filter(!is.na(hard_coral)) ## these are places without reef zone, so were dropped
+  filter(reef_zone=='Forereef') %>%  ## Drops 712 other reef habs
+  filter(!is.na(hard_coral)) %>% ## these are places without reef zone, so were dropped
+  filter(!is.na(ted_mean)) # 9 sites at Johnston, which is excluded
 
 # check time-series
 depth %>% group_by(island, region) %>% summarise(n_year = n_distinct(year)) %>% 
@@ -146,18 +147,18 @@ pairs2(
            chl_a_mg_m3_mean, mld_mean, mld_amp, ted_mean, month_num))
 dev.off()
 
-
-rel_metab<-depth %>% select(region, island, SITEVISITID, planktivore_metab:piscivore_metab) %>% 
-  mutate(community_metab = planktivore_metab + herbivore_metab + secondary_metab + piscivore_metab,
-         rel_plank = planktivore_metab / community_metab) 
-
-ggplot(rel_metab %>% 
-         group_by(island, region) %>% 
-         summarise(sd = sd(rel_plank), rel_plank = median(rel_plank)), aes(region, rel_plank, col=region)) + geom_point()
-
-ggplot(rel_metab, aes(fct_reorder2(island, rel_plank, region), rel_plank, col=region)) + geom_boxplot()  +
-  labs(x = '', y = 'Planktivore metabolic flux, % of community') +
-  scale_y_continuous(labels = label_percent()) + coord_flip()
-
-# range by region
-rel_metab %>% group_by(region) %>% reframe(range(rel_plank))
+# 
+# rel_metab<-depth %>% select(region, island, SITEVISITID, planktivore_metab:piscivore_metab) %>% 
+#   mutate(community_metab = planktivore_metab + herbivore_metab + secondary_metab + piscivore_metab,
+#          rel_plank = planktivore_metab / community_metab) 
+# 
+# ggplot(rel_metab %>% 
+#          group_by(island, region) %>% 
+#          summarise(sd = sd(rel_plank), rel_plank = median(rel_plank)), aes(region, rel_plank, col=region)) + geom_point()
+# 
+# ggplot(rel_metab, aes(fct_reorder2(island, rel_plank, region), rel_plank, col=region)) + geom_boxplot()  +
+#   labs(x = '', y = 'Planktivore metabolic flux, % of community') +
+#   scale_y_continuous(labels = label_percent()) + coord_flip()
+# 
+# # range by region
+# rel_metab %>% group_by(region) %>% reframe(range(rel_plank))
