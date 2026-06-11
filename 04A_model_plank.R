@@ -21,7 +21,7 @@ car::vif(glm(log(planktivore_metab) ~
 
 
 # 1. Planktivore
-# model N = 4294 [2009-2024].   n=3589 with hard coral
+# model N = 3622 [2009-2024].   n=3589 with hard coral
 m2_plank<-brm(planktivore_metab ~ 
                     geomorphic_type + reef_area_km2 + island_area_km2 + 
                     site_bathy_400m + 

@@ -34,7 +34,10 @@ variance_partition_brms <- function(fit, data, groups) {
   # ── fixed effect group contributions (from fixed-only predictions) ────────
   group_var <- map(groups, function(vars) {
     newdata_reduced <- data |>
-      mutate(across(all_of(vars), \(x) mean(x, na.rm = TRUE)))
+      mutate(across(all_of(vars), \(x) {
+        if (is.numeric(x)) mean(x, na.rm = TRUE)
+        else names(which.max(table(x)))
+      }))
     pred_reduced <- posterior_epred(fit, newdata = newdata_reduced,
                                     re_formula = NA)   # fixed only, group removed
     var_fixonly - row_var(pred_reduced)
@@ -46,7 +49,7 @@ variance_partition_brms <- function(fit, data, groups) {
   # ── compile ───────────────────────────────────────────────────────────────
   all_components <- c(
     group_var,
-    list(Island_RE = var_random,
+    list(RE = var_random,
          Residual  = var_resid)
   )
   
@@ -64,7 +67,7 @@ variance_partition_brms <- function(fit, data, groups) {
 groups <- list(
   Geomorphic    = c("island_area_km2", "reef_area_km2", "site_bathy_400m", "geomorphic_type"),
   Oceanographic = c("mld_mean", "avg_monthly_mm", "ted_mean"),
-  Fish_habitat  = c("hard_coral", "depth"),
+  Fish_habitat  = c("hard_coral", "depth_m"),
   Human         = c("population_status")
 )
 

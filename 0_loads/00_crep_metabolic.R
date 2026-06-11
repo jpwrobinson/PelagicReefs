@@ -146,18 +146,18 @@ pairs2(
            chl_a_mg_m3_mean, mld_mean, mld_amp, ted_mean, month_num))
 dev.off()
 
-
-rel_metab<-depth %>% select(region, island, SITEVISITID, planktivore_metab:piscivore_metab) %>% 
-  mutate(community_metab = planktivore_metab + herbivore_metab + secondary_metab + piscivore_metab,
-         rel_plank = planktivore_metab / community_metab) 
-
-ggplot(rel_metab %>% 
-         group_by(island, region) %>% 
-         summarise(sd = sd(rel_plank), rel_plank = median(rel_plank)), aes(region, rel_plank, col=region)) + geom_point()
-
-ggplot(rel_metab, aes(fct_reorder2(island, rel_plank, region), rel_plank, col=region)) + geom_boxplot()  +
-  labs(x = '', y = 'Planktivore metabolic flux, % of community') +
-  scale_y_continuous(labels = label_percent()) + coord_flip()
-
-# range by region
-rel_metab %>% group_by(region) %>% reframe(range(rel_plank))
+# 
+# rel_metab<-depth %>% select(region, island, SITEVISITID, planktivore_metab:piscivore_metab) %>% 
+#   mutate(community_metab = planktivore_metab + herbivore_metab + secondary_metab + piscivore_metab,
+#          rel_plank = planktivore_metab / community_metab) 
+# 
+# ggplot(rel_metab %>% 
+#          group_by(island, region) %>% 
+#          summarise(sd = sd(rel_plank), rel_plank = median(rel_plank)), aes(region, rel_plank, col=region)) + geom_point()
+# 
+# ggplot(rel_metab, aes(fct_reorder2(island, rel_plank, region), rel_plank, col=region)) + geom_boxplot()  +
+#   labs(x = '', y = 'Planktivore metabolic flux, % of community') +
+#   scale_y_continuous(labels = label_percent()) + coord_flip()
+# 
+# # range by region
+# rel_metab %>% group_by(region) %>% reframe(range(rel_plank))
