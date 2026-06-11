@@ -4,7 +4,21 @@ source('0_loads/00_oceanographic_load.R')
 # Load IME from 0_loads/00_ime_messie_load.R
 # ime = mean upwelling %
 ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
-ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)
+
+# source='MODIS-2'
+
+if(source == 'MODIS-1'){
+ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)}
+
+if(source == 'GlobColour'){
+ime_month<-read.csv('data/GlobColour/IME_climato_GlobColour_MODIS.csv') %>% 
+  filter(!is.na(region.num) & data == 'GlobColour') %>% 
+  mutate(month_num = month, month=NULL, REGION=NULL)}
+
+if(source == 'MODIS-2'){
+ime_df<-read.csv('data/GlobColour/IME_climato_GlobColour_MODIS.csv') %>% 
+  filter(!is.na(region.num) & data == 'MODIS') %>% 
+  mutate(month_num = month, month=NULL, REGION=NULL)}
 
 # dim(ime_dat) = 35 island (complexes)
 ime_dat<-ime_island %>% left_join(
@@ -37,17 +51,17 @@ ime_dat<-ime_island %>% left_join(
 ##------ save csv of modelled data ------##
 
 # 1. Island complexes in IME model. N = 35
-ime_dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
-
-# 2. Islands with data and modelled at complex level. N=40
-island %>% filter(island != 'Maro Reef') %>% 
-  distinct(island, latitude, longitude, REGION, geomorphic_type) %>% 
-  write.csv('ime_island_crep_lat_lon.csv', row.names=FALSE)
+# ime_dat %>% distinct(island, lat, lon, REGION, geomorphic_type) %>% write.csv('ime_complex_crep_lat_lon.csv', row.names=FALSE)
+# 
+# # 2. Islands with data and modelled at complex level. N=40
+# island %>% filter(island != 'Maro Reef') %>% 
+#   distinct(island, latitude, longitude, REGION, geomorphic_type) %>% 
+#   write.csv('ime_island_crep_lat_lon.csv', row.names=FALSE)
 
 ##------ merge with IME covariates ------##
 # dim(dat_month) = 420 (12 * 35)
 dat_month<-ime_month %>% 
-  left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>% 
+  left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>%
   left_join(island_complex %>% ungroup() %>% 
               mutate(island = str_replace_all(island_group, '_C', '')) %>%
               select(island, REGION, region.col, sst_mean:ted_sum, -mld, -mld_sd, -avg_monthly_mm),
@@ -85,14 +99,14 @@ dat_scaled_month<-dat_month %>%
          population_status_num = ifelse(population_status == 'U', 0, 1))
 
 # Create pairs plot for IME covariates
-pdf(file = 'fig/crep_island_month_correlations.pdf', height=7, width=15)
-pairs2(
-  dat_scaled_month %>% 
-    filter(!is.na(bathymetric_slope) & !is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% 
-    select(land_area_km2, reef_area_km2, bathymetric_slope,avg_monthly_mm,population_status_num,
-           sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
-           mean_chlorophyll, mld, ssh, ted_mean, ted_sum, month_num))
-dev.off()
+# pdf(file = 'fig/crep_island_month_correlations.pdf', height=7, width=15)
+# pairs2(
+#   dat_scaled_month %>% 
+#     filter(!is.na(bathymetric_slope) & !is.na(ted_mean) & !is.na(Chl_increase_nearby)) %>% 
+#     select(land_area_km2, reef_area_km2, bathymetric_slope,avg_monthly_mm,population_status_num,
+#            sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
+#            mean_chlorophyll, mld, ssh, ted_mean, ted_sum, month_num))
+# dev.off()
 
 # 
 # pdf(file = 'fig/ime_db/ime_month_crep.pdf', height=5, width=12)
