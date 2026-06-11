@@ -127,29 +127,24 @@ island_complex<-island_complex %>%
 # levs<-island %>% distinct(region, island_code, latitude) %>% 
 #   group_by(region) %>% arrange(island_code, latitude, .by_group=TRUE) %>% pull(island_code)
 # 
-# pdf(file = 'fig/ime_crep/crep_island_oceanography.pdf', height=6, width=17)
-# print(
-#   # Island mean values
-# island %>% 
-#   mutate(island_code = factor(island_code, levels = rev(levs))) %>% 
-#   rename(
-#          tidal_mean_W_m1 = ted_mean,
-#          tidal_sum_W_m1 = ted_sum,
-#          sea_surface_height_m = ssh,
-#          mld_avg_m = mld_mean,
-#          n_months_deep_mld = mld_months_deep,
-#          mld_sd_m = mld_sd) %>% 
-#   pivot_longer(-c(island_code, island, region,REGION, geomorphic_type, latitude, longitude, 
-#                   region.col, island_group, n_grids, irradiance_einsteins_m2_d1_mean), names_to = 'cov', values_to = 'val') %>% 
-#   ggplot(aes(island_code, val, fill=region.col)) + geom_col() +
-#   facet_grid(~cov, scales='free') + 
-#   coord_flip() +
-#   scale_fill_identity() +
-#   theme(legend.position.inside = NULL) +
-#   scale_y_continuous(expand=c(0,0)) +
-#   labs( x= '', y = '')
-# )
-# dev.off()
+pdf(file = 'fig/ime_crep/crep_island_oceanography.pdf', height=6, width=17)
+print(
+  # Island mean values
+island %>%
+  mutate(island_code = factor(island_code, levels = rev(levs))) %>%
+  select(-ted_sum, -ssh, -mld_months_deep, -mld_amp, -mld_cv, -mld_sd, -precip_amp_mm, -ted_median, -ted_sum_median, -var_slope) %>% 
+  rename(tidal_mean_W_m1 = ted_mean, mld_avg_m = mld_mean) %>%
+  pivot_longer(-c(island_code, island, region,REGION, geomorphic_type, latitude, longitude,
+                  region.col, island_group, n_grids, irradiance_einsteins_m2_d1_mean), names_to = 'cov', values_to = 'val') %>%
+  ggplot(aes(island_code, val, fill=region.col)) + geom_col() +
+  facet_grid(~cov, scales='free') +
+  coord_flip() +
+  scale_fill_identity() +
+  theme(legend.position.inside = NULL) +
+  scale_y_continuous(expand=c(0,0)) +
+  labs( x= '', y = '')
+)
+dev.off()
 # 
 # 
 # pdf(file = 'fig/ime_crep/crep_island_correlations.pdf', height=7, width=15)

@@ -63,9 +63,9 @@ m_detect <- brm(bf(
 # intervals(m_detect2$lme, which = "var-cov")  # 95% CI for rho
 # m_detect2$AR1.rho
 
-gratia::draw(m_detect2, select = 'mld_mean', partial_match=TRUE)
-gratia::draw(m_detect2, select = 'mld_anom', partial_match=TRUE)
-gratia::draw(m_detect2, select = 'time_s', partial_match=TRUE)
+# gratia::draw(m_detect2, select = 'mld_mean', partial_match=TRUE)
+# gratia::draw(m_detect2, select = 'mld_anom', partial_match=TRUE)
+# gratia::draw(m_detect2, select = 'time_s', partial_match=TRUE)
 
 save(ime_df, focal, m_detect, m_detect2, file = 'results/mod_ime_time_binom.rds')
 

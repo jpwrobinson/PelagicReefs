@@ -60,7 +60,12 @@ gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
     theme(strip.text = element_text(face=1, hjust=0, vjust=3, size=10),
           strip.background = element_blank(),
           axis.text.y = element_text(size =10),
-          axis.text.x = element_text(size =10))
+          axis.text.x = element_text(size =10)) + 
+  add_fishape(family = "Acanthuridae",
+             option = "Naso_unicornis",
+             xmin = 1, xmax = 3, ymin = 15000, ymax = 20000,
+             fill = fish(option = "Naso_lituratus", n = 4)[2],
+             alpha = 0.8) +
 
 ## SHAP panels
 
