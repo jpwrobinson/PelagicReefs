@@ -45,10 +45,6 @@ group_shap_r2 <- function(fit, data, groups, bg_n = 100, n_explain = 300, respon
   
   shap_mat <- as.data.frame(ks$S)
   
-  # ── total variance in posterior mean predictions ──────────────────────────
-  pred_means <- brms_pred_fun(fit, X)
-  pred_var   <- var(pred_means)
-  
   shap_mat |>
     summarise(across(everything(), var)) |>
     pivot_longer(everything(), names_to = "feature", values_to = "shap_var") |>

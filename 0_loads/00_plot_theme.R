@@ -20,6 +20,7 @@ library(RColorBrewer)
 library(tidybayes)
 library(gratia)
 library(bayesplot)
+library(fishualize)
 
 island_cols<-data.frame(region = c("Northwestern Hawaiian", "Hawaii", "Mariana", "Equatorial", "Samoa"),
                         REGION = c("NWHI", "MHI", "MARIAN", "PRIAs", "SAMOA"),
