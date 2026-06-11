@@ -60,8 +60,9 @@ depth<- depth %>%
   # left_join(ime_dat %>% 
   #             select(island_group, months_ime, median_ime_percent, chl_ime))
   # keep forereef only (drops 31 sites)
-  filter(reef_zone=='Forereef') %>%  ## need to check with Tom. Drops 712.
-  filter(!is.na(hard_coral)) ## these are places without reef zone, so were dropped
+  filter(reef_zone=='Forereef') %>%  ## Drops 712 other reef habs
+  filter(!is.na(hard_coral)) %>% ## these are places without reef zone, so were dropped
+  filter(!is.na(ted_mean)) # 9 sites at Johnston, which is excluded
 
 # check time-series
 depth %>% group_by(island, region) %>% summarise(n_year = n_distinct(year)) %>% 
