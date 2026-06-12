@@ -38,6 +38,18 @@ load('results/mod_herbivore_metabolic.rds')
 summary(m2_plank)
 summary(m2_herb)
 
-island %>% distinct(island, mld_amp) %>% dplyr::slice_min(mld_amp, n = 5) 
+island %>% distinct(island, mld_amp) %>% dplyr::slice_min(mld_amp, n = 5)
 
+# Island vs Island complex
+ime_is<-mod_dat %>% distinct(island) %>% pull(island)
+fish_is<-plank_scaled %>% distinct(island) %>% pull(island)
 
+fish_is[fish_is %in% ime_is] # 29 fish islands in IME
+
+fish_is[!fish_is %in% ime_is] # Islands not in IME because complex:
+# "Ofu & Olosega" "Lanai"         "Molokai"       "Tinian"        "Aguijan"
+
+ime_is[!ime_is %in% fish_is] # Islands not in fish because no bathymetry data:
+# "Wake"     "Midway"   "Laysan"   "Johnston" "Necker"  
+
+unique(c(fish_is, ime_is))
