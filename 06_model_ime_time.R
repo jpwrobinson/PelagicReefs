@@ -77,7 +77,8 @@ pp_check(m_detect)
 conditional_effects(m_detect, effects = 'mld_mean_s')
 conditional_effects(m_detect, effects = 'mld_anom_s')
 conditional_effects(m_detect, effects = 'time_s')
-# 
+bayes_R2(m_detect,  re.form=NA) 
+
 # smooth_estimates <- smooth_estimates(m_detect2) %>%
 #   filter(smooth == "s(time_s):island")
 # 
@@ -86,7 +87,7 @@ conditional_effects(m_detect, effects = 'time_s')
 
 ## 2. Gamma on has_IME == 1
 # n = 6132 , ~5020 obs dropped
-focalCont<-focal %>% filter(has_IME == 1)
+focalCont<-focal %>% filter(has_IME == 1 & !is.na(Chl_increase_nearby))
 
 m_hurdle<-brm(bf(
   Chl_increase_nearby ~ 
