@@ -68,7 +68,7 @@ th<-theme(legend.position='none',
           strip.text = element_text(face=2, hjust=0, size=11),
           strip.background = element_blank(),
           axis.text.x = element_text(size=10),
-          plot.margin = unit(c(0.1, 1.5, 0, 1), 'cm'))
+          plot.margin = unit(c(0.1, 1.75, 0, .5), 'cm'))
 
 labs<-data.frame(label = c('Depth', 'Hard coral',
                  'Precipitation', 'Mixed layer depth','Tidal energy',
@@ -119,10 +119,14 @@ print(
 dev.off()
 
 # fish icons
+pdf(file = 'fig/Fig_FishIcon.pdf', height=4.5, width=10)
+
 ggplot() + add_fishape(family = 'Caesionidae', option = "Caesio_cuning",
             fill = fg_cols[2])  +
-  theme_void() 
+  theme_void() + labs(subtitle = 'Caesio cuning')
 
 ggplot() + add_fishape(family = 'Acanthuridae', option = "Naso_unicornis",
                        fill = fg_cols[1])  +
-  theme_void() 
+  theme_void() + labs(subtitle = 'Naso unicornis')
+
+dev.off()
