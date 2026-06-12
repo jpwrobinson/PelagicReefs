@@ -154,7 +154,7 @@ slopes_detect <- pred_detect %>%
   mutate(model = "detect")
 
 # Summarise and plot
-bind_rows(slopes_detect) %>%
+bind_rows(slopes_no_mld, slopes_detect) %>%
   group_by(island, model) %>%
   summarise(mean_slope = mean(slope),
             lower = quantile(slope, 0.025),
