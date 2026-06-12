@@ -119,7 +119,7 @@ print(
 dev.off()
 
 # fish icons
-pdf(file = 'fig/Fig_FishIcon.pdf', height=4.5, width=10)
+pdf(file = 'fig/Fig_FishIcon.pdf', height=6, width=10)
 
 ggplot() + add_fishape(family = 'Caesionidae', option = "Caesio_cuning",
             fill = fg_cols[2])  +
