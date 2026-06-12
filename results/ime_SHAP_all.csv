@@ -1,0 +1,3 @@
+"group","response","mean_abs_shap","rel_R2","abs_R2"
+"Geomorphic","IME strength",26.2687779664056,0.726849027299707,0.895825032528579
+"Oceanographic","IME strength",9.87184681229965,0.273150972700293,0.10363690329506

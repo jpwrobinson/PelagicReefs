@@ -117,6 +117,8 @@ vp_by_var <- bind_rows(vp_plank[[2]], vp_herb[[2]]) %>%
 
 print(vp_all)
 
+write.csv(vp_ime[[1]], file='results/ime_SHAP_all.csv', row.names = FALSE)
+write.csv(vp_ime[[2]], file='results/ime_SHAP_byvar.csv', row.names = FALSE)
 write.csv(vp_all, file='results/fish_SHAP_all.csv', row.names = FALSE)
 write.csv(vp_by_var, file='results/fish_SHAP_byvar.csv', row.names = FALSE)
 
