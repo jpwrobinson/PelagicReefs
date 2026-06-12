@@ -1,5 +1,9 @@
 source('func_mod_conditional.R')
 
+th_marg<-theme(plot.margin=unit(c(0.1, .1, .1,.1), 'cm'),
+               axis.title = element_text(size = 10),
+               axis.text = element_text(size=9))
+
 ## IME plots
 
 # Panel A = 06_ime_time. m_detect. code is ready.
@@ -9,54 +13,67 @@ load(file = 'results/mod_ime_time_hurdle.rds')
 # A = MLD anomaly preds, B = MLD anomaly preds
 df_mldmean<-marginal_post(m_detect, focal, 'mld_mean_s', 'mld_mean')
 df_mldanom<-marginal_post(m_detect, focal, 'mld_anom_s', 'mld_anom')
+# df_time<-marginal_post(m_detect, focal, 'time_s', 'time')
 
 df_mldmeanG<-marginal_post(m_hurdle, focal, 'mld_mean_s', 'mld_mean')
 df_mldanomG<-marginal_post(m_hurdle, focal, 'mld_anom_s', 'mld_anom')
+# df_timeG<-marginal_post(m_hurdle, focal, 'time_s', 'time')
 
-marginal_post_island(m_hurdle, focal, 'time_s', 'time')
+# marginal_post_island(m_hurdle, focal, 'time_s', 'time')
 
 # Plot and multipanel
 gA<-ggplot(df_mldmean, aes(mld_mean, .epred)) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
   geom_line(colour = "steelblue", linewidth = 0.9) +
-  labs(x = "", y = "P(IME detected)")
+  lims(y = c(0, 0.9)) +
+  labs(x = "", y = "P(IME)") +
+  th_marg
 
 gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +
-    geom_vline(xintercept = 0, linetype=5) +
+    geom_vline(xintercept = 0, linetype=5, alpha=0.5) +
     geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
+    lims(y = c(0, 0.9)) +
     geom_line(colour = "steelblue", linewidth = 0.9) +
-    labs(x = "", y = "")
+    labs(x = "", y = "") +
+    th_marg
 
 gC<-ggplot(df_mldmeanG, aes(mld_mean, .epred)) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
   geom_line(colour = "steelblue", linewidth = 0.9) +
-  scale_y_continuous(labels=label_percent()) +
-  labs(x = "Mixed layer depth [mean], m", y = "IME strength")
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.55)) +
+  labs(x = "Mixed layer depth [mean], m", y = "IME strength") +
+  th_marg
 
 gD<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +
-  geom_vline(xintercept = 0, linetype=5) +
+  geom_vline(xintercept = 0, linetype=5, alpha=0.5) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
   geom_line(colour = "steelblue", linewidth = 0.9) +
-  scale_y_continuous(labels=label_percent()) +
-  labs(x = "Mixed layer depth [anomaly], m", y = "")
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.55)) +
+  labs(x = "Mixed layer depth [anomaly], m", y = "") +
+  th_marg
+
+
+# gE<-ggplot(df_time, aes(time, .epred)) +
+#   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+#               alpha = 0.2, fill = "steelblue") +
+#   geom_line(colour = "steelblue", linewidth = 0.9) +
+#   scale_y_continuous(labels=label_percent()) +
+#   labs(x = "", y = "")
+# 
+# gF<-ggplot(df_timeG, aes(mld_anom, .epred)) +
+#   geom_vline(xintercept = 0, linetype=5) +
+#   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+#               alpha = 0.2, fill = "steelblue") +
+#   geom_line(colour = "steelblue", linewidth = 0.9) +
+#   scale_y_continuous(labels=label_percent()) +
+#   labs(x = "", y = "")
 
 plot_grid(gA, gB, gC, gD, align='hv', labels=c('a', 'b', 'c', 'd'))
  
-#   geom_text(data = data.frame(mld_anom = c(-25, 25), pred = 0.78, z = c('Shallower', 'Deeper')), aes(label = z), size=3) +
-#   geom_vline(xintercept = 0, linetype=5) +
-#   geom_ribbon(col='transparent', alpha=0.1, aes(ymin = lower, ymax = upper)) +
-#   geom_line(col = 'blue') + 
-#   scale_colour_identity() +
-#   scale_y_continuous(limits=c(0, 0.8), expand=c(0,0)) +
-#   scale_x_continuous(breaks = c(-30, -15, 0, 15, 30, 45), 
-#                    sec.axis = dup_axis(breaks =0, labels = 'Monthly mean')) +
-#   labs(x = 'Mixed layer depth [anomaly], m', y = 'P (IME detection)') +
-#   theme(axis.title.x.top = element_blank(), axis.line.x.top = element_blank())
-
 histA <- ggplot(focal, aes(mld_mean)) +
   geom_histogram(bins = 20, fill = "steelblue", color = "white") +
   scale_x_continuous(expand=c(0,0)) + theme_void() 
@@ -88,15 +105,17 @@ preds <- tibble(year_s = seq(min(focal$year_s), max(focal$year_s), length.out = 
   filter(.category != "normal")
 
 # Plot with uncertainty ribbons
-gC<-ggplot(preds, aes(x = year, y = .epred, color = .category, fill = .category)) +
+gE<-ggplot(preds, aes(x = year, y = .epred, color = .category, fill = .category)) +
   stat_lineribbon(.width = c(0.50, 0.95), alpha = 0.3) +
   scale_fill_manual(values = c("shallow" = "#3182bd", "deep" = "#de2d26")) +
   scale_color_manual(values = c("shallow" = "#3182bd", "deep" = "#de2d26")) +
   labs(x = "",y = "P (MLD anomaly ± 20 m)") +
   scale_x_continuous(breaks=seq(1995, 2025, by = 5)) +
-  annotate('text', x = 2020, y = 0.03, label = 'Deep', col = '#de2d26') +
-  annotate('text', x = 1996, y = 0.014, label = 'Shallow', col = "#3182bd") +
-  theme(legend.position = "none")
+  annotate('text', x = 2020, y = 0.03, label = 'Deep', col = '#de2d26', size=3) +
+  annotate('text', x = 1996, y = 0.014, label = 'Shallow', col = "#3182bd", size=3) +
+  theme(legend.position = "none",
+        axis.title = element_text(size=10),
+        axis.text = element_text(size=9))
 
 # Panel C = 02_model_mld_time. 
 # main panel = MLD obs removing month effect (m1)
@@ -141,15 +160,23 @@ gBase<-ggplot(data = region_smooth %>% filter(var == 'obs'), aes(date, MLD_pred)
   guides(col='none', fill='none') +
   scale_colour_identity() +
   scale_fill_identity() +
-  scale_x_date(date_breaks = '7 years', date_labels = paste0("'", '%y')) +
+  scale_x_date(
+    breaks=as.Date(c('1993', '1999', '2005', '2011', '2017', '2023'), '%Y'),
+    # date_breaks = '4 years', 
+    # minor_breaks = as.Date(c('1996', '2002', '2008', '2014', '2020', '2026'), '%Y'),
+               date_labels = paste0('%Y')) +
   facet_wrap(~region, nrow=1) +
-  theme(strip.text = element_text(hjust = 0, size = 10), strip.background = element_blank(),
-      axis.text.x = element_text(size = 10))
+  theme(strip.text = element_text(hjust = 0, size = 9), 
+        strip.background = element_blank(),
+      axis.text = element_text(size = 9))
 
 gF<-gBase %+% (region_smooth %>% filter(var == 'anom')) + 
   geom_hline(yintercept = 0, linetype=5, alpha=0.5) +
-  geom_line(data = preds %>% filter(var == 'anom'), aes(col=region.col, group=island), alpha=0.5) +
-  labs(x = '', y = 'Mixed layer depth, m') 
+  geom_line(data = preds %>% filter(var == 'anom'), 
+            aes(col=region.col, group=island), alpha=0.5) +
+  labs(x = '', y = 'Mixed layer anomaly, m') +
+  theme(axis.title = element_text(size = 10))
+
 
 gSX <- gBase + 
   geom_ribbon(data = preds %>% filter(var == 'obs'), 
@@ -160,11 +187,11 @@ gSX <- gBase +
   scale_x_date(date_breaks = '5 years', date_labels = paste0('%Y')) +
   labs(x = '', y = 'Mixed layer depth, m') 
 
-# source('Figure3_hurdle.R')
+gIME<-plot_grid(gA, gB, gC, gD, nrow=2, labels=c('a', 'b', 'c', 'd'))
+gIME2<-plot_grid(gIME, gE, nrow=1, labels=c('', 'e'), rel_widths=c(1, 0.4))
 
-pdf(file = 'fig/Figure3.pdf', height=5, width=8.5)
-gIME<-plot_grid(gA, gB, gC, nrow=1, labels=c('a', 'b', 'c'))
-plot_grid(gIME, gF, nrow=2, labels=c('', 'd'))
+pdf(file = 'fig/Figure3.pdf', height=5, width=10)
+plot_grid(gIME2, gF, nrow=2, labels=c('', 'f'), rel_heights=c(1, 0.8))
 dev.off()
 
 pdf(file = 'fig/FigureSX_MLD_time_obs.pdf', height=3, width=12.5)
