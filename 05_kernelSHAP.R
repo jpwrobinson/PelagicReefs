@@ -45,14 +45,12 @@ group_shap_r2 <- function(fit, data, groups, bg_n = 100, n_explain = 300, respon
   
   shap_mat <- as.data.frame(ks$S)
   
-  shap_mat |>
-    summarise(across(everything(), var)) |>
-    pivot_longer(everything(), names_to = "feature", values_to = "shap_var") |>
-    arrange(desc(shap_var))
-  
   # ── group-level importance ────────────────────────────────────────────────
   group_importance<-map_dfr(names(groups), function(grp) {
     vars <- groups[[grp]]
+    
+    # hack to allow the mi() structure of IME model to work
+    if(length(groups) == 2){vars<-paste0('Chlincreasenearby.', vars)}
     
     if (length(vars) == 1) {
       obs_imp <- abs(shap_mat[[vars]])
@@ -92,19 +90,20 @@ group_shap_r2 <- function(fit, data, groups, bg_n = 100, n_explain = 300, respon
 
 # ── run for IME ─────────────────────────────────────────
 load(file = 'results/mod_ime.rds')
-vp_ime <- group_shap_r2(m_chl_inc, mod_dat, 
-                          ime_groups, n_explain = dim(mod_dat)[1], bg_n = 100,
+mod_dat2 <- mod_dat %>% filter(!is.na(ted_mean)) # drop NAs for SHAP
+vp_ime <- group_shap_r2(m_chl_inc, mod_dat2, 
+                          ime_groups, n_explain = dim(mod_dat2)[1], bg_n = 200,
                           response_var = "IME strength")
 
 # ── run for planktivore and herbivore ─────────────────────────────────────────
 load('results/mod_planktivore_metabolic.rds')
 vp_plank <- group_shap_r2(m2_plank, plank_scaled, 
-                          fish_groups, n_explain = 300, bg_n = 100,
+                          fish_groups, n_explain = dim(plank_scaled)[1], bg_n = 100,
                           response_var = "Planktivore")
 
 load('results/mod_herbivore_metabolic.rds')
 vp_herb  <- group_shap_r2(m2_herb,  herb_scaled,
-                          fish_groups, n_explain = 300, bg_n = 100,
+                          fish_groups, n_explain = dim(herb_scaled)[1], bg_n = 100,
                           response_var = "Herbivore")
 
 

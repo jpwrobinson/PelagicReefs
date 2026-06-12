@@ -57,18 +57,12 @@ gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
                                 'Precipitation', 'Mixed layer depth','Tidal energy',
                                 'Bathymetric slope','Island area', 'Reef area', 'Island [vs. atoll]', 'Unpopulated'), 
                      sec.axis = dup_axis(labels=NULL)) +
-    theme(strip.text = element_text(face=1, hjust=0, vjust=4, size=10),
+    theme(strip.text = element_text(face=1, hjust=0, vjust=3, size=10),
           strip.background = element_blank(),
           axis.text.y = element_text(size =10),
-          axis.text.x = element_text(size =10)) + 
-  add_fishape(family = "Acanthuridae",
-             option = "Naso_unicornis",
-             xmin = 1, xmax = 3, ymin = 15000, ymax = 20000,
-             fill = fish(option = "Naso_lituratus", n = 4)[2],
-             alpha = 0.8) +
+          axis.text.x = element_text(size =10)) 
 
 ## SHAP panels
-
 th<-theme(legend.position='none',
           axis.text.y = element_blank(), axis.ticks.y = element_blank(),
           strip.text = element_text(face=2, hjust=0, size=11),
@@ -124,3 +118,11 @@ print(
 )
 dev.off()
 
+# fish icons
+ggplot() + add_fishape(family = 'Caesionidae', option = "Caesio_cuning",
+            fill = fg_cols[2])  +
+  theme_void() 
+
+ggplot() + add_fishape(family = 'Acanthuridae', option = "Naso_unicornis",
+                       fill = fg_cols[1])  +
+  theme_void() 
