@@ -19,7 +19,7 @@ gA<-ggplot(plank_mean_is) +
     sec.axis = dup_axis(name = 'Planktivore', labels=scales::trans_format("log10", scales::math_format(10^.x)))
   ) +
   coord_flip() +
-  labs(x = '', y=expression(Planktivore~metabolic~rates~(kJ~m^-2~d^-1))) +
+  labs(x = '', y=expression(Planktivore~respiration~rates~(kJ~m^-2~d^-1))) +
   theme(legend.position= 'none',
         panel.grid.major.x = element_line(colour='grey'))
 
@@ -39,7 +39,7 @@ gB<-ggplot(plank_mean_is) +
   ) +
   scale_x_discrete(position = 'top') + 
   coord_flip() +
-  labs(x = '', y=expression(Planktivore~metabolic~rates~(kJ~m^-2~d^-1))) +
+  labs(x = '', y=expression(Herbivore~respiration~rates~(kJ~m^-2~d^-1))) +
   theme(legend.position= 'none', 
         panel.grid.major.x = element_line(colour='grey'))
 

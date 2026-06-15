@@ -124,8 +124,8 @@ island_complex<-island_complex %>%
 
 
 # island oceanographic summaries
-# levs<-island %>% distinct(region, island_code, latitude) %>% 
-#   group_by(region) %>% arrange(island_code, latitude, .by_group=TRUE) %>% pull(island_code)
+levs<-island %>% distinct(region, island_code, latitude) %>%
+  group_by(region) %>% arrange(island_code, latitude, .by_group=TRUE) %>% pull(island_code)
 # 
 pdf(file = 'fig/ime_crep/crep_island_oceanography.pdf', height=6, width=17)
 print(

@@ -5,7 +5,7 @@ source('0_loads/00_oceanographic_load.R')
 # ime = mean upwelling %
 ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
 
-# source='MODIS-2'
+source='GlobColour'
 
 if(source == 'MODIS-1'){
 ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)}
