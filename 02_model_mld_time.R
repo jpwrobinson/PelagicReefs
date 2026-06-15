@@ -53,10 +53,15 @@ df$MLD_pred<-exp(predict(m1, newdata = df, type='response'))
 
 # get predicted temporal MLD holding month constant
 df2<-expand.grid(month = 1, island = unique(mld$island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
-df2$MLD_pred<-exp(predict(m1, newdata = df2, type='response',exclude=ex_smooths))
-df2<-df2 %>% left_join(island %>% rename(island = island) %>% select(island, region)) 
+# df2$MLD_pred<-exp(predict(m1, newdata = df2, type='response',exclude=ex_smooths))
+# df2<-df2 %>% left_join(island %>% rename(island = island) %>% select(island, region)) 
+# ggplot(df2, aes(time_num, MLD_pred, col=island)) + geom_line() + facet_wrap(~region)
 
-ggplot(df2, aes(time_num, MLD_pred, col=island)) + geom_line() + facet_wrap(~region)
+mld_trend<-data.frame(mld = exp(predict(m1, newdata = mld, type='response',exclude=ex_smooths)),
+                      time = mld$Date,island = mld$island, region = mld$region)
+
+ggplot(mld_trend, aes(time, mld, col=island)) + geom_line() + facet_wrap(~region)
+
 
 # add categorical vars and survey dates
 df<-df %>% 
@@ -66,6 +71,7 @@ df<-df %>%
   mutate(month_name = month.abb[month])
 
 write.csv(df, file = 'results/mld_seasonal_pred.csv', row.names=FALSE) # this is mld amplitude
+write.csv(mld_trend, file = 'results/mld_time_pred.csv', row.names=FALSE) # this is mld trend
 
 survey_dates<-read.csv('data/noaa-crep/crep_for_analysis.csv') %>% 
   distinct(OBS_YEAR, DATE_, ISLAND) %>% 
