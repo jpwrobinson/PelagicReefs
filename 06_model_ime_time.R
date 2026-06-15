@@ -2,6 +2,8 @@ source('0_loads/00_oceanographic_load.R')
 ## This script models temporal trends in the IME% (chl enhancement).
 ## It is not ideal because lots of year - month - island combinations are NA. They do have Chl_max, but not always an IME detection.
 
+mld_trend<-read.csv(file = 'results/mld_time_pred.csv') %>% mutate(date = as.Date(time), time=NULL, mld_pred = mld, mld=NULL)
+
 ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>% 
   mutate(date = as.Date(date),
          year = as.numeric(year(date)),
@@ -12,6 +14,8 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
   ) %>% 
   # matching MLD, but note this is for the 1st of the month, whereas IME is 15th
   left_join(mld %>% mutate(date = as.Date(format(Date, "%Y-%m-15"))) %>% select(date, island, MLD)) %>% 
+  # matching mLD predictions
+  left_join(mld_trend %>% mutate(date = as.Date(format(date, "%Y-%m-15")))) %>% 
   # filter(!is.na(MLD)) %>% 
   mutate(mld_s = scale(MLD)[,1]) %>% 
   group_by(island, month) %>% 
@@ -20,7 +24,8 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
   mutate(mld_anom = MLD - mld_mean, 
          mld_anom_s = scale(mld_anom),
          mld_mean_s = scale(mld_mean),
-         island=factor(island))
+         mld_pred_s = scale(mld_pred),
+         island=factor(island)) 
 
 ## Hurdle approach of gamma + binomial models.
 # Examining temopral trends in Chl_% by island, accounting for seasonality. 
@@ -35,6 +40,19 @@ focal<-ime_df %>%
 m_detect <- brm(bf(
   has_IME ~ 
     s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
+    s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
+    s(time_s, by = island, bs = "cr", k = 10)),   # island-level probability
+  family = bernoulli,
+  data = focal,
+  backend = "cmdstanr",
+  chains = 3,
+  cores = 4
+)
+
+m_detectMLDtrend <- brm(bf(
+  has_IME ~ 
+    s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
+    s(mld_pred_s, k = 3) + # MLD deepening trend
     s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
     s(time_s, by = island, bs = "cr", k = 10)),   # island-level probability
   family = bernoulli,
@@ -90,6 +108,19 @@ m_hurdle<-brm(bf(
         chains = 3,
         cores = 4
         )
+
+m_hurdleMLDtrend<-brm(bf(
+  Chl_increase_nearby ~ 
+    s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
+    s(mld_pred_s, k = 3) + # MLD deepening
+    s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
+    s(time_s, by = island, bs = "cr", k = 10)),   # island-level probability
+  family = Gamma(link = 'log'),
+  data = focalCont,
+  backend = "cmdstanr",
+  chains = 3,
+  cores = 4
+)
 
 save(ime_df, focalCont, m_hurdle, file = 'results/mod_ime_time_hurdle.rds')
 
