@@ -2,8 +2,6 @@ library(scales)
 library(RColorBrewer)
 library(tidybayes)
 library(bayesplot)
-
-source('0_loads/00_oceanographic_load.R')
 source('0_loads/00_ime_dataframe.R')
 
 crep<-read.csv(file = 'data/metabolic/crep_site_metabolic_rates.csv') 
@@ -65,10 +63,10 @@ depth<- depth %>%
   filter(!is.na(ted_mean)) # 9 sites at Johnston, which is excluded
 
 # check time-series
-depth %>% group_by(island, region) %>% summarise(n_year = n_distinct(year)) %>% 
-  ggplot() + geom_col(aes(fct_reorder2(island, region, n_year), n_year, fill=region)) + coord_flip() + labs(x ='',y= 'Number of unique survey years')
-depth %>% group_by(island, region) %>% summarise(n_year = max(year) - min(year)) %>% 
-  ggplot() + geom_col(aes(fct_reorder2(island, region, n_year), n_year, fill=region)) + coord_flip() + labs(x ='', y= 'Range of surveys')
+# depth %>% group_by(island, region) %>% summarise(n_year = n_distinct(year)) %>% 
+#   ggplot() + geom_col(aes(fct_reorder2(island, region, n_year), n_year, fill=region)) + coord_flip() + labs(x ='',y= 'Number of unique survey years')
+# depth %>% group_by(island, region) %>% summarise(n_year = max(year) - min(year)) %>% 
+#   ggplot() + geom_col(aes(fct_reorder2(island, region, n_year), n_year, fill=region)) + coord_flip() + labs(x ='', y= 'Range of surveys')
 
 # 1. Create planktivore
 # drop NA planktivore sites (n = 0)
@@ -146,19 +144,3 @@ pairs2(
            precip_amp_mm, avg_monthly_mm,sst_mean, wave_energy_mean_kw_m1, irradiance_einsteins_m2_d1_mean,
            chl_a_mg_m3_mean, mld_mean, mld_amp, ted_mean, month_num))
 dev.off()
-
-# 
-# rel_metab<-depth %>% select(region, island, SITEVISITID, planktivore_metab:piscivore_metab) %>% 
-#   mutate(community_metab = planktivore_metab + herbivore_metab + secondary_metab + piscivore_metab,
-#          rel_plank = planktivore_metab / community_metab) 
-# 
-# ggplot(rel_metab %>% 
-#          group_by(island, region) %>% 
-#          summarise(sd = sd(rel_plank), rel_plank = median(rel_plank)), aes(region, rel_plank, col=region)) + geom_point()
-# 
-# ggplot(rel_metab, aes(fct_reorder2(island, rel_plank, region), rel_plank, col=region)) + geom_boxplot()  +
-#   labs(x = '', y = 'Planktivore metabolic flux, % of community') +
-#   scale_y_continuous(labels = label_percent()) + coord_flip()
-# 
-# # range by region
-# rel_metab %>% group_by(region) %>% reframe(range(rel_plank))

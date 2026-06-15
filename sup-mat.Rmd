@@ -1,17 +1,12 @@
 ---
 title: "Supplementary Figures"
 header-includes:
-- \usepackage{pdflscape}
-- \newcommand{\blandscape}{\begin{landscape}}
-- \newcommand{\elandscape}{\end{landscape}}
-- \usepackage{graphicx}
-- \setkeys{Gin}{width=0.9\linewidth,keepaspectratio}  # This forces figures to max 90% of the text width
-- \usepackage{pdflscape}    
+  - \usepackage{pdflscape}
+  - \usepackage{afterpage}
 output:
-  pdf_document: null
-  latex_engine: pdflatex
-  html_document:
-    df_print: paged
+  pdf_document:
+    latex_engine: pdflatex
+    keep_tex: true
 ---
 
 
@@ -26,40 +21,58 @@ options(tinytex.verbose = TRUE)
 i = 1
 ```
 
-```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 # knitr::include_graphics("fig/FigureS1_ill2.pdf"); i = i + 1
 ```
 
 **Fig. S`r i`** | *tbd* Map of 35 islands surveyed by CREP across the tropical Pacific.
-\newpage
 
-```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+\begin{landscape}
+
+```{r,out.width = "85%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME.pdf"); i = i + 1
 ```
-**Fig. S`r i`** | Seasonal variation in IME strength at each island complex. Lines are mean-monthly chl-a enhancement from January to December, ordered and coloured by island group.
+\textbf{Fig. S`r i`} | Seasonal variation in IME strength at each island. Lines are mean-monthly chl-a enhancement from January to December, ordered and coloured by island group.
+\end{landscape}
 \newpage
 
-```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME_pred.pdf"); i = i + 1
 ```
 **Fig. S`r i`** | Spatial effects on chl-a enhancement for geomorphic features (top) and average oceanographic conditions (bottom) Lines are median posterior predictions (± 95% certainty intervals). Note different y-axis values between static and dynamic covariates.
 \newpage
 
-```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME_seasonal_pred.pdf"); i = i + 1
 ```
 **Fig. S`r i`** | Heatmap of seasonal effects on chl-a enhancement for a mixed layer depth, b precipitation and c both covariates combined. Islands with less than 1 mm monthly rainfall are shown in grey. All values are median posterior predictions excluding effects of other covariates.
 \newpage
 
-```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_MLD_amp.pdf"); i = i + 1
 ```
 **Fig. S`r i`** | Seasonal variability in the mixed layer depth at each island. In a, lines are predicted mixed layer depth at each island from a general additive model of time and month, overlaid with points indicating timing of coral reef fish surveys. Predicted values were used to estimate b the mixed layer depth seasonal amplitude at each island, or the range of depths experienced by each island from Jan to Dec.
 \newpage
 
 
-```{r, out.height="80%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+```{r, out.height="80%",out.width = "95%",  echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_metab.pdf"); i = i + 1
 ```
-**Fig. S`r i`** | Metabolic rate of reef-associated planktivores on coral reefs at 39 Pacific islands and atolls. Each point is a site-year combination (n = XX). 
+**Fig. S`r i`** | Respiration rate of reef-associated planktivores on coral reefs at 34 Pacific islands and atolls. Each point is the median respiration at each island, with jitter showing unique sites (n = 3,622). 
 \newpage
+\begin{landscape}
+
+```{r, out.height="80%",out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+knitr::include_graphics("fig/FigureSX_planktivore_time.pdf"); i = i + 1
+```
+
+\textbf{Fig. S`r i`} | Effect of survey year on planktivore respiration rate. Points are posterior medians with 95\% certainty intervals, coloured when the posterior did not overlap zero (red = negative, blue = positive).
+\newpage
+
+```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+knitr::include_graphics("fig/FigureSX_herbivore_time.pdf"); i = i + 1
+```
+
+\textbf{Fig. S`r i`} | Effect of survey year on herbivore respiration rate. Points are posterior medians with 95\% certainty intervals, coloured when the posterior did not overlap zero (red = negative, blue = positive).
+\newpage
+\end{landscape}

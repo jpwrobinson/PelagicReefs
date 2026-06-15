@@ -38,6 +38,11 @@ load('results/mod_herbivore_metabolic.rds')
 summary(m2_plank)
 summary(m2_herb)
 
+# temporal windows
+plank_scaled %>% group_by(island) %>% reframe(n = n_distinct(year),
+                                                range = max(year) - min(year)) %>% 
+  ungroup() %>% summarise(median(n), median(range))
+
 island %>% distinct(island, mld_amp) %>% dplyr::slice_min(mld_amp, n = 5)
 
 # Island vs Island complex
