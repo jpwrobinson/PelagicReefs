@@ -75,17 +75,20 @@ m_detectNoMLD <- brm(bf(
 )
 
 save(ime_df, focal, m_detect, file = 'results/mod_ime_time_binom.rds')
-save(ime_df, focal, m_detectNoMLD, file = 'results/mod_ime_time_binom_mediator.rds')
+save(ime_df, focal, m_detectMLDtrend, m_detectNoMLD, file = 'results/mod_ime_time_binom_mediator.rds')
 
 load('results/mod_ime_time_binom.rds')
+checker<-m_detectMLDtrend
+checker<-m_detect
+summary(checker)
+pp_check(checker)
 
-summary(m_detect)
-pp_check(m_detect)
-
-conditional_effects(m_detect, effects = 'mld_mean_s')
-conditional_effects(m_detect, effects = 'mld_anom_s')
-conditional_effects(m_detect, effects = 'time_s')
-bayes_R2(m_detect,  re.form=NA) 
+conditional_effects(checker, effects = 'mld_mean_s')
+conditional_effects(checker, effects = 'mld_anom_s')
+conditional_effects(checker, effects = 'mld_pred_s')
+conditional_effects(checker, effects = 'time_s')
+bayes_R2(checker,  re.form=NA) # R2 = 0.085
+loo(m_detect, m_detectMLDtrend) # MLD pred is supported
 
 # smooth_estimates <- smooth_estimates(m_detect2) %>%
 #   filter(smooth == "s(time_s):island")
@@ -125,12 +128,13 @@ m_hurdleMLDtrend<-brm(bf(
 save(ime_df, focalCont, m_hurdle, file = 'results/mod_ime_time_hurdle.rds')
 
 load('results/mod_ime_time_hurdle.rds')
-summary(m_hurdle)
-pp_check(m_hurdle)
-conditional_effects(m_hurdle, effects = 'mld_mean_s')
-conditional_effects(m_hurdle, effects = 'mld_anom_s')
-conditional_effects(m_hurdle, effects = 'time_s') # time marginalised over islands
-ce<-conditional_effects(m_hurdle, effects = "time_s", 
+checker<-m_hurdleMLDtrend
+summary(checker)
+pp_check(checker)
+conditional_effects(checker, effects = 'mld_mean_s')
+conditional_effects(checker, effects = 'mld_anom_s')
+conditional_effects(checker, effects = 'time_s') # time marginalised over islands
+ce<-conditional_effects(checker, effects = "time_s", 
                     conditions = distinct(focalCont, island))
 
 plot(ce, plot = FALSE)[[1]] +
@@ -150,7 +154,7 @@ m_hurdleNoMLD<-brm(bf(
   cores = 4
 )
 
-save(ime_df, focalCont, m_hurdleNoMLD, file = 'results/mod_ime_time_hurdle_mediator.rds')
+save(ime_df, focalCont, m_hurdleNoMLD, m_hurdleMLDtrend, file = 'results/mod_ime_time_hurdle_mediator.rds')
 
 
 ## For IME detect (binom)
