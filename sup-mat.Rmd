@@ -29,29 +29,31 @@ i = 1
 
 \begin{landscape}
 
-```{r,out.width = "85%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+```{r,out.width = "75%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME.pdf"); i = i + 1
 ```
 \textbf{Fig. S`r i`} | Seasonal variation in IME strength at each island. Lines are mean-monthly chl-a enhancement from January to December, ordered and coloured by island group.
 \end{landscape}
 \newpage
 
-```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+```{r, out.width = "85%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME_pred.pdf"); i = i + 1
 ```
 **Fig. S`r i`** | Spatial effects on chl-a enhancement for geomorphic features (top) and average oceanographic conditions (bottom) Lines are median posterior predictions (± 95% certainty intervals). Note different y-axis values between static and dynamic covariates.
 \newpage
 
-```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+```{r, out.width = "85%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME_seasonal_pred.pdf"); i = i + 1
 ```
 **Fig. S`r i`** | Heatmap of seasonal effects on chl-a enhancement for a mixed layer depth, b precipitation and c both covariates combined. Islands with less than 1 mm monthly rainfall are shown in grey. All values are median posterior predictions excluding effects of other covariates.
 \newpage
+\begin{landscape}
 
 ```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_MLD_amp.pdf"); i = i + 1
 ```
-**Fig. S`r i`** | Seasonal variability in the mixed layer depth at each island. In a, lines are predicted mixed layer depth at each island from a general additive model of time and month, overlaid with points indicating timing of coral reef fish surveys. Predicted values were used to estimate b the mixed layer depth seasonal amplitude at each island, or the range of depths experienced by each island from Jan to Dec.
+\textbf{Fig. S`r i`} | Seasonal variability in the mixed layer depth at each island. In a, lines are predicted mixed layer depth at each island from a general additive model of time and month, overlaid with points indicating timing of coral reef fish surveys. Predicted values were used to estimate b the mixed layer depth seasonal amplitude at each island, or the range of depths experienced by each island from Jan to Dec.
+\end{landscape}
 \newpage
 
 
@@ -76,3 +78,9 @@ knitr::include_graphics("fig/FigureSX_herbivore_time.pdf"); i = i + 1
 \textbf{Fig. S`r i`} | Effect of survey year on herbivore respiration rate. Points are posterior medians with 95\% certainty intervals, coloured when the posterior did not overlap zero (red = negative, blue = positive).
 \newpage
 \end{landscape}
+
+```{r, out.height = "85%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+knitr::include_graphics("fig/FigureSX_MLD_time_obs.pdf"); i = i + 1
+```
+
+**Fig. S`r i`** | Island-level temporal trends in the mixed layer depth layer from 1997-2026. Lines are mean predicted mixed layer from a generalised additive model, for each region (black with 95% CI filled by region), overlaid with mean island predictions (coloured lines).

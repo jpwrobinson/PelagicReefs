@@ -28,12 +28,14 @@ save(m1, file = 'results/mld_time_mod.rds')
 
 # estimate rho using acf residuals - the lag 1 acf value. this is island smooths only.
 # tested regional smoother with island fs smooths that penalize towards 0, this only predicted regional smooth (islands follow region)
+# model is too big to fit in brms
 m2 <- bam(
   anomaly ~ s(time_num, by = island, k = 12),
   data = mld,
   rho = 0.35,
   AR.start = mld$new_series
 )
+
 save(mld, m2, file = 'results/mld_anomaly_time_mod.rds')
 
 
