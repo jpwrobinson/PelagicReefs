@@ -157,6 +157,18 @@ plot(ce, plot = FALSE)[[1]] +
   coord_cartesian(ylim = c(0, 2))
 
 
+# Extract LOO and save as table
+loo1<-loo(m_detect, m_detectMLDtrend, m_detectNoMLD)
+loo2<-loo(m_hurdle, m_hurdleMLDtrend, m_hurdleNoMLD)
 
-loo(m_detect, m_detectMLDtrend, m_detectNoMLD)
-loo(m_hurdle, m_hurdleMLDtrend, m_hurdleNoMLD)
+rbind(
+  loo1$diffs %>%
+  as.data.frame() %>%
+  rownames_to_column("model") %>% 
+  mutate(dist = 'IME detect'),
+  loo2$diffs %>%
+    as.data.frame() %>%
+    rownames_to_column("model") %>% 
+    mutate(dist = 'IME strength')
+  ) %>% 
+  write.csv('results/loo_ime_probability.csv', row.names=FALSE)
