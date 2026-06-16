@@ -1,4 +1,7 @@
 # Load Messi IME and Gove drivers with statistical model objects
+source='MODIS-1'
+# source='MODIS-2'
+# source='GlobColour'
 source('0_loads/00_ime_dataframe.R')
 
 # dim(dat) = 35 islands
@@ -18,7 +21,6 @@ gInset<-ggplot(dat_month, aes(Chl_increase_nearby/100)) +
         axis.title = element_text(size = 9))
 
 gA<-ggplot(dat, aes(mean_chlorophyll, mean_chl_percent/100, fill=region.col)) + 
-  # geom_point(data = dat_month %>% mutate(mean_chl_percent = Chl_increase_nearby/100), alpha=0.5, size=1, aes(col=region.col)) +
   geom_point(alpha=1, size=2.5, pch=21, col='black') +
   geom_text_repel(aes(label=island), size=2.5) +
   labs(y = 'IME strength', x = 'chl-a, mg/m3') +

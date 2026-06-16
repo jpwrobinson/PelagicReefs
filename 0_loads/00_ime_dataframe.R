@@ -5,7 +5,7 @@ source('0_loads/00_oceanographic_load.R')
 # ime = mean upwelling %
 ime_island<-read.csv(file = 'island_ime_dat.csv') %>% select(-lon, -lat, -type)
 
-source='GlobColour'
+# source='MODIS-1'
 
 if(source == 'MODIS-1'){
 ime_month<-read.csv(file = 'island_ime_month_dat.csv') %>% select(-lon, -lat, -type)}
@@ -64,8 +64,7 @@ dat_month<-ime_month %>%
   left_join(data.frame('month' = month.abb, 'month_num' = 1:12)) %>%
   left_join(island_complex %>% ungroup() %>% 
               mutate(island = str_replace_all(island_group, '_C', '')) %>%
-              select(island, REGION, region.col, sst_mean:ted_sum, -mld, -mld_sd, -avg_monthly_mm),
-            by = 'island') %>% 
+              select(island, REGION, region.col, sst_mean:ted_sum, -mld, -mld_sd, -avg_monthly_mm)) %>% 
   left_join(mld_month %>% ungroup() %>% 
               mutate(month_num=month) %>% 
               select(month_num, island, mld)) %>% 
