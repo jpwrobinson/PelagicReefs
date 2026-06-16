@@ -10,16 +10,20 @@ th_marg<-theme(plot.margin=unit(c(0.1, .1, .1,.1), 'cm'),
 load(file = 'results/mod_ime_time_binom.rds')
 load(file = 'results/mod_ime_time_hurdle.rds')
 
+topDet<-m_detectMLDtrend
+topHur<-m_hurdleMLDtrend
+
 # A = MLD anomaly preds, B = MLD anomaly preds
-df_mldmean<-marginal_post(m_detect, focal, 'mld_mean_s', 'mld_mean')
-df_mldanom<-marginal_post(m_detect, focal, 'mld_anom_s', 'mld_anom')
-# df_time<-marginal_post(m_detect, focal, 'time_s', 'time')
+df_mldmean<-marginal_post(topDet, focal, 'mld_mean_s', 'mld_mean')
+df_mldanom<-marginal_post(topDet, focal, 'mld_anom_s', 'mld_anom')
+df_mldpred<-marginal_post(topDet, focal, 'mld_pred_s', 'mld_pred')
 
-df_mldmeanG<-marginal_post(m_hurdle, focal, 'mld_mean_s', 'mld_mean')
-df_mldanomG<-marginal_post(m_hurdle, focal, 'mld_anom_s', 'mld_anom')
-# df_timeG<-marginal_post(m_hurdle, focal, 'time_s', 'time')
+df_mldmeanG<-marginal_post(topHur, focal, 'mld_mean_s', 'mld_mean')
+df_mldanomG<-marginal_post(topHur, focal, 'mld_anom_s', 'mld_anom')
+df_mldpredG<-marginal_post(topHur, focal, 'mld_pred_s', 'mld_pred')
 
-# marginal_post_island(m_hurdle, focal, 'time_s', 'time')
+# df_time<-marginal_post(topDet, focal, 'time_s', 'time')
+# df_timeG<-marginal_post(topHur, focal, 'time_s', 'time')
 
 # Plot and multipanel
 gA<-ggplot(df_mldmean, aes(mld_mean, .epred)) +
@@ -39,7 +43,15 @@ gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +
     labs(x = "", y = "") +
     th_marg
 
-gC<-ggplot(df_mldmeanG, aes(mld_mean, .epred)) +
+gC<-ggplot(df_mldpred, aes(mld_pred, .epred)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  lims(y = c(0, 0.9)) +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  labs(x = "", y = "") +
+  th_marg
+
+gD<-ggplot(df_mldmeanG, aes(mld_mean, .epred)) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
   geom_line(colour = "steelblue", linewidth = 0.9) +
@@ -47,7 +59,7 @@ gC<-ggplot(df_mldmeanG, aes(mld_mean, .epred)) +
   labs(x = "Mixed layer depth [mean], m", y = "IME strength") +
   th_marg
 
-gD<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +
+gE<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +
   geom_vline(xintercept = 0, linetype=5, alpha=0.5) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
@@ -56,23 +68,16 @@ gD<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +
   labs(x = "Mixed layer depth [anomaly], m", y = "") +
   th_marg
 
+gF<-ggplot(df_mldpredG, aes(mld_pred, .epred)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.55)) +
+  labs(x = "Mixed layer depth [trend], m", y = "") +
+  th_marg
 
-# gE<-ggplot(df_time, aes(time, .epred)) +
-#   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
-#               alpha = 0.2, fill = "steelblue") +
-#   geom_line(colour = "steelblue", linewidth = 0.9) +
-#   scale_y_continuous(labels=label_percent()) +
-#   labs(x = "", y = "")
-# 
-# gF<-ggplot(df_timeG, aes(mld_anom, .epred)) +
-#   geom_vline(xintercept = 0, linetype=5) +
-#   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
-#               alpha = 0.2, fill = "steelblue") +
-#   geom_line(colour = "steelblue", linewidth = 0.9) +
-#   scale_y_continuous(labels=label_percent()) +
-#   labs(x = "", y = "")
 
-plot_grid(gA, gB, gC, gD, align='hv', labels=c('a', 'b', 'c', 'd'))
+plot_grid(gA, gB, gC, gD, gE, gF, align='hv', nrow=2, labels=c('a', 'b', 'c', 'd', 'e', 'f'))
  
 histA <- ggplot(focal, aes(mld_mean)) +
   geom_histogram(bins = 20, fill = "steelblue", color = "white") +

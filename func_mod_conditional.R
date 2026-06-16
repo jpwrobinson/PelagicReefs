@@ -28,6 +28,7 @@ marginal_post<-function(mod, dat_raw, var, var_raw, n = 100){
     var_raw = seq_range(dat_raw[[var_raw]], n=n),
     mld_anom_s = 0,
     mld_mean_s = 0,
+    mld_pred_s = 0,
     month      = 6,
     time_s     = 0,
     island     = focal$island[2]   # single island, effect is shared across islands
@@ -39,7 +40,7 @@ marginal_post<-function(mod, dat_raw, var, var_raw, n = 100){
   epred <- pred_grid |>
     add_epred_draws(mod, re_formula = NA, ndraws = 500)
   
-  # marginalise over islands (average the posterior draws across islands)
+  # average the posterior draws across var conditions
   epred_marginal <- epred |>
     group_by(var, var_raw, .draw) |>
     summarise(.epred = mean(.epred), .groups = "drop") |>
@@ -59,6 +60,7 @@ marginal_post_island<-function(mod, dat_raw, var, var_raw, n = 100){
     var_raw = seq_range(dat_raw[[var_raw]], n=n),
     mld_anom_s = 0,
     mld_mean_s = 0,
+    mld_pred_s = 0,
     month      = 6,
     time_s     = 0,
     island     = focal$island   # single island, effect is shared across islands
