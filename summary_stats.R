@@ -39,6 +39,22 @@ load('results/mod_herbivore_metabolic.rds')
 summary(m2_plank)
 summary(m2_herb)
 
+# metabolic rates
+plank_scaled %>% 
+  group_by(region.col, region, island) %>% 
+  summarise(planktivore_metab = median(planktivore_metab),
+            herbivore_metab = median(herbivore_metab)) %>% ungroup() %>% 
+  reframe(range(planktivore_metab), range(herbivore_metab))
+
+# plankton flux effect per m MLD
+# eff<-effects %>% filter(.variable == 'mld_mean') %>% 
+#   group_by(fg) %>% 
+#   summarise(med = median(.value))
+# 
+# eff$med[eff$fg=='Planktivore']/sd(depth$mld_mean) # -0.13 per m MLD
+
+
+## NCRMP vs. IME datasets
 # temporal windows
 plank_scaled %>% group_by(island) %>% reframe(n = n_distinct(year),
                                                 range = max(year) - min(year)) %>% 

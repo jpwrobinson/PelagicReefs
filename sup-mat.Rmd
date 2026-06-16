@@ -52,7 +52,7 @@ knitr::include_graphics("fig/FigureSX_IME_seasonal_pred.pdf"); i = i + 1
 ```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_MLD_amp.pdf"); i = i + 1
 ```
-\textbf{Fig. S`r i`} | Seasonal variability in the mixed layer depth at each island. In a, lines are predicted mixed layer depth at each island from a general additive model of time and month, overlaid with points indicating timing of coral reef fish surveys. Predicted values were used to estimate b the mixed layer depth seasonal amplitude at each island, or the range of depths experienced by each island from Jan to Dec.
+\textbf{Fig. S`r i`} | Seasonal variability in the mixed layer depth at each island. In a, lines are predicted mixed layer depth at each island from a General Additive Model with smoothers for time and month (cyclic), overlaid with points indicating timing of coral reef fish surveys.
 \end{landscape}
 \newpage
 
