@@ -28,7 +28,7 @@ marginal_post<-function(mod, dat_raw, var, var_raw, n = 100){
     var_raw = seq_range(dat_raw[[var_raw]], n=n),
     mld_anom_s = 0,
     mld_mean_s = 0,
-    mld_pred_s = 0,
+    mld_slope_s = 0,
     month      = 6,
     time_s     = 0,
     island     = focal$island[2]   # single island, effect is shared across islands
@@ -57,14 +57,15 @@ marginal_post_island<-function(mod, dat_raw, var, var_raw, n = 100){
   
   pred_grid <- expand.grid(
     var = seq_range(mod$data[[var]], n=n),
-    var_raw = seq_range(dat_raw[[var_raw]], n=n),
     mld_anom_s = 0,
     mld_mean_s = 0,
-    mld_pred_s = 0,
+    mld_slope_s = 0,
     month      = 6,
     time_s     = 0,
     island     = focal$island   # single island, effect is shared across islands
   ) %>% select(-as.name(var))
+  
+  pred_grid$var_raw <- rep(seq_range(dat_raw[[var_raw]], n=n), each = unique(focal$island))
   
   colnames(pred_grid)[1]<-c(as.name(var)) # need full name for epred_draws
   pred_grid$var<-pred_grid[[var]] # need generic for marginalise operation

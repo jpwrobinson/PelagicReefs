@@ -95,3 +95,15 @@ gSX <- gBase +
   labs(x = '', y = 'Mixed layer depth, m') +
   theme(plot.margin = unit(c(0.5, 2, 0.5, 0.5), 'cm')) +
   coord_cartesian(clip='off')
+
+gMLD<-ggplot(mld_slopes, aes(fct_reorder(island, mld_slope), 
+                              mld_slope, ymin = mld_slope_lower, ymax = mld_slope_upper, col=region.col)) +
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +
+  # geom_pointrange() +
+  geom_point() +
+  coord_flip() +
+  scale_colour_identity() +
+  theme(legend.position = NULL) +
+  labs(x = '', y = 'MLD slope') +
+  scale_y_continuous(limits=c(-0.02, 0.06)) +
+  scale_x_discrete(position = 'top')

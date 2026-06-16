@@ -16,13 +16,13 @@ topHur<-m_hurdleMLDtrend
 # A = MLD anomaly preds, B = MLD anomaly preds
 df_mldmean<-marginal_post(topDet, focal, 'mld_mean_s', 'mld_mean')
 df_mldanom<-marginal_post(topDet, focal, 'mld_anom_s', 'mld_anom')
-df_mldpred<-marginal_post(topDet, focal, 'mld_pred_s', 'mld_pred')
+df_mldslope<-marginal_post(topDet, focal, 'mld_slope_s', 'mld_slope')
 
 df_mldmeanG<-marginal_post(topHur, focal, 'mld_mean_s', 'mld_mean')
 df_mldanomG<-marginal_post(topHur, focal, 'mld_anom_s', 'mld_anom')
-df_mldpredG<-marginal_post(topHur, focal, 'mld_pred_s', 'mld_pred')
+df_mldslopeG<-marginal_post(topHur, focal, 'mld_slope_s', 'mld_slope')
 
-# df_time<-marginal_post(topDet, focal, 'time_s', 'time')
+# df_time<-marginal_post_island(topDet, focal, 'time_s', 'time')
 # df_timeG<-marginal_post(topHur, focal, 'time_s', 'time')
 
 # Plot and multipanel
@@ -30,7 +30,7 @@ gA<-ggplot(df_mldmean, aes(mld_mean, .epred)) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
   geom_line(colour = "steelblue", linewidth = 0.9) +
-  lims(y = c(0, 0.9)) +
+  lims(y = c(0, 1)) +
   labs(x = "", y = "P(IME)") +
   th_marg
 
@@ -38,15 +38,15 @@ gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +
     geom_vline(xintercept = 0, linetype=5, alpha=0.5) +
     geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
-    lims(y = c(0, 0.9)) +
+    lims(y = c(0, 1)) +
     geom_line(colour = "steelblue", linewidth = 0.9) +
     labs(x = "", y = "") +
     th_marg
 
-gC<-ggplot(df_mldpred, aes(mld_pred, .epred)) +
+gC<-ggplot(df_mldslope, aes(mld_slope, .epred)) +
   geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
               alpha = 0.2, fill = "steelblue") +
-  lims(y = c(0, 0.9)) +
+  lims(y = c(0, 1)) +
   geom_line(colour = "steelblue", linewidth = 0.9) +
   labs(x = "", y = "") +
   th_marg
@@ -101,7 +101,7 @@ gB<-gB + annotation_custom(
 )
 
 # load MLD predictions
-source('scripts/Figure3_MLD.R')
+source('Figure3_MLD.R')
 
 gIME<-plot_grid(gA, gB, gC, gD, nrow=2, labels=c('a', 'b', 'c', 'd'))
 gIME2<-plot_grid(gIME, gE, nrow=1, labels=c('', 'e'), rel_widths=c(1, 0.4))
@@ -110,6 +110,6 @@ pdf(file = 'fig/Figure3.pdf', height=5, width=10)
 plot_grid(gIME2, gF, nrow=2, labels=c('', 'f'), rel_heights=c(1, 0.8))
 dev.off()
 
-pdf(file = 'fig/FigureSX_MLD_time_obs.pdf', height=6, width=3.5)
-gSX
+pdf(file = 'fig/FigureSX_MLD_time_obs.pdf', height=6, width=8)
+plot_grid(gSX, gMLD, nrow=1, labels = c('a', 'b'), rel_widths=c(1, 0.7))
 dev.off()

@@ -18,7 +18,7 @@ mld<-mld %>%
                     
 
 m1<-bam(log(MLD) ~ 
-          s(time_num, island, k=12, bs = 'fs') +
+          s(time_num, island, k=12) +
           s(month, bs = 'cc', k = 12, by = island),
           rho = 0.35,
           AR.start = mld$new_series,
@@ -30,7 +30,7 @@ save(m1, file = 'results/mld_time_mod.rds')
 # tested regional smoother with island fs smooths that penalize towards 0, this only predicted regional smooth (islands follow region)
 # model is too big to fit in brms
 m2 <- bam(
-  anomaly ~ s(time_num, by = island, k = 12),
+  anomaly ~ s(time_num, island, k = 12),
   data = mld,
   rho = 0.35,
   AR.start = mld$new_series

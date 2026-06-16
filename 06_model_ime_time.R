@@ -6,10 +6,26 @@ source('0_loads/00_oceanographic_load.R')
 
 ## island derivatives: mean slope of MLD over time [exclude month]
 dS <- gratia::derivatives(m1, select = "s(time_num,island)")
+dS2 <- gratia::derivatives(m2)
 
-mld_slopes <- dS %>%
-  group_by(island) %>%
-  summarise(mld_slope = mean(.derivative))
+mld_slopes <- rbind(dS %>% mutate(model = 'Obs'),
+                    dS2 %>% mutate(model = 'Anom')) %>% 
+  group_by(island, model) %>%
+  summarise(mld_slope = mean(.derivative),
+            mld_slope_se = sqrt(mean(.se^2)),  # root mean square of SEs
+            mld_slope_lower = mld_slope - 1.96 * mld_slope_se,
+            mld_slope_upper = mld_slope + 1.96 * mld_slope_se) %>% 
+  left_join(ime_df %>% distinct(island, region, region.col))
+
+# Anom and Obs have similar signals (r = 0.962)
+mld_slopes %>% select(model, mld_slope) %>% pivot_wider(names_from = model, values_from = mld_slope) %>% ggplot() +geom_point(aes(Anom, Obs))
+
+ggplot(mld_slopes, aes(fct_reorder(island, mld_slope), 
+                       mld_slope, ymin = mld_slope_lower, ymax = mld_slope_upper, col=region.col)) +
+  geom_pointrange() +
+  geom_point() +
+  coord_flip() +
+  facet_wrap(~model, scales='free')
 
 ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>% 
   mutate(date = as.Date(date),
@@ -84,16 +100,16 @@ save(ime_df, focal, m_detect, m_detectMLDtrend, m_detectNoMLD, file = 'results/m
 
 load('results/mod_ime_time_binom.rds')
 checker<-m_detectMLDtrend
-checker<-m_detect
+# checker<-m_detect
 summary(checker)
 pp_check(checker)
 
 conditional_effects(checker, effects = 'mld_mean_s')
 conditional_effects(checker, effects = 'mld_anom_s')
-conditional_effects(checker, effects = 'mld_pred_s')
+conditional_effects(checker, effects = 'mld_slope_s')
 conditional_effects(checker, effects = 'time_s')
-bayes_R2(checker,  re.form=NA) # R2 = 0.085
-loo(m_detect, m_detectMLDtrend) # MLD pred is supported
+bayes_R2(checker,  re.form=NA) # R2 = 0.12
+loo(m_detect, m_detectNoMLD, m_detectMLDtrend) # MLD slope is supported
 
 # smooth_estimates <- smooth_estimates(m_detect2) %>%
 #   filter(smooth == "s(time_s):island")
@@ -120,7 +136,7 @@ m_hurdle<-brm(bf(
 m_hurdleMLDtrend<-brm(bf(
   Chl_increase_nearby ~ 
     s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
-    s(mld_pred_s, k = 3) + # MLD deepening
+    s(mld_slope_s, k = 3) + # MLD trend
     s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
     s(time_s, by = island, bs = "cr", k = 10)),   # island-level probability
   family = Gamma(link = 'log'),
@@ -154,7 +170,7 @@ pp_check(checker)
 bayes_R2(checker) # 38.1%
 conditional_effects(checker, effects = 'mld_mean_s')
 conditional_effects(checker, effects = 'mld_anom_s')
-conditional_effects(checker, effects = 'mld_pred_s')
+conditional_effects(checker, effects = 'mld_slope_s')
 conditional_effects(checker, effects = 'time_s') # time marginalised over islands
 ce<-conditional_effects(checker, effects = "time_s", 
                     conditions = distinct(focalCont, island))
