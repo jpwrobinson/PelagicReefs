@@ -125,7 +125,7 @@ m_hurdleMLDtrend<-brm(bf(
   cores = 4
 )
 
-save(ime_df, focalCont, m_hurdle, file = 'results/mod_ime_time_hurdle.rds')
+save(ime_df, focalCont, m_hurdle, m_hurdleMLDtrend, file = 'results/mod_ime_time_hurdle.rds')
 
 load('results/mod_ime_time_hurdle.rds')
 checker<-m_hurdleMLDtrend
