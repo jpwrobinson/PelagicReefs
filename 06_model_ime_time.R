@@ -74,8 +74,7 @@ m_detectNoMLD <- brm(bf(
   cores = 4
 )
 
-save(ime_df, focal, m_detect, file = 'results/mod_ime_time_binom.rds')
-save(ime_df, focal, m_detectMLDtrend, m_detectNoMLD, file = 'results/mod_ime_time_binom_mediator.rds')
+save(ime_df, focal, m_detect, m_detectMLDtrend, m_detectNoMLD, file = 'results/mod_ime_time_binom.rds')
 
 load('results/mod_ime_time_binom.rds')
 checker<-m_detectMLDtrend
@@ -125,23 +124,8 @@ m_hurdleMLDtrend<-brm(bf(
   cores = 4
 )
 
-save(ime_df, focalCont, m_hurdle, m_hurdleMLDtrend, file = 'results/mod_ime_time_hurdle.rds')
 
-load('results/mod_ime_time_hurdle.rds')
-checker<-m_hurdleMLDtrend
-summary(checker)
-pp_check(checker)
-conditional_effects(checker, effects = 'mld_mean_s')
-conditional_effects(checker, effects = 'mld_anom_s')
-conditional_effects(checker, effects = 'time_s') # time marginalised over islands
-ce<-conditional_effects(checker, effects = "time_s", 
-                    conditions = distinct(focalCont, island))
-
-plot(ce, plot = FALSE)[[1]] +
-  coord_cartesian(ylim = c(0, 2))
-
-
-## 3. MLD mediating time effect
+# MLD mediating time effect
 m_hurdleNoMLD<-brm(bf(
   Chl_increase_nearby ~ 
     # s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
@@ -154,100 +138,25 @@ m_hurdleNoMLD<-brm(bf(
   cores = 4
 )
 
-save(ime_df, focalCont, m_hurdleNoMLD, m_hurdleMLDtrend, file = 'results/mod_ime_time_hurdle_mediator.rds')
+
+save(ime_df, focalCont, m_hurdle, m_hurdleMLDtrend, m_hurdleNoMLD, file = 'results/mod_ime_time_hurdle.rds')
+
+load('results/mod_ime_time_hurdle.rds')
+
+checker<-m_hurdleMLDtrend
+summary(checker)
+pp_check(checker)
+bayes_R2(checker) # 38.1%
+conditional_effects(checker, effects = 'mld_mean_s')
+conditional_effects(checker, effects = 'mld_anom_s')
+conditional_effects(checker, effects = 'time_s') # time marginalised over islands
+ce<-conditional_effects(checker, effects = "time_s", 
+                    conditions = distinct(focalCont, island))
+
+plot(ce, plot = FALSE)[[1]] +
+  coord_cartesian(ylim = c(0, 2))
 
 
-## For IME detect (binom)
-# Create a time grid for each island
-time_grid <- with(focal, expand.grid(
-                     island = unique(island),
-                    time_s = seq(min(time_s), max(time_s), length.out = 20)) %>%
-  mutate(mld_mean_s = 0,  # hold at mean 
-         mld_anom_s = 0,
-         month = 12))       # hold month constant
 
-# Get posterior epred for both models
-pred_no_mld <- time_grid %>%
-  add_epred_draws(m_detectNoMLD, re_formula = NA, ndraws = 200)
-
-pred_detect <- time_grid %>%
-  add_epred_draws(m_detect, re_formula = NA, ndraws = 200)
-
-# Estimate slope per island per draw as linear regression of prediction on time
-slope_fn <- function(df) {
-  lm(.epred ~ time_s, data = df)$coefficients["time_s"]
-}
-
-slopes_no_mld <- pred_no_mld %>%
-  group_by(island, .draw) %>%
-  summarise(slope = slope_fn(cur_data()), .groups = "drop") %>%
-  mutate(model = "no_mld")
-
-slopes_detect <- pred_detect %>%
-  group_by(island, .draw) %>%
-  summarise(slope = slope_fn(cur_data()), .groups = "drop") %>%
-  mutate(model = "detect")
-
-# Summarise and plot
-bind_rows(slopes_no_mld, slopes_detect) %>%
-  group_by(island, model) %>%
-  summarise(mean_slope = mean(slope),
-            lower = quantile(slope, 0.025),
-            upper = quantile(slope, 0.975),
-            .groups = "drop") %>%
-  ggplot(aes(x = reorder(island, mean_slope), y = mean_slope,
-             ymin = lower, ymax = upper, colour = model)) +
-  geom_pointrange(position = position_dodge(0.5)) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  coord_flip() +
-  lims(y = c(-.5, 1)) +
-  labs(x = NULL, y = "Posterior slope of time effect",
-       title = "Attenuation of temporal trend after including MLD")
-
-
-## For IME Strength (hurdle)
-# Create a time grid for each island
-time_grid <- with(focalCont, expand.grid(
-  island = unique(island),
-  time_s = seq(min(time_s), max(time_s), length.out = 20)) %>%
-    mutate(mld_mean_s = 0,  # hold at mean for hurdle model
-           mld_anom_s = 0,
-           month = 12))       # hold month constant
-
-# Get posterior epred for both models
-pred_no_mld <- time_grid %>%
-  add_epred_draws(m_hurdleNoMLD, re_formula = NA, ndraws = 200)
-
-pred_hurdle <- time_grid %>%
-  add_epred_draws(m_hurdle, re_formula = NA, ndraws = 200)
-
-# Estimate slope per island per draw as linear regression of prediction on time
-slope_fn <- function(df) {
-  lm(.epred ~ time_s, data = df)$coefficients["time_s"]
-}
-
-slopes_no_mld <- pred_no_mld %>%
-  group_by(island, .draw) %>%
-  summarise(slope = slope_fn(cur_data()), .groups = "drop") %>%
-  mutate(model = "no_mld")
-
-slopes_hurdle <- pred_hurdle %>%
-  group_by(island, .draw) %>%3
-summarise(slope = slope_fn(cur_data()), .groups = "drop") %>%
-  mutate(model = "hurdle")
-
-# Summarise and plot
-bind_rows(slopes_no_mld, slopes_hurdle) %>%
-  group_by(island, model) %>%
-  summarise(mean_slope = mean(slope),
-            lower = quantile(slope, 0.025),
-            upper = quantile(slope, 0.975),
-            .groups = "drop") %>%
-  ggplot(aes(x = reorder(island, mean_slope), y = mean_slope,
-             ymin = lower, ymax = upper, colour = model)) +
-  geom_pointrange(position = position_dodge(0.5)) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  coord_flip() +
-  lims(y = c(-.5, 1)) +
-  labs(x = NULL, y = "Posterior slope of time effect",
-       title = "Attenuation of temporal trend after including MLD")
+loo(m_detect, m_detectMLDtrend, m_detectNoMLD)
+loo(m_hurdle, m_hurdleMLDtrend, m_hurdleNoMLD)
