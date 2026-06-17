@@ -74,7 +74,7 @@ gBase<-ggplot(data = region_smooth %>% filter(var == 'obs'), aes(date, MLD_pred)
         strip.background = element_blank(),
         axis.text = element_text(size = 9))
 
-gF<-gBase %+% (region_smooth %>% filter(var == 'anom')) + 
+gMLD_anom<-gBase %+% (region_smooth %>% filter(var == 'anom')) + 
   geom_hline(yintercept = 0, linetype=5, alpha=0.5) +
   geom_line(data = preds %>% filter(var == 'anom'), 
             aes(col=region.col, group=island), alpha=0.5) +
@@ -99,12 +99,12 @@ delta_anom<-read.csv(file = 'results/MLD_anom_change.csv') %>%
   left_join(focal %>% distinct(island, region.col)) %>% 
   mutate(sig = ifelse(change_lower > 0, 'red', 'black'))
 
-gMLD<-ggplot(delta_anom, aes(fct_reorder(island, change), 
+gMLDdelta<-ggplot(delta_anom, aes(fct_reorder(island, change), 
                               change, ymin = change_lower, ymax = change_upper, col=sig)) +
   geom_hline(yintercept = 0, linetype=5, colour= 'grey') +
   geom_pointrange() +
   coord_flip() +
   scale_colour_identity() +
   theme(legend.position = NULL) +
-  labs(x = '', y = '∆ MLD anomaly, m [1993 - 2026]') +
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +
   scale_x_discrete(position = 'top')

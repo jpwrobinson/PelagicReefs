@@ -73,11 +73,13 @@ gF<-ggplot(df_mldpredG, aes(mld_pred, .epred)) +
               alpha = 0.2, fill = "steelblue") +
   geom_line(colour = "steelblue", linewidth = 0.9) +
   scale_y_continuous(labels=label_percent(), limits=c(0, 0.55)) +
-  labs(x = "Mixed layer depth [trend], m", y = "") +
+  labs(x = "∆ Mixed layer depth, m [1993-2026]", y = "") +
   th_marg
 
 
-plot_grid(gA, gB, gC, gD, gE, gF, align='hv', nrow=2, labels=c('a', 'b', 'c', 'd', 'e', 'f'))
+g_mld_covs<-plot_grid(gA, gB, gC, gD, gE, gF, 
+                      align='hv', nrow=2, 
+                      labels=c('a', 'b', 'c', 'd', 'e', 'f'))
  
 histA <- ggplot(focal, aes(mld_mean)) +
   geom_histogram(bins = 20, fill = "steelblue", color = "white") +
@@ -103,13 +105,19 @@ gB<-gB + annotation_custom(
 # load MLD predictions
 source('Figure3_MLD.R')
 
-gIME<-plot_grid(gA, gB, gC, gD, nrow=2, labels=c('a', 'b', 'c', 'd'))
-gIME2<-plot_grid(gIME, gE, nrow=1, labels=c('', 'e'), rel_widths=c(1, 0.4))
+gMLD_change<-plot_grid(gC + labs(y = 'P(IME)', x = "∆ Mixed layer depth, m [1993-2026]", y = ""), 
+                       gF, labels = c('b', 'c'), nrow=1)
+
+gIME<-plot_grid(gMLD_anom, gMLD_change, nrow=2, labels=c('a', ''), rel_widths=c(1, 0.4))
 
 pdf(file = 'fig/Figure3.pdf', height=5, width=10)
-plot_grid(gIME2, gF, nrow=2, labels=c('', 'f'), rel_heights=c(1, 0.8))
+plot_grid(gIME, gMLD_delta, nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.4))
 dev.off()
 
-pdf(file = 'fig/FigureSX_MLD_time_obs.pdf', height=6, width=8)
-plot_grid(gSX, gMLD, nrow=1, labels = c('a', 'b'), rel_widths=c(1, 0.7))
+pdf(file = 'fig/FigureSX_IME_time_covariates.pdf', height=5, width=10)
+g_mld_covs
+dev.off()
+
+pdf(file = 'fig/FigureSX_MLD_time_obs.pdf', height=3.5, width=5)
+gSX
 dev.off()

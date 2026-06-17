@@ -1,0 +1,9 @@
+load("/Users/jamesrobinson/Documents/git-repos/PelagicReefs/results/mld_anomaly_time_mod.rds")
+ls()
+dim(md)
+dim(mld)
+mld;head
+head(mld)
+mld(tail)
+tail(mld)
+dim(mld)

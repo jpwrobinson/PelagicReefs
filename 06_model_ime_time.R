@@ -41,7 +41,7 @@ m_detectMLD <- brm(bf(
   has_IME ~ 
     s(mld_clim_s, k=3) + # MLD climatology
     s(mld_anom_s, k=3) + # MLD anomaly
-    s(mld_slope_s, k = 3) + 
+    s(mld_change_s, k = 3) + 
     (1 | island)), # MLD trend
   family = bernoulli,
   data = focal,
@@ -54,7 +54,7 @@ m_detectFull <- brm(bf(
   has_IME ~ 
     s(mld_clim_s, k=3) + # MLD climatology
     s(mld_anom_s, k=3) + # MLD anomaly
-    s(mld_slope_s, k = 3) + # MLD trend
+    s(mld_change_s, k = 3) + # MLD trend
     s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
     s(time_s, by = island, bs = "cr", k = 10)),   # island-level probability
   family = bernoulli,
@@ -100,7 +100,7 @@ m_hurdleMLD<-brm(bf(
   Chl_increase_nearby ~ 
           s(mld_clim_s, k=3) + # MLD climatology
           s(mld_anom_s, k=3) + # MLD anomaly
-          s(mld_slope_s, k = 3)), # MLD trend
+          s(mld_change_s, k = 3)), # MLD trend
         family = Gamma(link = 'log'),
         data = focalCont,
         backend = "cmdstanr",
@@ -113,7 +113,7 @@ m_hurdleFull<-brm(bf(
   Chl_increase_nearby ~ 
     s(mld_clim_s, k=3) + # MLD climatology
     s(mld_anom_s, k=3) + # MLD anomaly
-    s(mld_slope_s, k = 3) + # MLD trend
+    s(mld_change_s, k = 3) + # MLD trend
     s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
     s(time_s, by = island, bs = "cr", k = 10)),   # island-level probability
   family = Gamma(link = 'log'),
@@ -147,7 +147,7 @@ pp_check(checker)
 bayes_R2(checker) # 38.1%
 conditional_effects(checker, effects = 'mld_clim_s')
 conditional_effects(checker, effects = 'mld_anom_s')
-conditional_effects(checker, effects = 'mld_slope_s')
+conditional_effects(checker, effects = 'mld_change_s')
 conditional_effects(checker, effects = 'time_s') # time marginalised over islands
 ce<-conditional_effects(checker, effects = "time_s", 
                     conditions = distinct(focalCont, island))
