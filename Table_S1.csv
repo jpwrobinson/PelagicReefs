@@ -1,9 +1,9 @@
 ,Covariates,Æelpd,SE(Æelpd),elpd,SE(elpd),p_loo,se_p_loo,looic,se_looic
-IME detect,MLD_obs + MLD_pred + time + month,0,0,-7304.067742,33.47617422,274.0355547,3.109296572,14608.13548,66.95234845
-,MLD_obs + time + month,-25.43790376,7.059690437,-7329.505646,33.10541079,270.9600142,3.142122648,14659.01129,66.21082158
-,time + month,-158.8204397,17.44313714,-7462.888182,27.75906488,207.1343736,2.130870513,14925.77636,55.51812977
-IME strength,MLD_obs + MLD_pred + time + month,0,0,5597.729571,76.66228627,538.4166169,18.95654694,-11195.45914,153.3245725
-,MLD_obs + time + month,-375.300696,33.71357633,5222.428875,74.67518879,486.5322712,17.23158456,-10444.85775,149.3503776
-,time + month,-678.2915466,46.17919299,4919.438025,79.40165035,459.899664,20.98761849,-9838.876049,158.8033007
+IME detect,MLD_vars + MLD_pred + time + month,0.00,0.00,-7101.91,49.58,276.47,6.64,14203.83,99.16
+,MLD_vars,-227.59,36.22,-7329.51,33.11,270.96,3.14,14659.01,66.21
+,time + month,-361.01,39.64,-7462.92,27.69,206.48,2.04,14925.84,55.38
+IME strength,MLD_vars + MLD_pred + time + month,0.00,0.00,5713.96,79.43,450.04,20.96,-11427.92,158.87
+,MLD_vars,-491.53,41.01,5222.43,74.68,486.53,17.23,-10444.86,149.35
+,time + month,-793.65,46.33,4920.30,79.15,460.57,20.12,-9840.61,158.31
 ,,,,,,,,,
 Table S1 | Model comparison using LOO. Top-ranked models have the lowest log pointwise predictive density (elpd). Additional estimates provided for effective number of parameters (p_loo) and LOO information criterion (looic).,,,,,,,,,
