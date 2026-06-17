@@ -27,8 +27,8 @@ marginal_post<-function(mod, dat_raw, var, var_raw, n = 100){
     var = seq_range(mod$data[[var]][,1], n=n),
     var_raw = seq_range(dat_raw[[var_raw]], n=n),
     mld_anom_s = 0,
-    mld_mean_s = 0,
-    mld_slope_s = 0,
+    mld_clim_s = 0,
+    mld_change_s = 0,
     month      = 6,
     time_s     = 0,
     island     = focal$island[2]   # single island, effect is shared across islands
@@ -58,8 +58,8 @@ marginal_post_island<-function(mod, dat_raw, var, var_raw, n = 100){
   pred_grid <- expand.grid(
     var = seq_range(mod$data[[var]], n=n),
     mld_anom_s = 0,
-    mld_mean_s = 0,
-    mld_slope_s = 0,
+    mld_clim_s = 0,
+    mld_change_s = 0,
     month      = 6,
     time_s     = 0,
     island     = focal$island   # single island, effect is shared across islands

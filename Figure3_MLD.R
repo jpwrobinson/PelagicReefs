@@ -1,3 +1,4 @@
+source('0_loads/00_islands.R')
 
 # deep / shallow probs
 load('results/mld_time_extreme.rds')
@@ -9,7 +10,7 @@ preds <- tibble(year_s = seq(min(focal$year_s), max(focal$year_s), length.out = 
   filter(.category != "normal")
 
 # Plot with uncertainty ribbons
-gE<-ggplot(preds, aes(x = year, y = .epred, color = .category, fill = .category)) +
+gExtreme<-ggplot(preds, aes(x = year, y = .epred, color = .category, fill = .category)) +
   stat_lineribbon(.width = c(0.50, 0.95), alpha = 0.3) +
   scale_fill_manual(values = c("shallow" = "#3182bd", "deep" = "#de2d26")) +
   scale_color_manual(values = c("shallow" = "#3182bd", "deep" = "#de2d26")) +
@@ -21,9 +22,8 @@ gE<-ggplot(preds, aes(x = year, y = .epred, color = .category, fill = .category)
         axis.title = element_text(size=10),
         axis.text = element_text(size=9))
 
-# Panel C = 02_model_mld_time. 
-# main panel = MLD obs removing month effect (m1)
-# sup fig = MLD anomaly by island over time (m2)
+# sup fig = MLD obs removing month effect (m1)
+# main fig = MLD anomaly by island over time (m2)
 load(file = 'results/mld_time_mod.rds')
 load(file = 'results/mld_anomaly_time_mod.rds')
 
@@ -96,15 +96,23 @@ gSX <- gBase +
   coord_cartesian(clip='off')
 
 delta_anom<-read.csv(file = 'results/MLD_anom_change.csv') %>% 
-  left_join(focal %>% distinct(island, region.col)) %>% 
+  left_join(island %>% distinct(island, region.col)) %>% 
   mutate(sig = ifelse(change_lower > 0, 'red', 'black'))
 
-gMLDdelta<-ggplot(delta_anom, aes(fct_reorder(island, change), 
-                              change, ymin = change_lower, ymax = change_upper, col=sig)) +
+labber<-data.frame(island = delta_anom$island[which.max(delta_anom$change)],
+                   change = c(-1, 1), label = c('Shallower', 'Deeper'))
+
+gMLDdelta<-ggplot(delta_anom, 
+                  aes(fct_reorder(island, change), change)) +
   geom_hline(yintercept = 0, linetype=5, colour= 'grey') +
-  geom_pointrange() +
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig), size=0.25) +
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), col='darkgrey', size=2.5) +
   coord_flip() +
   scale_colour_identity() +
-  theme(legend.position = NULL) +
   labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +
-  scale_x_discrete(position = 'top')
+  scale_x_discrete(position = 'top') +
+  theme(legend.position = NULL, 
+        axis.text.y = element_text(size =7),
+        axis.title = element_text(size =9),
+        axis.ticks.y = element_blank())
