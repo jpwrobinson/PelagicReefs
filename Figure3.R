@@ -10,17 +10,17 @@ th_marg<-theme(plot.margin=unit(c(0.1, .1, .1,.1), 'cm'),
 load(file = 'results/mod_ime_time_binom.rds')
 load(file = 'results/mod_ime_time_hurdle.rds')
 
-fitted_df_gamma<-focal
-fitted_df_detect<-focalCont
+fitted_df_detect<-focal
+fitted_df_gamma<-focalCont
 
 # A = MLD anomaly preds, B = MLD anomaly preds
-df_mldclim<-marginal_post(topDet, fitted_df_detect, 'mld_clim_s', 'mld_clim')
-df_mldanom<-marginal_post(topDet, fitted_df_detect, 'mld_anom_s', 'mld_anom')
-df_mldchange<-marginal_post(topDet, fitted_df_detect, 'mld_change_s', 'mld_change')
+df_mldclim<-marginal_post(m_detectFull, fitted_df_detect, 'mld_clim_s', 'mld_clim')
+df_mldanom<-marginal_post(m_detectFull, fitted_df_detect, 'mld_anom_s', 'mld_anom')
+df_mldchange<-marginal_post(m_detectFull, fitted_df_detect, 'mld_change_s', 'mld_change')
 
-df_mldclimG<-marginal_post(topHur, fitted_df_detect, 'mld_clim_s', 'mld_clim')
-df_mldanomG<-marginal_post(topHur, fitted_df_detect, 'mld_anom_s', 'mld_anom')
-df_mldchangeG<-marginal_post(topHur, fitted_df_detect, 'mld_change_s', 'mld_change')
+df_mldclimG<-marginal_post(m_hurdleFull, fitted_df_detect, 'mld_clim_s', 'mld_clim')
+df_mldanomG<-marginal_post(m_hurdleFull, fitted_df_detect, 'mld_anom_s', 'mld_anom')
+df_mldchangeG<-marginal_post(m_hurdleFull, fitted_df_detect, 'mld_change_s', 'mld_change')
 
 # df_time<-marginal_post_island(topDet, focal, 'time_s', 'time')
 # df_timeG<-marginal_post(topHur, focal, 'time_s', 'time')
