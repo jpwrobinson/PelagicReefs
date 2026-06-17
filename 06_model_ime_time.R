@@ -144,16 +144,16 @@ load('results/mod_ime_time_hurdle.rds')
 checker<-m_hurdleFull
 summary(checker)
 pp_check(checker)
-bayes_R2(checker) # 38.1%
+bayes_R2(checker) # 43.5%
 conditional_effects(checker, effects = 'mld_clim_s')
 conditional_effects(checker, effects = 'mld_anom_s')
 conditional_effects(checker, effects = 'mld_change_s')
 conditional_effects(checker, effects = 'time_s') # time marginalised over islands
-ce<-conditional_effects(checker, effects = "time_s", 
-                    conditions = distinct(focalCont, island))
+# ce<-conditional_effects(checker, effects = "time_s", 
+#                     conditions = distinct(focalCont, island))
 
-plot(ce, plot = FALSE)[[1]] +
-  coord_cartesian(ylim = c(0, 2))
+# plot(ce, plot = FALSE)[[1]] +
+#   coord_cartesian(ylim = c(0, 2))
 
 
 # Extract LOO and save as table

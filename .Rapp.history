@@ -1,0 +1,1543 @@
+getwd()
+install.packages("rstan", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+library(rstan)
+library(StanHeaders)
+example(stan_model, package = "rstan", run.dontrun = TRUE)
+remove.packages('rstan')
+example(stan_model, package = "rstan", run.dontrun = TRUE)
+remove.packages('StanHeaders')
+remove.packages('rstan')
+install.packages("rstan", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+install.packages("StanHeaders", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+remove.packages('rstan')
+remove.packages('StanHeaders')
+# Compile packages using all cores#
+Sys.setenv(MAKEFLAGS = paste0("-j",parallel::detectCores()))#
+#
+install.packages(c("StanHeaders","rstan"),type="source")
+# Compile packages using all cores#
+Sys.setenv(MAKEFLAGS = paste0("-j",parallel::detectCores()))#
+#
+install.packages(c("StanHeaders","rstan"),type="binary")
+install.packages("rstan", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+example(stan_model, package = "rstan", run.dontrun = TRUE)
+# Compile packages using all cores#
+Sys.setenv(MAKEFLAGS = paste0("-j",parallel::detectCores()))#
+#
+install.packages(c("StanHeaders","rstan"),type="source")
+example(stan_model, package = "rstan", run.dontrun = TRUE)
+install.packages(c("StanHeaders","rstan"),type="source")
+example(stan_model, package = "rstan", run.dontrun = TRUE)
+?MDS
+?NMDS
+??NMDS
+?pca
+??pca
+library(FAOSTAT); fao_mal<-get_faostat_bulk(code = 'FS')
+library(FAOSTAT)
+fao_mal<-get_faostat_bulk(code = 'FS')
+library(tidyverse)
+getwd()
+setwd('Documents/git-repos/PelagicReefs/')
+source('func_mod_conditional.R')
+th_marg<-theme(plot.margin=unit(c(0.1, .1, .1,.1), 'cm'),#
+               axis.title = element_text(size = 10),#
+               axis.text = element_text(size=9))#
+#
+## IME plots#
+#
+# Panel A = 06_ime_time. m_detect. code is ready.#
+load(file = 'results/mod_ime_time_binom.rds')#
+load(file = 'results/mod_ime_time_hurdle.rds')#
+#
+topDet<-m_detectMLDtrend
+topDet<-m_detectFull#
+topHur<-m_hurdleFull
+df_mldmean<-marginal_post(topDet, focal, 'mld_mean_s', 'mld_mean')#
+df_mldanom<-marginal_post(topDet, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchange<-marginal_post(topDet, focal, 'mld_change_s', 'mld_change')#
+#
+df_mldmeanG<-marginal_post(topHur, focal, 'mld_mean_s', 'mld_mean')#
+df_mldanomG<-marginal_post(topHur, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchangeG<-marginal_post(topHur, focal, 'mld_change_s', 'mld_change')
+library(brms)
+df_mldmean<-marginal_post(topDet, focal, 'mld_mean_s', 'mld_mean')#
+df_mldanom<-marginal_post(topDet, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchange<-marginal_post(topDet, focal, 'mld_change_s', 'mld_change')#
+#
+df_mldmeanG<-marginal_post(topHur, focal, 'mld_mean_s', 'mld_mean')#
+df_mldanomG<-marginal_post(topHur, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchangeG<-marginal_post(topHur, focal, 'mld_change_s', 'mld_change')
+source('loads/00_plot_theme.R')
+source('0_loads/00_plot_theme.R')
+df_mldmean<-marginal_post(topDet, focal, 'mld_mean_s', 'mld_mean')#
+df_mldanom<-marginal_post(topDet, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchange<-marginal_post(topDet, focal, 'mld_change_s', 'mld_change')#
+#
+df_mldmeanG<-marginal_post(topHur, focal, 'mld_mean_s', 'mld_mean')#
+df_mldanomG<-marginal_post(topHur, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchangeG<-marginal_post(topHur, focal, 'mld_change_s', 'mld_change')
+mod_post<-function(mod, dat_raw, var, n = 100){#
+  vars<-names(mod$data)#
+  nd<-as.data.frame(setNames(as.list(rep(0, length(vars))), vars)) %>% #
+    select(-as.name(var))#
+  nd$geomorphic_type<-'Atoll'#
+  condo<-conditional_effects(mod, as.name(var), prob=0.95, resolution = n,#
+                             conditions = nd, re_formula=NA)[[1]] %>% #
+    mutate(raw = seq_range(dat_raw[[var]], n=n)) %>% #
+    mutate(lower95 = lower__, upper95 = upper__) %>% #
+    select({{var}}, raw, estimate__, lower95, upper95)#
+  c2<-conditional_effects(mod, as.name(var), prob=0.5)[[1]] %>% #
+    select(lower__:upper__)#
+  condo$lower50<-c2$lower__#
+  condo$upper50<-c2$upper__#
+  return(condo)#
+}#
+#
+marginal_post<-function(mod, dat_raw, var, var_raw, n = 100){#
+  pred_grid <- tibble(#
+    var = seq_range(mod$data[[var]][,1], n=n),#
+    var_raw = seq_range(dat_raw[[var_raw]], n=n),#
+    mld_anom_s = 0,#
+    mld_clim_s = 0,#
+    mld_change_s = 0,#
+    month      = 6,#
+    time_s     = 0,#
+    island     = focal$island[2]   # single island, effect is shared across islands#
+  ) %>% select(-as.name(var))#
+  colnames(pred_grid)[1]<-c(as.name(var)) # need full name for epred_draws#
+  pred_grid$var<-pred_grid[[var]] # need generic for marginalise operation#
+  epred <- pred_grid |>#
+    add_epred_draws(mod, re_formula = NA, ndraws = 500)#
+  # average the posterior draws across var conditions#
+  epred_marginal <- epred |>#
+    group_by(var, var_raw, .draw) |>#
+    summarise(.epred = mean(.epred), .groups = "drop") |>#
+    group_by(var, var_raw) |>#
+    median_qi(.epred, .width = c(0.5, 0.95))#
+#
+  colnames(epred_marginal)[1:2]<-c(as.name(var), as.name(var_raw))#
+  return(epred_marginal)#
+}#
+#
+marginal_post_island<-function(mod, dat_raw, var, var_raw, n = 100){#
+  pred_grid <- expand.grid(#
+    var = seq_range(mod$data[[var]], n=n),#
+    mld_anom_s = 0,#
+    mld_clim_s = 0,#
+    mld_change_s = 0,#
+    month      = 6,#
+    time_s     = 0,#
+    island     = focal$island   # single island, effect is shared across islands#
+  ) %>% select(-as.name(var))#
+  pred_grid$var_raw <- rep(seq_range(dat_raw[[var_raw]], n=n), each = unique(focal$island))#
+  colnames(pred_grid)[1]<-c(as.name(var)) # need full name for epred_draws#
+  pred_grid$var<-pred_grid[[var]] # need generic for marginalise operation#
+  epred <- pred_grid |>#
+    add_epred_draws(mod, re_formula = NA, ndraws = 500)#
+  # marginalise over islands (average the posterior draws across islands)#
+  epred_marginal <- epred |>#
+    group_by(var, var_raw, .draw, island) |>#
+    summarise(.epred = mean(.epred), .groups = "drop") |>#
+    group_by(var, var_raw, island) |>#
+    median_qi(.epred, .width = c(0.5, 0.95))#
+  colnames(epred_marginal)[1:2]<-c(as.name(var), as.name(var_raw))#
+  return(epred_marginal)#
+}#
+mod_post_island<-function(mod, dat_raw, var, n = 100){#
+  # extract island-level covariates#
+  nd<-mod$data %>% #
+    select(-avg_monthly_mm, -as.name(var)) %>% #
+    select(geomorphic_type:island, ted_mean) %>% distinct() %>% #
+    mutate(ted_mean = ifelse(is.na(ted_mean), 0, ted_mean))#
+#
+  # add the mean monthly mm for each island [because IME dataset is monthly and so is this covariate - so need to avg over months]#
+  avg_monthly_mm<-mod$data %>% group_by(island) %>% summarise(avg_monthly_mm = mean(avg_monthly_mm))#
+  nd<-nd %>% left_join(avg_monthly_mm)#
+  # nd$population_status<-'U'#
+  N<-length(unique(nd$island))#
+#
+  # estimate effect of var on y, with random effects#
+  condo<-conditional_effects(mod, as.name(var), prob=0.95, resolution = n,#
+                             conditions = nd, re_formula=NULL)[[1]] %>% #
+    mutate(raw = rep(seq_range(dat_raw[[var]], n=n), times = N)) %>% #
+    mutate(lower95 = lower__, upper95 = upper__) %>% #
+    select({{var}}, raw, estimate__, lower95, upper95, island)#
+  c2<-conditional_effects(mod, as.name(var), prob=0.5)[[1]] %>% #
+    select(lower__:upper__)#
+  condo$lower50<-c2$lower__#
+  condo$upper50<-c2$upper__#
+  # clip each island to its observed MLD range#
+  if(var != 'month_num'){#
+  obs_range<-dat_raw %>% group_by(island) %>% summarise(min = min(!!sym(var)), max = max(!!sym(var)))#
+  condo <- condo %>%#
+    left_join(obs_range, by = "island") %>%#
+    filter(raw >= min, raw <= max) %>%#
+    select(-min, -max)#
+  }#
+  return(condo)#
+}
+df_mldmean<-marginal_post(topDet, focal, 'mld_mean_s', 'mld_mean')#
+df_mldanom<-marginal_post(topDet, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchange<-marginal_post(topDet, focal, 'mld_change_s', 'mld_change')#
+#
+df_mldmeanG<-marginal_post(topHur, focal, 'mld_mean_s', 'mld_mean')#
+df_mldanomG<-marginal_post(topHur, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchangeG<-marginal_post(topHur, focal, 'mld_change_s', 'mld_change')
+# A = MLD anomaly preds, B = MLD anomaly preds#
+df_mldclim<-marginal_post(topDet, focal, 'mld_clim_s', 'mld_clim')#
+df_mldanom<-marginal_post(topDet, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchange<-marginal_post(topDet, focal, 'mld_change_s', 'mld_change')#
+#
+df_mldclimG<-marginal_post(topHur, focal, 'mld_clim_s', 'mld_clim')#
+df_mldanomG<-marginal_post(topHur, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchangeG<-marginal_post(topHur, focal, 'mld_change_s', 'mld_change')
+gA<-ggplot(df_mldclim, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  lims(y = c(0, 1)) +#
+  labs(x = "", y = "P(IME)") +#
+  th_marg#
+#
+gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +#
+    geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+    geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+    lims(y = c(0, 1)) +#
+    geom_line(colour = "steelblue", linewidth = 0.9) +#
+    labs(x = "", y = "") +#
+    th_marg#
+#
+gC<-ggplot(df_mldchange, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  lims(y = c(0, 1)) +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  labs(x = "", y = "") +#
+  th_marg#
+#
+gD<-ggplot(df_mldclimG, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.55)) +#
+  labs(x = "Mixed layer depth [mean], m", y = "IME strength") +#
+  th_marg#
+#
+gE<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +#
+  geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.55)) +#
+  labs(x = "Mixed layer depth [anomaly], m", y = "") +#
+  th_marg#
+#
+gF<-ggplot(df_mldpredG, aes(mld_pred, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.55)) +#
+  labs(x = "∆ Mixed layer depth, m [1993-2026]", y = "") +#
+  th_marg
+gF<-ggplot(df_mldchangeG, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.55)) +#
+  labs(x = "∆ Mixed layer depth, m [1993-2026]", y = "") +#
+  th_marg
+g_mld_covs<-plot_grid(gA, gB, gC, gD, gE, gF, #
+                      align='hv', nrow=2, #
+                      labels=c('a', 'b', 'c', 'd', 'e', 'f'))
+g_mld_covs
+gD<-ggplot(df_mldclimG, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.60)) +#
+  labs(x = "Mixed layer depth [mean], m", y = "IME strength") +#
+  th_marg#
+#
+gE<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +#
+  geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.60)) +#
+  labs(x = "Mixed layer depth [anomaly], m", y = "") +#
+  th_marg#
+#
+gF<-ggplot(df_mldchangeG, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.60)) +#
+  labs(x = "∆ Mixed layer depth, m [1993-2026]", y = "") +#
+  th_marg
+g_mld_covs<-plot_grid(gA, gB, gC, gD, gE, gF, #
+                      align='hv', nrow=2, #
+                      labels=c('a', 'b', 'c', 'd', 'e', 'f'))
+g_mld_covs
+gD<-ggplot(df_mldclimG, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "Mixed layer depth [mean], m", y = "IME strength") +#
+  th_marg#
+#
+gE<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +#
+  geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "Mixed layer depth [anomaly], m", y = "") +#
+  th_marg#
+#
+gF<-ggplot(df_mldchangeG, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "∆ Mixed layer depth, m [1993-2026]", y = "") +#
+  th_marg
+g_mld_covs<-plot_grid(gA, gB, gC, gD, gE, gF, #
+                      align='hv', nrow=2, #
+                      labels=c('a', 'b', 'c', 'd', 'e', 'f'))
+g_mld_covs
+histA <- ggplot(focal, aes(mld_clim)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histB<-  ggplot(focal, aes(mld_anom)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histC<-  ggplot(focal, aes(mld_change)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void()
+# inset histos#
+gA<-gA + annotation_custom(#
+    grob = ggplotGrob(histA),#
+    xmin = min(focal$mld_clim), max(focal$mld_clim),  # Adjust the x-axis placement of the inset#
+    ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset#
+  )#
+#
+gB<-gB + annotation_custom(#
+  grob = ggplotGrob(histB),#
+  xmin = min(focal$mld_anom), max(focal$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset#
+)#
+#
+gC<-gC + annotation_custom(#
+  grob = ggplotGrob(histC),#
+  xmin = min(focal$mld_change), max(focal$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset#
+)
+source('Figure3_MLD.R')
+g_mld_covs<-plot_grid(gA, gB, gC, gD, gE, gF, #
+                      align='hv', nrow=2, #
+                      labels=c('a', 'b', 'c', 'd', 'e', 'f'))
+g_mld_covs
+# Plot and multipanel#
+gA<-ggplot(df_mldclim, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+  labs(x = "", y = "P(IME)") +#
+  th_marg#
+#
+gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +#
+    geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+    geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+    geom_line(colour = "steelblue", linewidth = 0.9) +#
+    labs(x = "", y = "") +#
+    th_marg#
+#
+gC<-ggplot(df_mldchange, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  labs(x = "", y = "") +#
+  th_marg#
+#
+gD<-ggplot(df_mldclimG, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "Mixed layer depth [mean], m", y = "IME strength") +#
+  th_marg#
+#
+gE<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +#
+  geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "Mixed layer depth [anomaly], m", y = "") +#
+  th_marg#
+#
+gF<-ggplot(df_mldchangeG, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "∆ Mixed layer depth, m [1993-2026]", y = "") +#
+  th_marg#
+#
+# add underlying data histograms #
+histA <- ggplot(focal, aes(mld_clim)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histB<-  ggplot(focal, aes(mld_anom)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histC<-  ggplot(focal, aes(mld_change)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+# inset histos#
+gA<-gA + annotation_custom(#
+    grob = ggplotGrob(histA),#
+    xmin = min(focal$mld_clim), max(focal$mld_clim),  # Adjust the x-axis placement of the inset#
+    ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset#
+  )#
+#
+gB<-gB + annotation_custom(#
+  grob = ggplotGrob(histB),#
+  xmin = min(focal$mld_anom), max(focal$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset#
+)#
+#
+gC<-gC + annotation_custom(#
+  grob = ggplotGrob(histC),#
+  xmin = min(focal$mld_change), max(focal$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset#
+)#
+#
+g_mld_covs<-plot_grid(gA, gB, gC, gD, gE, gF, #
+                      align='hv', nrow=2, #
+                      labels=c('a', 'b', 'c', 'd', 'e', 'f'))
+g_mld_covs
+gA<-gA + annotation_custom(#
+    grob = ggplotGrob(histA),#
+    xmin = min(focal$mld_clim), max(focal$mld_clim),  # Adjust the x-axis placement of the inset#
+    ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+  )#
+#
+gB<-gB + annotation_custom(#
+  grob = ggplotGrob(histB),#
+  xmin = min(focal$mld_anom), max(focal$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gC<-gC + annotation_custom(#
+  grob = ggplotGrob(histC),#
+  xmin = min(focal$mld_change), max(focal$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)
+# Panel A = 06_ime_time. m_detect. code is ready.#
+load(file = 'results/mod_ime_time_binom.rds')#
+load(file = 'results/mod_ime_time_hurdle.rds')
+gA<-gA + annotation_custom(#
+    grob = ggplotGrob(histA),#
+    xmin = min(focal$mld_clim), max(focal$mld_clim),  # Adjust the x-axis placement of the inset#
+    ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+  )#
+#
+gB<-gB + annotation_custom(#
+  grob = ggplotGrob(histB),#
+  xmin = min(focal$mld_anom), max(focal$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gC<-gC + annotation_custom(#
+  grob = ggplotGrob(histC),#
+  xmin = min(focal$mld_change), max(focal$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)
+focal;head
+source('Figure3_MLD.R')
+load(file = 'results/mld_time_mod.rds')#
+load(file = 'results/mld_anomaly_time_mod.rds')#
+#
+levs<-c('Northwestern Hawaiian', 'Hawaii', 'Mariana', 'Equatorial', 'Samoa')#
+ex_smooths <- grep("month", smooths(m1), value = TRUE)#
+#
+# get predicted temporal MLD anomaly#
+mld_time<-expand.grid(month = 1, island = unique(mld$island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))#
+mld_time$date<-rep(seq(min(mld$Date), max(mld$Date), length.out=100), each = length(unique(mld$island)))#
+mld_time$MLD_pred<-exp(predict(m1, newdata = mld_time, type='response',exclude=ex_smooths))#
+mld_time$se<-predict(m1, newdata = mld_time, type='response', exclude=ex_smooths, se.fit = TRUE)$se.fit#
+mld_time$MLD_lower<-with(mld_time, MLD_pred - 2*se)#
+mld_time$MLD_upper<-with(mld_time, MLD_pred + 2*se)#
+#
+anom_time<-expand.grid(island = unique(mld$island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))#
+anom_time$date<-rep(seq(min(mld$Date), max(mld$Date), length.out=100), each = length(unique(mld$island)))#
+#
+anom_time$MLD_pred<-predict(m2, newdata = anom_time, type='response')#
+anom_time$se<-predict(m2, newdata = anom_time, type='response', se.fit = TRUE)$se.fit#
+anom_time$MLD_lower<-with(anom_time, MLD_pred - 2*se)#
+anom_time$MLD_upper<-with(anom_time, MLD_pred + 2*se)#
+#
+preds<-rbind(mld_time %>% mutate(var = 'obs', month=NULL),#
+             anom_time %>% mutate(var = 'anom')) %>% #
+  left_join(island %>% rename(island = island) %>% select(island, region, region.col)) %>% #
+  mutate(region = factor(region, levels = levs))
+head(mld)
+head(focal)
+preds<-rbind(mld_time %>% mutate(var = 'obs', month=NULL),#
+             anom_time %>% mutate(var = 'anom')) %>% #
+  left_join(island_cols %>% select(REGION, region.col)) %>% #
+  mutate(region = factor(region, levels = levs))
+preds<-rbind(mld_time %>% mutate(var = 'obs', month=NULL),#
+             anom_time %>% mutate(var = 'anom')) %>% #
+  left_join(island_cols %>% select(REGION, region.col)) %>% #
+  mutate(region = factor(REGION, levels = levs))
+rbind(mld_time %>% mutate(var = 'obs', month=NULL),#
+             anom_time %>% mutate(var = 'anom'))
+rbind(mld_time %>% mutate(var = 'obs', month=NULL),#
+             anom_time %>% mutate(var = 'anom')) %>% head
+source('0_loads/00_islands.R')
+preds<-rbind(mld_time %>% mutate(var = 'obs', month=NULL),#
+             anom_time %>% mutate(var = 'anom')) %>% #
+  left_join(island %>% rename(island = island) %>% select(island, region, region.col)) %>% #
+  mutate(region = factor(region, levels = levs))
+## this is regional smooth - but need to have island + region to understand the full model prediction#
+region_smooth <- preds %>%#
+  group_by(var, region.col,region, date, time_num) %>%#
+  summarize(MLD_pred = mean(MLD_pred), region_se = sqrt(sum(se^2)/n()),  # assumes island predictions are independent#
+            .groups = "drop") %>% #
+  mutate(ymin = MLD_pred - 2*region_se, ymax = MLD_pred + 2*region_se)#
+#
+gBase<-ggplot(data = region_smooth %>% filter(var == 'obs'), aes(date, MLD_pred)) + #
+  geom_ribbon(aes(ymin = ymin, ymax = ymax, fill=region.col), alpha=0.2) + #
+  geom_line(col='black', linewidth=1) + #
+  guides(col='none', fill='none') +#
+  scale_colour_identity() +#
+  scale_fill_identity() +#
+  scale_x_date(#
+    breaks=as.Date(c('1993', '1999', '2005', '2011', '2017', '2023'), '%Y'),#
+    # date_breaks = '4 years', #
+    # minor_breaks = as.Date(c('1996', '2002', '2008', '2014', '2020', '2026'), '%Y'),#
+    date_labels = paste0('%Y')) +#
+  facet_wrap(~region, nrow=1) +#
+  theme(strip.text = element_text(hjust = 0, size = 9), #
+        strip.background = element_blank(),#
+        axis.text = element_text(size = 9))#
+#
+gMLD_anom<-gBase %+% (region_smooth %>% filter(var == 'anom')) + #
+  geom_hline(yintercept = 0, linetype=5, alpha=0.5) +#
+  geom_line(data = preds %>% filter(var == 'anom'), #
+            aes(col=region.col, group=island), alpha=0.5) +#
+  labs(x = '', y = 'Mixed layer anomaly, m') +#
+  theme(axis.title = element_text(size = 10))#
+#
+gSX <- gBase + #
+  geom_ribbon(data = preds %>% filter(var == 'obs'), #
+              aes(group=island, ymin = MLD_lower, ymax = MLD_upper), #
+              fill='grey', alpha=0.5) +#
+  geom_text(data = preds %>% filter(var == 'obs' & date == '2026-02-01'),#
+            aes(label = island), size=1.5, hjust = -.1) +#
+  geom_line(data = preds %>% filter(var == 'obs'), #
+            aes(group=island, col=region.col)) +#
+  facet_wrap(~region, nrow=5) +#
+  scale_x_date(date_breaks = '5 years', date_labels = paste0('%Y')) +#
+  labs(x = '', y = 'Mixed layer depth, m') +#
+  theme(plot.margin = unit(c(0.5, 2, 0.5, 0.5), 'cm')) +#
+  coord_cartesian(clip='off')#
+#
+delta_anom<-read.csv(file = 'results/MLD_anom_change.csv') %>% #
+  left_join(focal %>% distinct(island, region.col)) %>% #
+  mutate(sig = ifelse(change_lower > 0, 'red', 'black'))#
+#
+labber<-data.frame(island = delta_anom$island[which.max(delta_anom$change)],#
+                   change = c(-2, 2), label = c('Shallower', 'Deeper'))#
+#
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change, #
+                      ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange() +#
+  geom_point(aes(y = 16, col=region.col)) +#
+  geom_text(data = labber, aes(label = lab), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+gSX
+gMLD_anom
+read.csv(file = 'results/MLD_anom_change.csv') %>% #
+  left_join(focal %>% distinct(island, region.col))
+delta_anom<-read.csv(file = 'results/MLD_anom_change.csv') %>% #
+  left_join(island %>% distinct(island, region.col)) %>% #
+  mutate(sig = ifelse(change_lower > 0, 'red', 'black'))
+labber<-data.frame(island = delta_anom$island[which.max(delta_anom$change)],#
+                   change = c(-2, 2), label = c('Shallower', 'Deeper'))#
+#
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change, #
+                      ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange() +#
+  geom_point(aes(y = 16, col=region.col)) +#
+  geom_text(data = labber, aes(label = lab), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+gMLDdelta
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change, #
+                      ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange() +#
+  geom_point(aes(y = 16, col=region.col)) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+gMLDdelta
+delta_anom
+ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change, col=sig)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper)) +#
+  geom_point(aes(y = 16, col=region.col)) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = 16, col=region.col)) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col)) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL, axis.ticks.x = element_blank()) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL, axis.ticks.y = element_blank()) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(data = delta_anom %>% filter(sig == 'black'),#
+                  aes(ymin = change_lower, ymax = change_upper, col=sig), alpha=0.5) +#
+  geom_pointrange(data = delta_anom %>% filter(sig == 'red'),#
+                  aes(ymin = change_lower, ymax = change_upper, col=sig), alpha=1) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL, axis.ticks.y = element_blank()) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL, axis.ticks.y = element_blank()) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+plot_grid(gC + labs(y = 'P(IME)', #
+                                 x = "∆ Mixed layer depth, m [1993-2026]"), #
+                       gF, labels = c('b', 'c'), nrow=1)
+plot_grid(gC + labs(y = 'P(IME)', #
+                                 x = "∆ Mixed layer depth, m [1993-2026]"), #
+                       gF + labs( y = 'IME strength'), labels = c('b', 'c'), nrow=1)
+gC<-gC + annotation_custom(#
+  grob = ggplotGrob(histC),#
+  xmin = min(focal$mld_change), max(focal$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)
+# Plot and multipanel#
+gA<-ggplot(df_mldclim, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+  labs(x = "", y = "P(IME)") +#
+  th_marg#
+#
+gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +#
+    geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+    geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+    geom_line(colour = "steelblue", linewidth = 0.9) +#
+    labs(x = "", y = "") +#
+    th_marg#
+#
+gC<-ggplot(df_mldchange, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  labs(x = "", y = "") +#
+  th_marg#
+#
+gD<-ggplot(df_mldclimG, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "Mixed layer depth [mean], m", y = "IME strength") +#
+  th_marg#
+#
+gE<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +#
+  geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "Mixed layer depth [anomaly], m", y = "") +#
+  th_marg#
+#
+gF<-ggplot(df_mldchangeG, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "∆ Mixed layer depth, m [1993-2026]", y = "") +#
+  th_marg#
+#
+# add underlying data histograms #
+histA <- ggplot(fitted_df_detect, aes(mld_clim)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histB<-  ggplot(fitted_df_detect, aes(mld_anom)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histC<-  ggplot(fitted_df_detect, aes(mld_change)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histD <- ggplot(fitted_df_gamm, aes(mld_clim)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histE<-  ggplot(fitted_df_gamm, aes(mld_anom)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histF<-  ggplot(fitted_df_gamm, aes(mld_change)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+# inset histos#
+gA<-gA + annotation_custom(#
+    grob = ggplotGrob(histA),#
+    xmin = min(fitted_df_detect$mld_clim), max(fitted_df_detect$mld_clim),  # Adjust the x-axis placement of the inset#
+    ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+  )#
+#
+gB<-gB + annotation_custom(#
+  grob = ggplotGrob(histB),#
+  xmin = min(fitted_df_detect$mld_anom), max(fitted_df_detect$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gC<-gC + annotation_custom(#
+  grob = ggplotGrob(histC),#
+  xmin = min(fitted_df_detect$mld_change), max(fitted_df_detect$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gD<-gD + annotation_custom(#
+  grob = ggplotGrob(histD),#
+  xmin = min(fitted_df_gamma$mld_clim), max(fitted_df_gamma$mld_clim),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gE<-gE + annotation_custom(#
+  grob = ggplotGrob(histE),#
+  xmin = min(fitted_df_gamma$mld_anom), max(fitted_df_gamma$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gF<-gF + annotation_custom(#
+  grob = ggplotGrob(histF),#
+  xmin = min(fitted_df_gamma$mld_change), max(fitted_df_gamma$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)
+# Panel A = 06_ime_time. m_detect. code is ready.#
+load(file = 'results/mod_ime_time_binom.rds')#
+fitted_df_detect<-focal#
+load(file = 'results/mod_ime_time_hurdle.rds')#
+fitted_df_gamma<-focal#
+#
+topDet<-m_detectFull#
+topHur<-m_hurdleFull#
+#
+# A = MLD anomaly preds, B = MLD anomaly preds#
+df_mldclim<-marginal_post(topDet, fitted_df_detect, 'mld_clim_s', 'mld_clim')#
+df_mldanom<-marginal_post(topDet, fitted_df_detect, 'mld_anom_s', 'mld_anom')#
+df_mldchange<-marginal_post(topDet, fitted_df_detect, 'mld_change_s', 'mld_change')#
+#
+df_mldclimG<-marginal_post(topHur, focal, 'mld_clim_s', 'mld_clim')#
+df_mldanomG<-marginal_post(topHur, focal, 'mld_anom_s', 'mld_anom')#
+df_mldchangeG<-marginal_post(topHur, focal, 'mld_change_s', 'mld_change')#
+#
+# df_time<-marginal_post_island(topDet, focal, 'time_s', 'time')#
+# df_timeG<-marginal_post(topHur, focal, 'time_s', 'time')#
+#
+# Plot and multipanel#
+gA<-ggplot(df_mldclim, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+  labs(x = "", y = "P(IME)") +#
+  th_marg#
+#
+gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +#
+    geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+    geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+    geom_line(colour = "steelblue", linewidth = 0.9) +#
+    labs(x = "", y = "") +#
+    th_marg#
+#
+gC<-ggplot(df_mldchange, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  labs(x = "", y = "") +#
+  th_marg#
+#
+gD<-ggplot(df_mldclimG, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "Mixed layer depth [mean], m", y = "IME strength") +#
+  th_marg#
+#
+gE<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +#
+  geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "Mixed layer depth [anomaly], m", y = "") +#
+  th_marg#
+#
+gF<-ggplot(df_mldchangeG, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "∆ Mixed layer depth, m [1993-2026]", y = "") +#
+  th_marg#
+#
+# add underlying data histograms #
+histA <- ggplot(fitted_df_detect, aes(mld_clim)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histB<-  ggplot(fitted_df_detect, aes(mld_anom)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histC<-  ggplot(fitted_df_detect, aes(mld_change)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histD <- ggplot(fitted_df_gamm, aes(mld_clim)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histE<-  ggplot(fitted_df_gamm, aes(mld_anom)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histF<-  ggplot(fitted_df_gamm, aes(mld_change)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+# inset histos#
+gA<-gA + annotation_custom(#
+    grob = ggplotGrob(histA),#
+    xmin = min(fitted_df_detect$mld_clim), max(fitted_df_detect$mld_clim),  # Adjust the x-axis placement of the inset#
+    ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+  )#
+#
+gB<-gB + annotation_custom(#
+  grob = ggplotGrob(histB),#
+  xmin = min(fitted_df_detect$mld_anom), max(fitted_df_detect$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gC<-gC + annotation_custom(#
+  grob = ggplotGrob(histC),#
+  xmin = min(fitted_df_detect$mld_change), max(fitted_df_detect$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gD<-gD + annotation_custom(#
+  grob = ggplotGrob(histD),#
+  xmin = min(fitted_df_gamma$mld_clim), max(fitted_df_gamma$mld_clim),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gE<-gE + annotation_custom(#
+  grob = ggplotGrob(histE),#
+  xmin = min(fitted_df_gamma$mld_anom), max(fitted_df_gamma$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gF<-gF + annotation_custom(#
+  grob = ggplotGrob(histF),#
+  xmin = min(fitted_df_gamma$mld_change), max(fitted_df_gamma$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)
+histD <- ggplot(fitted_df_gamma, aes(mld_clim)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histE<-  ggplot(fitted_df_gamma, aes(mld_anom)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histF<-  ggplot(fitted_df_gamma, aes(mld_change)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void()
+# inset histos#
+gA<-gA + annotation_custom(#
+    grob = ggplotGrob(histA),#
+    xmin = min(fitted_df_detect$mld_clim), max(fitted_df_detect$mld_clim),  # Adjust the x-axis placement of the inset#
+    ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+  )#
+#
+gB<-gB + annotation_custom(#
+  grob = ggplotGrob(histB),#
+  xmin = min(fitted_df_detect$mld_anom), max(fitted_df_detect$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gC<-gC + annotation_custom(#
+  grob = ggplotGrob(histC),#
+  xmin = min(fitted_df_detect$mld_change), max(fitted_df_detect$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gD<-gD + annotation_custom(#
+  grob = ggplotGrob(histD),#
+  xmin = min(fitted_df_gamma$mld_clim), max(fitted_df_gamma$mld_clim),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gE<-gE + annotation_custom(#
+  grob = ggplotGrob(histE),#
+  xmin = min(fitted_df_gamma$mld_anom), max(fitted_df_gamma$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gF<-gF + annotation_custom(#
+  grob = ggplotGrob(histF),#
+  xmin = min(fitted_df_gamma$mld_change), max(fitted_df_gamma$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)
+g_mld_covs<-plot_grid(gA, gB, gC, gD, gE, gF, #
+                      align='hv', nrow=2, #
+                      labels=c('a', 'b', 'c', 'd', 'e', 'f'))
+g_mld_covs
+plot_grid(gC + labs(y = 'P(IME)', #
+                                 x = "∆ Mixed layer depth, m [1993-2026]"), #
+                       gF + labs( y = 'IME strength'), labels = c('b', 'c'), nrow=1)
+gMLD_change<-plot_grid(gC + labs(y = 'P(IME)', #
+                                 x = "∆ Mixed layer depth, m [1993-2026]"), #
+                       gF + labs( y = 'IME strength'), labels = c('b', 'c'), nrow=1)#
+#
+gIME<-plot_grid(gMLD_anom, gMLD_change, nrow=2, labels=c('a', ''), rel_widths=c(1, 0.4))
+gIME
+plot_grid(gIME, gMLD_delta, nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.4))
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL, axis.ticks.y = element_blank()) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+plot_grid(gIME, gMLD_delta, nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.4))
+plot_grid(gIME, gMLDdelta, nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.4))
+pdf(file = 'fig/Figure3.pdf', height=6, width=9)#
+plot_grid(gIME, gMLDdelta, nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.7))#
+dev.off()
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.5, 0.1, 1.5, 1))), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.7))
+pdf(file = 'fig/Figure3.pdf', height=6, width=9)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.5, 0.1, 1.5, 1), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.7))#
+dev.off()
+pdf(file = 'fig/Figure3.pdf', height=6, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.5, 0.1, 1.5, 1), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.7))#
+dev.off()
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.5, 0.1, 1.5, 1), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.7))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  theme(legend.position = NULL, axis.ticks.y = element_blank()) +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top')
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0)) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.x = element_text(size =9),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+dim(fitted_df_gamma)
+dim(fitted_df_detect)
+fitted_df_detect<-focalCont
+# A = MLD anomaly preds, B = MLD anomaly preds#
+df_mldclim<-marginal_post(topDet, fitted_df_detect, 'mld_clim_s', 'mld_clim')#
+df_mldanom<-marginal_post(topDet, fitted_df_detect, 'mld_anom_s', 'mld_anom')#
+df_mldchange<-marginal_post(topDet, fitted_df_detect, 'mld_change_s', 'mld_change')#
+#
+df_mldclimG<-marginal_post(topHur, fitted_df_detect, 'mld_clim_s', 'mld_clim')#
+df_mldanomG<-marginal_post(topHur, fitted_df_detect, 'mld_anom_s', 'mld_anom')#
+df_mldchangeG<-marginal_post(topHur, fitted_df_detect, 'mld_change_s', 'mld_change')#
+#
+# df_time<-marginal_post_island(topDet, focal, 'time_s', 'time')#
+# df_timeG<-marginal_post(topHur, focal, 'time_s', 'time')#
+#
+# Plot and multipanel#
+gA<-ggplot(df_mldclim, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+  labs(x = "", y = "P(IME)") +#
+  th_marg#
+#
+gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +#
+    geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+    geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+    geom_line(colour = "steelblue", linewidth = 0.9) +#
+    labs(x = "", y = "") +#
+    th_marg#
+#
+gC<-ggplot(df_mldchange, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  labs(x = "", y = "") +#
+  th_marg#
+#
+gD<-ggplot(df_mldclimG, aes(mld_clim, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "Mixed layer depth [mean], m", y = "IME strength") +#
+  th_marg#
+#
+gE<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +#
+  geom_vline(xintercept = 0, linetype=5, alpha=0.5) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "Mixed layer depth [anomaly], m", y = "") +#
+  th_marg#
+#
+gF<-ggplot(df_mldchangeG, aes(mld_change, .epred)) +#
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),#
+              alpha = 0.2, fill = "steelblue") +#
+  geom_line(colour = "steelblue", linewidth = 0.9) +#
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +#
+  labs(x = "∆ Mixed layer depth, m [1993-2026]", y = "") +#
+  th_marg#
+#
+# add underlying data histograms #
+histA <- ggplot(fitted_df_detect, aes(mld_clim)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histB<-  ggplot(fitted_df_detect, aes(mld_anom)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histC<-  ggplot(fitted_df_detect, aes(mld_change)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histD <- ggplot(fitted_df_gamma, aes(mld_clim)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histE<-  ggplot(fitted_df_gamma, aes(mld_anom)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+#
+histF<-  ggplot(fitted_df_gamma, aes(mld_change)) +#
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +#
+  scale_x_continuous(expand=c(0,0)) + theme_void() #
+# inset histos#
+gA<-gA + annotation_custom(#
+    grob = ggplotGrob(histA),#
+    xmin = min(fitted_df_detect$mld_clim), max(fitted_df_detect$mld_clim),  # Adjust the x-axis placement of the inset#
+    ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+  )#
+#
+gB<-gB + annotation_custom(#
+  grob = ggplotGrob(histB),#
+  xmin = min(fitted_df_detect$mld_anom), max(fitted_df_detect$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gC<-gC + annotation_custom(#
+  grob = ggplotGrob(histC),#
+  xmin = min(fitted_df_detect$mld_change), max(fitted_df_detect$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset#
+)#
+#
+gD<-gD + annotation_custom(#
+  grob = ggplotGrob(histD),#
+  xmin = min(fitted_df_gamma$mld_clim), max(fitted_df_gamma$mld_clim),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset#
+)#
+#
+gE<-gE + annotation_custom(#
+  grob = ggplotGrob(histE),#
+  xmin = min(fitted_df_gamma$mld_anom), max(fitted_df_gamma$mld_anom),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset#
+)#
+#
+gF<-gF + annotation_custom(#
+  grob = ggplotGrob(histF),#
+  xmin = min(fitted_df_gamma$mld_change), max(fitted_df_gamma$mld_change),  # Adjust the x-axis placement of the inset#
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset#
+)#
+#
+g_mld_covs<-plot_grid(gA, gB, gC, gD, gE, gF, #
+                      align='hv', nrow=2, #
+                      labels=c('a', 'b', 'c', 'd', 'e', 'f'))#
+#
+# load MLD predictions#
+source('Figure3_MLD.R')#
+#
+gMLD_change<-plot_grid(gC + labs(y = 'P(IME)', #
+                                 x = "∆ Mixed layer depth, m [1993-2026]"), #
+                       gF + labs( y = 'IME strength'), labels = c('b', 'c'), nrow=1)#
+#
+gIME<-plot_grid(gMLD_anom, gMLD_change, nrow=2, labels=c('a', ''), rel_widths=c(1, 0.4))#
+#
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), size=2) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.x = element_text(size =9),#
+        axis.ticks.y = element_blank())
+gMLDdelta
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), size=3) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.x = element_text(size =9),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+labber<-data.frame(island = delta_anom$island[which.max(delta_anom$change)],#
+                   change = c(-1, 1), label = c('Shallower', 'Deeper'))#
+#
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.x = element_text(size =9),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.x = element_text(size =9),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =3) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip(clip='off') +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.x = element_text(size =9),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip(clip='off') +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.x = element_text(size =7),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = 16, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip(clip='off') +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.x = element_text(size =7),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf-1, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip(clip='off') +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.x = element_text(size =7),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.x = element_text(size =7),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.y = element_text(size =9),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig)) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.y = element_text(size =7),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig), size=2) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.y = element_text(size =7),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig), size=1) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.y = element_text(size =7),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+?geom_pointrange
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig), size=0.5) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.y = element_text(size =7),#
+        axis.ticks.y = element_blank())
+?geom_pointrange
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig), size=0.25) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), vjust = -1, size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.y = element_text(size =7),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig), size=0.25) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), col='grey', size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.y = element_text(size =7),#
+        axis.title = element_text(size =9),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()
+gMLDdelta<-ggplot(delta_anom, #
+                  aes(fct_reorder(island, change), change)) +#
+  geom_hline(yintercept = 0, linetype=5, colour= 'grey') +#
+  geom_pointrange(aes(ymin = change_lower, ymax = change_upper, col=sig), size=0.25) +#
+  geom_point(aes(y = Inf, col=region.col), pch=15, size =2) +#
+  geom_text(data = labber, aes(label = label), hjust=c(1,0), col='darkgrey', size=2.5) +#
+  coord_flip() +#
+  scale_colour_identity() +#
+  labs(x = '', y = '∆ Mixed layer depth anomaly, m [1993 - 2026]') +#
+  scale_x_discrete(position = 'top') +#
+  theme(legend.position = NULL, #
+        axis.text.y = element_text(size =7),#
+        axis.title = element_text(size =9),#
+        axis.ticks.y = element_blank())
+pdf(file = 'fig/Figure3.pdf', height=5, width=11)#
+plot_grid(gIME, #
+          gMLDdelta + theme(plot.margin = unit(c(1.1, 0.1, 1.1, .5), 'cm')), #
+          nrow=1, labels=c('', 'd'), rel_widths=c(1, 0.6))#
+dev.off()

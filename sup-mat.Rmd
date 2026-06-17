@@ -83,7 +83,7 @@ knitr::include_graphics("fig/FigureSX_herbivore_time.pdf"); i = i + 1
 knitr::include_graphics("fig/FigureSX_MLD_time_obs.pdf"); i = i + 1
 ```
 
-**Fig. S`r i`** | Island-level temporal trends in the mixed layer depth layer from 1993-2026. a) is the observed mixed layer accounting for monthly variability and b)  occurrence of anomalously shallow (< 20 m than monthly mean, blue) or deep (>20 m than monthly mean, red) mixed layers. In a), lines are mean predicted mixed layer from generalised additive model, for each region (black with 95% CI filled by region), overlaid with mean island predictions (coloured lines). In b), lines are posterior median predictions with 95% and 50% certainty intervals.
+**Fig. S`r i`** | Island-level temporal trends in the mixed layer depth layer from 1993-2026. Lines are mean predicted mixed layer, accounting for monthly variability, from a generalised additive model, for each region (black with 95% CI filled by region) and overlaid with mean island predictions (coloured lines).
 
 ```{r, out.width = "85%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME_time_covariates.pdf"); i = i + 1

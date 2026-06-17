@@ -163,5 +163,6 @@ g_mld_covs
 dev.off()
 
 pdf(file = 'fig/FigureSX_MLD_time_obs.pdf', height=3.5, width=7)
-plot_grid(gSX, gExtreme, nrow =1, labels =c('a', 'b'))
+# plot_grid(gSX, gExtreme, nrow =1, labels =c('a', 'b'))
+gSX
 dev.off()
