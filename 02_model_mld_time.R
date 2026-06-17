@@ -126,75 +126,6 @@ summary(m2) # dev exp. 4.5%
 acf(resid(m2, type = "pearson"))
 gratia::draw(m2)
 
-# is there a larger climatic process driving unexplained variation?
-
-# get predicted temporal MLD anomaly
-df2<-expand.grid(island = unique(mld$island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
-df2$date<-rep(seq(min(mld$Date), max(mld$Date), length.out=100), each = length(unique(mld$island)))
-df2<-df2 %>% left_join(island %>% rename(island = island) %>% select(island, region, region.col)) 
-
-df2$MLD_pred<-predict(m2, newdata = df2, type='response')
-df2$se<-predict(m2, newdata = df2, type='response', se.fit = TRUE)$se.fit
-df2$MLD_lower<-with(df2, MLD_pred - 2*se)
-df2$MLD_upper<-with(df2, MLD_pred + 2*se)
-
-ggplot(df2, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=island)) + 
-  geom_line(aes(col=island)) + geom_ribbon(alpha=0.5) + facet_wrap(~region)
-
-ggplot(df2, aes(date, MLD_pred, ymin = MLD_lower, ymax = MLD_upper, fill=region)) + 
-  geom_line(aes(col=region, group=island))  + facet_grid(~region) +
-  guides(col='none')
-
-## this is regional smooth - but need to have island + region to understand the full model prediction
-region_smooth <- df2 %>%
-  group_by(region, date, time_num) %>%
-  summarize(
-    # mean of island predictions
-    region_fit = mean(MLD_pred),
-    # SE of the mean across islands
-    region_se = sqrt(sum(se^2)/n()),  # assumes island predictions are independent
-    .groups = "drop"
-  ) %>% mutate(
-    ymin = region_fit - 2*region_se,
-    ymax = region_fit + 2*region_se,
-  )
-
-ggplot(region_smooth, aes(date, region_fit, ymin = ymin, ymax = ymax, fill=region)) + 
-  geom_line(aes(col=region)) + 
-  geom_ribbon(alpha=0.5) + facet_wrap(~region) 
-
-# MLD is getting deeper over time?
-
-# add categorical vars 
-df2<-df2 %>% left_join(island %>% rename(island = island) %>% select(island, region))
-
-regs<-unique(df2$region)
-for(i in 1:length(regs)){
-  
-  gg<-ggplot(df2 %>% filter(region %in% regs[i]), aes(date, MLD_pred, col=island)) + 
-    geom_line() + 
-    geom_text_repel(data = df2 %>% filter(region %in% regs[i] & date == max(df2$date)), aes(label = island), nudge_x = 0.25, size=3, segment.colour = NA) +
-    labs(x = '', y = 'Mixed layer depth anomaly (predicted)', subtitle = regs[i]) +
-    scale_x_date(date_breaks = '5 years', date_labels = '%Y') +
-    theme(legend.position = 'none') 
-  
-  assign(paste0('gg', regs[i]), gg)
-}
-
-pdf(file = 'fig/mld_anomaly_trend.pdf', height=5, width=20)
-plot_grid(ggMariana, `ggNorthwestern Hawaiian`, ggHawaii, ggEquatorial, ggSamoa, nrow=1)
-
-ggplot(region_smooth, aes(date, region_fit, ymin = ymin, ymax = ymax, fill=region)) + 
-  geom_line(aes(col=region)) + 
-  geom_ribbon(alpha=0.5) + facet_wrap(~region) +
-  scale_x_date(date_breaks = '5 years', date_labels = '%Y') +
-  theme(legend.position = 'none') + 
-  labs(y = 'MLD anomaly (predicted)', x ='')
-  
-
-dev.off()
-
-
 ## 3. Fit deep events anomaly
 focal <- mld |> mutate(
   mld_category = case_when(
@@ -221,10 +152,6 @@ m_deep <- brm(
 
 save(m_deep, focal, file = 'results/mld_time_extreme.rds')
 
-
-ggplot(focal %>% filter(deep_event ==1), aes(year)) + 
-  geom_histogram() + facet_wrap(~island)
-
 summary(m_deep) 
 # - mudeep: log-odds of deep vs normal
 # - mushallow: log-odds of shallow vs normal
@@ -235,24 +162,5 @@ mcmc_plot(m_deep)
 ranef(m_deep,dpar = "mudeep")$island
 
 # bayes_R2(m_deep) # 1%
-
-preds <- tibble(year_s = seq(min(focal$year_s), max(focal$year_s), length.out = 100)) %>%
-  left_join(focal %>% distinct(year, year_s)) %>% 
-  add_epred_draws(m_deep, ndraws = 1000, re_formula = NA) %>%  # population-level only
-  ungroup() %>%
-  filter(.category != "normal")
-
-# Plot with uncertainty ribbons
-ggplot(preds, aes(x = year, y = .epred, color = .category, fill = .category)) +
-  stat_lineribbon(.width = c(0.50, 0.95), alpha = 0.3) +
-  scale_fill_manual(values = c("shallow" = "#3182bd", "deep" = "#de2d26")) +
-  scale_color_manual(values = c("shallow" = "#3182bd", "deep" = "#de2d26")) +
-  labs(
-    x = "",
-    y = "Probability"
-  ) +
-  annotate('text', x = 2020, y = 0.03, label = 'Deep event', col = '#de2d26') +
-  annotate('text', x = 1996, y = 0.014, label = 'Shallow event', col = "#3182bd") +
-  theme(legend.position = "none")
 
 

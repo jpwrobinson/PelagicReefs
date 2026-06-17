@@ -27,6 +27,26 @@ ggplot(mld_slopes, aes(fct_reorder(island, mld_slope),
   coord_flip() +
   facet_wrap(~model, scales='free')
 
+anom_time<-expand.grid(island = unique(mld$island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
+anom_time$date<-rep(seq(min(mld$Date), max(mld$Date), length.out=100), each = length(unique(mld$island)))
+
+anom_time$MLD_pred<-predict(m2, newdata = anom_time, type='response')
+anom_time$se<-predict(m2, newdata = anom_time, type='response', se.fit = TRUE)$se.fit
+anom_time$MLD_lower<-with(anom_time, MLD_pred - 2*se)
+anom_time$MLD_upper<-with(anom_time, MLD_pred + 2*se)
+
+delta_anom <- anom_time %>% group_by(island) %>% 
+  summarise(
+    change = MLD_pred[which.max(time_num)] - MLD_pred[which.min(time_num)],
+    change_lower = MLD_lower[which.max(time_num)] - MLD_upper[which.min(time_num)],
+    change_upper = MLD_upper[which.max(time_num)] - MLD_lower[which.min(time_num)]
+  )
+
+# slope and predicted change have same signal (strongest in anom - near perfect cor())  
+# ggplot(mld_slopes %>% left_join(delta_anom) %>% filter(model =='Anom'), 
+#        aes(mld_slope, change)) + geom_point()
+
+
 ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>% 
   mutate(date = as.Date(date),
          year = as.numeric(year(date)),
@@ -36,18 +56,17 @@ ime_df<-read.csv(file = 'data/GlobColour/GlobColour_IME_output.csv') %>%
          island = factor(island), region = factor(region)
   ) %>% 
   # matching MLD, but note this is for the 1st of the month, whereas IME is 15th
-  left_join(mld %>% mutate(date = as.Date(format(Date, "%Y-%m-15"))) %>% select(date, island, MLD)) %>% 
+  left_join(mld %>% mutate(date = as.Date(format(Date, "%Y-%m-15"))) %>% select(date, island, month_mean, anomaly)) %>% 
   # matching mLD predictions
-  left_join(mld_slopes) %>% 
-  # filter(!is.na(MLD)) %>% 
-  mutate(mld_s = scale(MLD)[,1]) %>% 
-  group_by(island, month) %>% 
-  mutate(mld_mean = mean(MLD, na.rm=TRUE)) %>% 
+  left_join(delta_anom) %>% 
   ungroup() %>% 
-  mutate(mld_anom = MLD - mld_mean, 
+  mutate(mld_clim = month_mean,
+         mld_anom = anomaly,
+         mld_change = change,
+         change = NULL, month_mean = NULL, anomaly = NULL,
          mld_anom_s = scale(mld_anom),
-         mld_mean_s = scale(mld_mean),
-         mld_slope_s = scale(mld_slope),
+         mld_clim_s = scale(mld_clim),
+         mld_change_s = scale(mld_change),
          island=factor(island)) 
 
 ## Hurdle approach of gamma + binomial models.
@@ -62,7 +81,7 @@ focal<-ime_df %>%
 
 m_detect <- brm(bf(
   has_IME ~ 
-    s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
+    s(mld_clim_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
     s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
     s(time_s, by = island, bs = "cr", k = 10)),   # island-level probability
   family = bernoulli,
@@ -74,8 +93,8 @@ m_detect <- brm(bf(
 
 m_detectMLDtrend <- brm(bf(
   has_IME ~ 
-    s(mld_mean_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
-    s(mld_slope_s, k = 3) + # MLD trend
+    s(mld_clim_s, k=3) + s(mld_anom_s, k=3) + # MLD effects
+    s(mld_change_s, k = 3) + # MLD trend
     s(month, bs = 'cc', k = 12, by = island) + # island-level seasonal probability
     s(time_s, by = island, bs = "cr", k = 10)),   # island-level probability
   family = bernoulli,
