@@ -75,48 +75,6 @@ df<-df %>%
 write.csv(df, file = 'results/mld_seasonal_pred.csv', row.names=FALSE) # this is mld amplitude
 write.csv(mld_trend, file = 'results/mld_time_pred.csv', row.names=FALSE) # this is mld trend
 
-survey_dates<-read.csv('data/noaa-crep/crep_for_analysis.csv') %>% 
-  distinct(OBS_YEAR, DATE_, ISLAND) %>% 
-  mutate(DATE_ = as.Date(DATE_, "%m/%d/%Y"), month = month(DATE_)) %>% 
-  left_join(island %>% rename(ISLAND = island) %>% select(ISLAND, region)) %>%
-  distinct(region, month) %>% 
-  left_join(df %>% group_by(region, month) %>% summarise(MLD_pred = mean(MLD_pred)))
-
-amp<-df %>% group_by(island, region, region.col) %>%
-  summarise(mld_amp = max(MLD_pred) - min(MLD_pred))
-
-regs<-unique(df$region)
-
-for(i in 1:length(regs)){
-
-  gg<-ggplot(df %>% filter(region %in% regs[i]), aes(month, MLD_pred, col=region.col)) + 
-    geom_line(aes(group=island)) + 
-    geom_text_repel(data = df %>% filter(region %in% regs[i] & month == 12), aes(label = island), nudge_x = 0.5, size=3) +
-    geom_point(data = survey_dates %>% filter(region %in% regs[i]), pch=21, col='white', fill = 'black', size=3) +
-    scale_x_continuous(breaks=c(1,3,6,9, 12), labels=c('Jan', 'Mar', 'Jun', 'Sept', 'Dec')) +
-    scale_y_continuous(limits=c(10, 60)) +
-    scale_colour_identity() +
-    labs(x = '', y = 'Mixed layer depth', subtitle = regs[i]) +
-    theme(legend.position = 'none', 
-          axis.text = element_text(size=11),
-          axis.title = element_text(size=11)) 
-  
-  assign(paste0('gg', str_replace_all(regs[i], ' island', '')), gg)
-  assign(paste0('gg', str_replace_all(regs[i], ' Hawaiian', '')), gg)
-}
-
-gg2<-ggplot(amp, aes(fct_reorder2(island, region, mld_amp),mld_amp, fill = region.col)) + geom_col() +
-  geom_text(aes(label = str_wrap(island, 12)), vjust=-.5, size=2.2) +
-  scale_fill_identity() +
-  scale_y_continuous(expand=c(0,0), limits=c(0,47)) +
-  labs(x = '', y = 'Mixed layer amplitude, m') +
-  theme(axis.text.x = element_blank())
-
-pdf(file = 'fig/FigureSX_MLD_amp.pdf', height=6, width=16)
-top<-plot_grid(ggMariana, ggNorthwestern, ggHawaii,ggEquatorial, ggSamoa, nrow=1)
-plot_grid(top, gg2, nrow=2, labels=c('a', 'b'))
-dev.off()
-
 
 # 2. Explore MLD with anomaly model (m2), which cancels out monthly variation.
 load(file = 'results/mld_anomaly_time_mod.rds')
@@ -162,5 +120,59 @@ mcmc_plot(m_deep)
 ranef(m_deep,dpar = "mudeep")$island
 
 # bayes_R2(m_deep) # 1%
+
+## Derive MLD changes
+
+## island derivatives: mean slope of MLD over time [exclude month]
+dS <- gratia::derivatives(m1, select = "s(time_num,island)")
+dS2 <- gratia::derivatives(m2)
+
+mld_slopes <- rbind(dS %>% mutate(model = 'Obs'),
+                    dS2 %>% mutate(model = 'Anom')) %>% 
+  group_by(island, model) %>%
+  summarise(mld_slope = mean(.derivative),
+            mld_slope_se = sqrt(mean(.se^2)),  # root mean square of SEs
+            mld_slope_lower = mld_slope - 1.96 * mld_slope_se,
+            mld_slope_upper = mld_slope + 1.96 * mld_slope_se) %>% 
+  left_join(ime_df %>% distinct(island, region, region.col))
+
+# Anom and Obs have similar signals (r = 0.962)
+mld_slopes %>% select(model, mld_slope) %>% pivot_wider(names_from = model, values_from = mld_slope) %>% ggplot() +geom_point(aes(Anom, Obs))
+
+# 3rd var is the change in anomaly over time (ie. in metres)
+anom_time<-expand.grid(island = unique(mld$island), time_num = seq(min(mld$time_num), max(mld$time_num), length.out=100))
+anom_time$date<-rep(seq(min(mld$Date), max(mld$Date), length.out=100), each = length(unique(mld$island)))
+
+anom_time$MLD_pred<-predict(m2, newdata = anom_time, type='response')
+anom_time$se<-predict(m2, newdata = anom_time, type='response', se.fit = TRUE)$se.fit
+anom_time$MLD_lower<-with(anom_time, MLD_pred - 2*se)
+anom_time$MLD_upper<-with(anom_time, MLD_pred + 2*se)
+
+delta_anom <- anom_time %>% group_by(island) %>% 
+  summarise(
+    change = MLD_pred[which.max(time_num)] - MLD_pred[which.min(time_num)],
+    change_lower = MLD_lower[which.max(time_num)] - MLD_upper[which.min(time_num)],
+    change_upper = MLD_upper[which.max(time_num)] - MLD_lower[which.min(time_num)]
+  )
+
+write.csv(delta_anom, file = 'results/MLD_anom_change.csv', row.names=FALSE)
+write.csv(mld_slopes, file = 'results/MLD_slopes.csv', row.names=FALSE)
+
+# slope and predicted change have same signal (strongest in anom - near perfect cor())  
+# ggplot(mld_slopes %>% filter(model =='Anom'), 
+#        aes(mld_slope, change)) + geom_point()
+
+ggplot(mld_slopes, aes(fct_reorder(island, mld_slope), 
+                       mld_slope, ymin = mld_slope_lower, ymax = mld_slope_upper, col=region.col)) +
+  geom_pointrange() +
+  geom_point() +
+  coord_flip() +
+  facet_wrap(~model, scales='free')
+
+ggplot(delta_anom, aes(fct_reorder(island, change), 
+  change, ymin = change_lower, ymax = change_upper)) +
+  geom_pointrange() +
+  geom_point() +
+  coord_flip()
 
 

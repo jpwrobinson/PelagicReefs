@@ -81,7 +81,6 @@ gF<-gBase %+% (region_smooth %>% filter(var == 'anom')) +
   labs(x = '', y = 'Mixed layer anomaly, m') +
   theme(axis.title = element_text(size = 10))
 
-
 gSX <- gBase + 
   geom_ribbon(data = preds %>% filter(var == 'obs'), 
               aes(group=island, ymin = MLD_lower, ymax = MLD_upper), 
@@ -96,14 +95,16 @@ gSX <- gBase +
   theme(plot.margin = unit(c(0.5, 2, 0.5, 0.5), 'cm')) +
   coord_cartesian(clip='off')
 
-gMLD<-ggplot(mld_slopes, aes(fct_reorder(island, mld_slope), 
-                              mld_slope, ymin = mld_slope_lower, ymax = mld_slope_upper, col=region.col)) +
+delta_anom<-read.csv(file = 'results/MLD_anom_change.csv') %>% 
+  left_join(focal %>% distinct(island, region.col)) %>% 
+  mutate(sig = ifelse(change_lower > 0, 'red', 'black'))
+
+gMLD<-ggplot(delta_anom, aes(fct_reorder(island, change), 
+                              change, ymin = change_lower, ymax = change_upper, col=sig)) +
   geom_hline(yintercept = 0, linetype=5, colour= 'grey') +
-  # geom_pointrange() +
-  geom_point() +
+  geom_pointrange() +
   coord_flip() +
   scale_colour_identity() +
   theme(legend.position = NULL) +
-  labs(x = '', y = 'MLD slope') +
-  scale_y_continuous(limits=c(-0.02, 0.06)) +
+  labs(x = '', y = '∆ MLD anomaly, m [1993 - 2026]') +
   scale_x_discrete(position = 'top')
