@@ -5,3 +5,4 @@
 frames/
 results/mod_ime_time_seasonality.rds
 /spatial/
+data/spatial*
