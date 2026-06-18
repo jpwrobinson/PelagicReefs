@@ -1,132 +1,167 @@
+source('func_mod_conditional.R')
 
-# Trophic group effect plots
-load('results/mod_planktivore_metabolic.rds')
-load('results/mod_herbivore_metabolic.rds')
+th_marg<-theme(plot.margin=unit(c(0.1, .1, .1,.1), 'cm'),
+               axis.title = element_text(size = 10),
+               axis.text = element_text(size=9))
 
-bayes<-data.frame(b = c(bayes_R2(m2_plank, re.form=NA)[1,'Estimate'],
-                        bayes_R2(m2_herb, re.form=NA)[1,'Estimate']),
-                  x = 0.9, y = 11, fg = c('Planktivore', 'Herbivore'))
+## IME plots
 
-direc<-data.frame(b = c('Wetter', 'Deeper'),
-                  x = c(0.5, -0.6), 
-                  y = c(3.3, 4.3), fg = c('Herbivore', 'Planktivore'))
+# Panel A = 06_ime_time. m_detect. code is ready.
+load(file = 'results/mod_ime_time_binom.rds')
+load(file = 'results/mod_ime_time_hurdle.rds')
 
-## Effect sizes
-effects <- rbind(
-  m2_plank %>%
-  gather_draws(`b_.*`, regex=TRUE) %>%  
-  mutate(fg = 'Planktivore'),
-  m2_herb %>%
-    gather_draws(`b_.*`, regex=TRUE) %>%  
-    mutate(fg = 'Herbivore')) %>% 
-  filter(.variable != 'Intercept') %>% 
-  mutate(.variable = str_replace_all(.variable, 'b_', ''),
-         var_fac = factor(.variable, 
-                          levels = rev(c('population_statusU', 'geomorphic_typeIsland','reef_area_km2','island_area_km2','site_bathy_400m', # geomorphic
-                                        'ted_mean', 'mld_mean', 'avg_monthly_mm', #oceanographic
-                                         'hard_coral', 'depth_m' #habitat
-                                         )))) %>% 
-  filter(!is.na(var_fac)) %>% 
-  group_by(var_fac, fg) %>% mutate(medi = abs(median(.value)),
-                               hpdi_lower = HDInterval::hdi(.value, credMass = 0.95)[1],
-                               hpdi_upper = HDInterval::hdi(.value, credMass = 0.95)[2],
-                               median = median(.value),
-                               excludes_zero = !(hpdi_lower < 0 & hpdi_upper > 0)) 
+fitted_df_detect<-focal
+fitted_df_gamma<-focalCont
+
+# A = MLD anomaly preds, B = MLD anomaly preds
+df_mldclim<-marginal_post(m_detectFull, fitted_df_detect, 'mld_clim_s', 'mld_clim')
+df_mldanom<-marginal_post(m_detectFull, fitted_df_detect, 'mld_anom_s', 'mld_anom')
+df_mldchange<-marginal_post(m_detectFull, fitted_df_detect, 'mld_change_s', 'mld_change')
+
+df_mldclimG<-marginal_post(m_hurdleFull, fitted_df_detect, 'mld_clim_s', 'mld_clim')
+df_mldanomG<-marginal_post(m_hurdleFull, fitted_df_detect, 'mld_anom_s', 'mld_anom')
+df_mldchangeG<-marginal_post(m_hurdleFull, fitted_df_detect, 'mld_change_s', 'mld_change')
+
+# df_time<-marginal_post_island(topDet, focal, 'time_s', 'time')
+# df_timeG<-marginal_post(topHur, focal, 'time_s', 'time')
+
+# Plot and multipanel
+gA<-ggplot(df_mldclim, aes(mld_clim, .epred)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +
+  labs(x = "", y = "P(IME)") +
+  th_marg
+
+gB<-ggplot(df_mldanom, aes(mld_anom, .epred)) +
+    geom_vline(xintercept = 0, linetype=5, alpha=0.5) +
+    geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +
+    geom_line(colour = "steelblue", linewidth = 0.9) +
+    labs(x = "", y = "") +
+    th_marg
+
+gC<-ggplot(df_mldchange, aes(mld_change, .epred)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  scale_y_continuous(expand=c(0,0), limits=c(0,1)) +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  labs(x = "", y = "") +
+  th_marg
+
+gD<-ggplot(df_mldclimG, aes(mld_clim, .epred)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +
+  labs(x = "Mixed layer depth [mean], m", y = "IME strength") +
+  th_marg
+
+gE<-ggplot(df_mldanomG, aes(mld_anom, .epred)) +
+  geom_vline(xintercept = 0, linetype=5, alpha=0.5) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +
+  labs(x = "Mixed layer depth [anomaly], m", y = "") +
+  th_marg
+
+gF<-ggplot(df_mldchangeG, aes(mld_change, .epred)) +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper, group = .width),
+              alpha = 0.2, fill = "steelblue") +
+  geom_line(colour = "steelblue", linewidth = 0.9) +
+  scale_y_continuous(expand=c(0,0), labels=label_percent(), limits=c(0, 0.70)) +
+  labs(x = expression(Delta * " Mixed layer anomaly, m"), y = "") +
+  th_marg
+
+# add underlying data histograms 
+histA <- ggplot(fitted_df_detect, aes(mld_clim)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+  scale_x_continuous(expand=c(0,0)) + theme_void() 
+
+histB<-  ggplot(fitted_df_detect, aes(mld_anom)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+  scale_x_continuous(expand=c(0,0)) + theme_void() 
+
+histC<-  ggplot(fitted_df_detect, aes(mld_change)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+  scale_x_continuous(expand=c(0,0)) + theme_void() 
+
+histD <- ggplot(fitted_df_gamma, aes(mld_clim)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+  scale_x_continuous(expand=c(0,0)) + theme_void() 
+
+histE<-  ggplot(fitted_df_gamma, aes(mld_anom)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+  scale_x_continuous(expand=c(0,0)) + theme_void() 
+
+histF<-  ggplot(fitted_df_gamma, aes(mld_change)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+  scale_x_continuous(expand=c(0,0)) + theme_void() 
 
 
-# Plot effect sizes
-gA<-ggplot(effects, aes(x = .value, y = var_fac, col = fg)) +
-    # geom_text(data = labs, aes(x, y, label = label), size=3.5, fontface=1, hjust=1, col='black') +
-    # annotate('rect', xmin = -Inf, xmax=Inf, ymin = -Inf, ymax = 2.5, fill='grey', alpha=0.1) +
-    # annotate('rect', xmin = -Inf, xmax=Inf, ymin = 4.5, ymax = 8.5, fill='grey', alpha=0.1) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "black") + 
-    stat_pointinterval(data = effects, .width = c(0.5, 0.95), pch=19, alpha=0.5,
-                       position = position_dodge(width=0.65)) +  
-    stat_pointinterval(data = effects %>% filter(excludes_zero == TRUE), 
-                      .width = c(0.5, 0.95), pch=19, 
-                     position = position_dodge(width=0.65)) +  
-    geom_text(data = bayes, aes(x = x, y = y, label = paste0('R² = ', round(b*100,1),'% ')), size=3.5) +
-    geom_text(data = direc, aes(x = x, y = y, label = b), size=2.5) +
-    facet_grid(~fct_rev(fg)) +
-    scale_color_manual(values = fg_cols) +
-    labs(x = "Effect on fish-assemblage respiration rate", y = "") +
-    scale_x_continuous(limits=c(-.9, 1.3), expand=c(0,0)) +
-    guides(color='none') +
-    coord_cartesian(clip='off') +
-    scale_y_discrete(labels = c('Depth', 'Hard coral',
-                                'Precipitation', 'Mixed layer depth','Tidal energy',
-                                'Bathymetric slope','Island area', 'Reef area', 'Island [vs. atoll]', 'Unpopulated'), 
-                     sec.axis = dup_axis(labels=NULL)) +
-    theme(strip.text = element_text(face=1, hjust=0, vjust=3, size=10),
-          strip.background = element_blank(),
-          axis.text.y = element_text(size =10),
-          axis.text.x = element_text(size =10)) 
+# inset histos
+gA<-gA + annotation_custom(
+    grob = ggplotGrob(histA),
+    xmin = min(fitted_df_detect$mld_clim), max(fitted_df_detect$mld_clim),  # Adjust the x-axis placement of the inset
+    ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset
+  )
 
-## SHAP panels
-th<-theme(legend.position='none',
-          axis.text.y = element_blank(), axis.ticks.y = element_blank(),
-          strip.text = element_text(face=2, hjust=0, size=11),
-          strip.background = element_blank(),
-          axis.text.x = element_text(size=10),
-          plot.margin = unit(c(0.1, 1.75, 0, .5), 'cm'))
-
-labs<-data.frame(label = c('Depth', 'Hard coral',
-                 'Precipitation', 'Mixed layer depth','Tidal energy',
-                 'Bathymetric slope','Island area', 'Reef area', 'Island [vs. atoll]', 'Unpopulated'),
-                 feature = c('depth_m','hard_coral',
-                   'avg_monthly_mm', 'mld_mean','ted_mean',
-                   'site_bathy_400m','island_area_km2','reef_area_km2', 'geomorphic_type',
-                   'population_status'))
-
-sigs<-effects %>% mutate(response = fg, 
-                         feature = str_replace_all(.variable, 'Island', ''),
-                         feature = str_replace_all(feature, 'statusU', 'status')) %>% 
-  distinct(response, feature, excludes_zero)
-
-vp_by_var<-read.csv('results/fish_SHAP_byvar.csv') %>% 
-  left_join(labs) %>% 
-  left_join(sigs)
-
-
-gB1<-ggplot(vp_by_var %>% filter(response=='Planktivore') %>% 
-              mutate(feature = fct_reorder(feature, mean_abs_shap)),
-                                 aes(x = mean_abs_shap, y = feature, alpha=excludes_zero)) +
-  geom_col(fill=fg_cols[2]) +
-  geom_text(aes(label = label), hjust = -0.05, size=3) +
-  scale_x_continuous(expand=c(0,0), limits=c(0, 0.65)) +
-  scale_alpha_manual(values = c(0.5,1)) +
-  coord_cartesian(clip='off') +
-  labs(x = "", y = NULL, fill  = NULL) + th
-
-gB2<-ggplot(vp_by_var %>% filter(response=='Herbivore') %>% 
-              mutate(feature = fct_reorder(feature, mean_abs_shap)),
-            aes(x = mean_abs_shap, y = feature, alpha=excludes_zero)) +
-  geom_col(fill=fg_cols[1]) +
-  geom_text(aes(label = label), hjust = -0.05, size=3) +
-  scale_x_continuous(expand=c(0,0), limits=c(0, 0.65)) +
-  scale_alpha_manual(values = c(0.5,1)) +
-  coord_cartesian(clip='off') +
-  labs(x  = "Variable importance (mean SHAP)", y = NULL, fill  = NULL) + th
-
-gB<-plot_grid(gB1, gB2, nrow=2)
-
-pdf(file = 'fig/Figure4.pdf', height=4.5, width=10)
-print(
-  plot_grid(gA + theme(plot.margin=unit(c(1.15, 0, 1.25, 0), 'cm')),
-            gB,
-            nrow=1, labels=c('a', 'b'), align='hv', rel_widths=c(1, 1))
+gB<-gB + annotation_custom(
+  grob = ggplotGrob(histB),
+  xmin = min(fitted_df_detect$mld_anom), max(fitted_df_detect$mld_anom),  # Adjust the x-axis placement of the inset
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset
 )
+
+gC<-gC + annotation_custom(
+  grob = ggplotGrob(histC),
+  xmin = min(fitted_df_detect$mld_change), max(fitted_df_detect$mld_change),  # Adjust the x-axis placement of the inset
+  ymin = -Inf, ymax = 0.2  # Adjust the y-axis placement of the inset
+)
+
+gD<-gD + annotation_custom(
+  grob = ggplotGrob(histD),
+  xmin = min(fitted_df_gamma$mld_clim), max(fitted_df_gamma$mld_clim),  # Adjust the x-axis placement of the inset
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset
+)
+
+gE<-gE + annotation_custom(
+  grob = ggplotGrob(histE),
+  xmin = min(fitted_df_gamma$mld_anom), max(fitted_df_gamma$mld_anom),  # Adjust the x-axis placement of the inset
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset
+)
+
+gF<-gF + annotation_custom(
+  grob = ggplotGrob(histF),
+  xmin = min(fitted_df_gamma$mld_change), max(fitted_df_gamma$mld_change),  # Adjust the x-axis placement of the inset
+  ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset
+)
+
+g_mld_covs<-plot_grid(gA, gB, gC, gD, gE, gF, 
+                      align='hv', nrow=2, 
+                      labels=c('a', 'b', 'c', 'd', 'e', 'f'))
+
+# load MLD predictions
+source('Figure4_MLD.R')
+
+gMLD_change<-plot_grid(gC + labs(y = 'P(IME)', 
+                                 x = expression(Delta * " Mixed layer anomaly, m")), 
+                       gF + labs( y = 'IME strength'), labels = c('c', 'd'), nrow=1)
+
+gIME<-plot_grid(gMLD_anom, gMLD_change, nrow=2, labels=c('a', ''))
+
+pdf(file = 'fig/Figure4.pdf', height=5, width=11)
+plot_grid(gIME, 
+          gMLDdelta + theme(plot.margin = unit(c(0.8, 0, .5, 1), 'cm')), 
+          nrow=1, labels=c('', 'b'), rel_widths=c(1, 0.36))
 dev.off()
 
-# fish icons
-pdf(file = 'fig/Fig_FishIcon.pdf', height=6, width=10)
+pdf(file = 'fig/FigureSX_IME_time_covariates.pdf', height=5, width=10)
+g_mld_covs
+dev.off()
 
-ggplot() + add_fishape(family = 'Caesionidae', option = "Caesio_cuning",
-            fill = fg_cols[2])  +
-  theme_void() + labs(subtitle = 'Caesio cuning')
-
-ggplot() + add_fishape(family = 'Acanthuridae', option = "Naso_unicornis",
-                       fill = fg_cols[1])  +
-  theme_void() + labs(subtitle = 'Naso unicornis')
-
+pdf(file = 'fig/FigureSX_MLD_time_obs.pdf', height=3.5, width=7)
+gSX
 dev.off()

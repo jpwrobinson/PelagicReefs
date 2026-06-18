@@ -149,11 +149,6 @@ conditional_effects(checker, effects = 'mld_clim_s')
 conditional_effects(checker, effects = 'mld_anom_s')
 conditional_effects(checker, effects = 'mld_change_s')
 conditional_effects(checker, effects = 'time_s') # time marginalised over islands
-# ce<-conditional_effects(checker, effects = "time_s", 
-#                     conditions = distinct(focalCont, island))
-
-# plot(ce, plot = FALSE)[[1]] +
-#   coord_cartesian(ylim = c(0, 2))
 
 
 # Extract LOO and save as table
