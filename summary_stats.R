@@ -53,6 +53,19 @@ plank_scaled %>%
 # 
 # eff$med[eff$fg=='Planktivore']/sd(depth$mld_mean) # -0.13 per m MLD
 
+load(file = 'results/mod_ime_time_binom.rds')
+load(file = 'results/mod_ime_time_hurdle.rds')
+bayes_R2(m_detectFull, re.form=NA)
+bayes_R2(m_hurdleFull, re.form=NA)
+
+## IME and MLD time series
+delta_anom<-read.csv(file = 'results/MLD_anom_change.csv') %>% 
+  left_join(island %>% distinct(island, region.col)) %>% 
+  mutate(sig = ifelse(change_lower > 0, 'red', 'black')) %>% 
+  filter(island %in% ime_df$island)
+
+with(delta_anom, table(sig)) # 20 / 34 islands (59%)
+delta_anom %>% filter(sig == 'red') %>% summarise(mean(change)) # 5.696 m 
 
 ## NCRMP vs. IME datasets
 # temporal windows
