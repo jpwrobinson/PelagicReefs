@@ -162,6 +162,6 @@ pdf(file = 'fig/FigureSX_IME_time_covariates.pdf', height=5, width=10)
 g_mld_covs
 dev.off()
 
-pdf(file = 'fig/FigureSX_MLD_time_obs.pdf', height=3.5, width=7)
+pdf(file = 'fig/FigureSX_MLD_time_obs.pdf', height=7, width=5)
 gSX
 dev.off()

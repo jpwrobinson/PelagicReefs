@@ -85,8 +85,28 @@ knitr::include_graphics("fig/FigureSX_MLD_time_obs.pdf"); i = i + 1
 
 **Fig. S`r i`** | Island-level temporal trends in the mixed layer depth layer from 1993-2026. Lines are mean predicted mixed layer, accounting for monthly variability, from a generalised additive model, for each region (black with 95% CI filled by region) and overlaid with mean island predictions (coloured lines).
 
+\newpage
 ```{r, out.width = "85%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
 knitr::include_graphics("fig/FigureSX_IME_time_covariates.pdf"); i = i + 1
 ```
 
 **Fig. S`r i`** | Effects of mixed layer depth covariates on IME dynamics from 1997-2025. a) Probability of detecting an IME and b) IME strength (%). Lines are median posterior estimates with 95% and 50% certainty intervals.
+
+\newpage
+\begin{landscape}
+
+```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+knitr::include_graphics("fig/FigureSX_IME_temporalFullDetect.pdf"); i = i + 1
+```
+
+\textbf{Fig. S`r i`} | Temporal change in the probability of IME occurrence at each island from 1997-2025. Lines are median posterior estimates with 95% and 50% certainty intervals, excluding effects of mixed layer covariates and month smoother.
+
+\newpage
+
+```{r, out.width = "95%", echo=F,fig.align='center', warning=FALSE, message=FALSE}
+knitr::include_graphics("fig/FigureSX_IME_temporalFullGamma.pdf"); i = i + 1
+```
+
+\textbf{Fig. S`r i`} | Temporal change in the IME strength at each island from 1997-2025. Lines are median posterior estimates with 95% and 50% certainty intervals, excluding effects of mixed layer covariates and month smoother.
+
+\end{landscape}
