@@ -139,7 +139,8 @@ gF<-gF + annotation_custom(
   ymin = -Inf, ymax = 0.1  # Adjust the y-axis placement of the inset
 )
 
-g_mld_covs<-plot_grid(gA, gB, gC, gD, gE, gF, 
+g_mld_covs<-plot_grid(gA, gB, gC + labs(x = expression(Delta * " Mixed layer anomaly, m")), 
+                      gD, gE, gF + labs(x = expression(Delta * " Mixed layer anomaly, m")), 
                       align='hv', nrow=2, 
                       labels=c('a', 'b', 'c', 'd', 'e', 'f'))
 

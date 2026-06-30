@@ -1,4 +1,4 @@
-
+source('0_loads/00_plot_theme.R')
 load(file = 'results/mod_ime_time_binom.rds')
 load(file = 'results/mod_ime_time_hurdle.rds')
 
@@ -22,15 +22,16 @@ func_time_fig<-function(model, df, filename, ylab){
             axis.title = element_text(size=11)) 
     
     # manual y lims
-    if(ylab =='IME strength' & regs[i] %in% c('Northwestern Hawaiian', 'Hawaii')){gg <- gg + scale_y_continuous(labels=label_percent(), limits = c(0, 1))}
+    if(ylab =='IME strength' & regs[i] %in% c('Northwestern Hawaiian', 'Hawaii')){gg <- gg + scale_y_continuous(labels=label_percent(), limits = c(0, 0.75))}
     if(ylab =='IME strength' & regs[i] %in% c('Mariana')){gg <- gg + scale_y_continuous(labels=label_percent(), limits = c(0, 3.5))}
-    if(ylab =='IME strength' & regs[i] %in% c('Equatorial', 'Samoa')){gg <- gg + scale_y_continuous(labels=label_percent(), limits = c(0, 2))}
+    if(ylab =='IME strength' & regs[i] %in% c('Equatorial')){gg <- gg + scale_y_continuous(labels=label_percent(), limits = c(0, 1.5))}
+    if(ylab =='IME strength' & regs[i] %in% c('Samoa')){gg <- gg + scale_y_continuous(labels=label_percent(), limits = c(0, 2.2))}
     
     assign(paste0('gg', str_replace_all(regs[i], ' island', '')), gg)
     assign(paste0('gg', str_replace_all(regs[i], ' Hawaiian', '')), gg)
   }
   
-  pdf(file = filename, height=7, width=14)
+  pdf(file = filename, height=9, width=14)
   print(
     ggMariana / (ggNorthwestern + ggHawaii) / (ggEquatorial + ggSamoa)
   )
